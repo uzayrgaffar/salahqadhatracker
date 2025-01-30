@@ -1,20 +1,34 @@
-import React, { useContext, useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, LayoutAnimation, Platform, UIManager, Modal } from 'react-native';
-import { Calendar } from 'react-native-calendars';
-import { useNavigation } from '@react-navigation/native';
-import { AppContext } from '../AppContext';
-import moment from 'moment';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import { useContext, useState, useEffect } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions } from "react-native"
+import { Calendar } from "react-native-calendars"
+import { useNavigation } from "@react-navigation/native"
+import { AppContext } from "../AppContext"
+import moment from "moment"
+import Icon from "react-native-vector-icons/FontAwesome"
 
-if (Platform.OS === 'android') {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const { height } = Dimensions.get("window")
 
 const DailyChart = () => {
-  const navigation = useNavigation();
-  const { fajr, setFajr, dhuhr, setDhuhr, asr, setAsr, maghrib, setMaghrib, isha, setIsha, witr, setWitr, dailyPrayerCounts, setDailyPrayerCounts, madhab } = useContext(AppContext);
-  const today = moment().format('YYYY-MM-DD');
-  const [selectedDate, setSelectedDate] = useState(today);
+  const navigation = useNavigation()
+  const {
+    fajr,
+    setFajr,
+    dhuhr,
+    setDhuhr,
+    asr,
+    setAsr,
+    maghrib,
+    setMaghrib,
+    isha,
+    setIsha,
+    witr,
+    setWitr,
+    dailyPrayerCounts,
+    setDailyPrayerCounts,
+    madhab,
+  } = useContext(AppContext)
+  const today = moment().format("YYYY-MM-DD")
+  const [selectedDate, setSelectedDate] = useState(today)
   const [prayerStates, setPrayerStates] = useState({
     [today]: {
       fajr: false,
@@ -24,8 +38,7 @@ const DailyChart = () => {
       isha: false,
       witr: false,
     },
-  });
-
+  })
   const [ldailyPrayerCounts, lsetDailyPrayerCounts] = useState({
     [today]: {
       fajr: 0,
@@ -35,28 +48,12 @@ const DailyChart = () => {
       isha: 0,
       witr: 0,
     },
-  });
-
-  const flatListRef = useRef(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
-  const generateDates = () => {
-    let dates = [];
-    for (let i = -14; i <= 3; i++) {
-      dates.push(moment().add(i, 'days').format('YYYY-MM-DD'));
-    }
-    return dates;
-  };
-
-  const countSelectedPrayers = (date) => {
-    const selectedPrayers = prayerStates[date] || {};
-    const selectedCount = Object.values(selectedPrayers).filter(value => value).length;
-    // console.log(`Number of selected Salah for ${date}: ${selectedCount}`);
-  };
+  })
+  const [isModalVisible, setIsModalVisible] = useState(false)
 
   const handleDateSelect = (date) => {
     if (moment(date).isSameOrBefore(today)) {
-      setSelectedDate(date);
+      setSelectedDate(date)
       if (!prayerStates[date]) {
         setPrayerStates((prevStates) => ({
           ...prevStates,
@@ -68,7 +65,7 @@ const DailyChart = () => {
             isha: false,
             witr: false,
           },
-        }));
+        }))
       }
       if (!ldailyPrayerCounts[date]) {
         lsetDailyPrayerCounts((prevCounts) => ({
@@ -81,16 +78,10 @@ const DailyChart = () => {
             isha: 0,
             witr: 0,
           },
-        }));
-      }
-      countSelectedPrayers(date);
-      
-      const index = generateDates().indexOf(date);
-      if (index >= 0 && flatListRef.current) {
-        flatListRef.current.scrollToIndex({ index, animated: true });
+        }))
       }
     }
-  };
+  }
 
   const handlePrayerSelect = (prayer) => {
     const updatedStates = {
@@ -99,123 +90,79 @@ const DailyChart = () => {
         ...prayerStates[selectedDate],
         [prayer]: !prayerStates[selectedDate][prayer],
       },
-    };
-    setPrayerStates(updatedStates);
-  
-    setTimeout(() => {
-      countSelectedPrayers(selectedDate);
-    }, 500);
-  
-    const countAdjust = updatedStates[selectedDate][prayer] ? -1 : 1;
-    if (prayer === 'fajr') setFajr(fajr + countAdjust);
-    if (prayer === 'dhuhr') setDhuhr(dhuhr + countAdjust);
-    if (prayer === 'asr') setAsr(asr + countAdjust);
-    if (prayer === 'maghrib') setMaghrib(maghrib + countAdjust);
-    if (prayer === 'isha') setIsha(isha + countAdjust);
-    if (prayer === 'witr') setWitr(witr + countAdjust);
-  };
+    }
+    setPrayerStates(updatedStates)
+
+    const countAdjust = updatedStates[selectedDate][prayer] ? -1 : 1
+    if (prayer === "fajr") setFajr(fajr + countAdjust)
+    if (prayer === "dhuhr") setDhuhr(dhuhr + countAdjust)
+    if (prayer === "asr") setAsr(asr + countAdjust)
+    if (prayer === "maghrib") setMaghrib(maghrib + countAdjust)
+    if (prayer === "isha") setIsha(isha + countAdjust)
+    if (prayer === "witr") setWitr(witr + countAdjust)
+  }
 
   const adjustCount = (prayer, amount) => {
     lsetDailyPrayerCounts((prevCounts) => {
-      const currentCount = prevCounts[selectedDate][prayer];
-      if (amount < 0 && currentCount === 0) return prevCounts;
+      const currentCount = prevCounts[selectedDate][prayer]
+      if (amount < 0 && currentCount === 0) return prevCounts
 
-      const updatedCount = currentCount + amount;
+      const updatedCount = currentCount + amount
       return {
         ...prevCounts,
         [selectedDate]: {
           ...prevCounts[selectedDate],
           [prayer]: updatedCount,
         },
-      };
-    });
+      }
+    })
 
-    const countAdjust = amount < 0 ? -1 : 1;
-    if (prayer === 'fajr') setFajr(fajr - countAdjust);
-    if (prayer === 'dhuhr') setDhuhr(dhuhr - countAdjust);
-    if (prayer === 'asr') setAsr(asr - countAdjust);
-    if (prayer === 'maghrib') setMaghrib(maghrib - countAdjust);
-    if (prayer === 'isha') setIsha(isha - countAdjust);
-    if (prayer === 'witr') setWitr(witr - countAdjust);
-  };
+    const countAdjust = amount < 0 ? -1 : 1
+    if (prayer === "fajr") setFajr(fajr - countAdjust)
+    if (prayer === "dhuhr") setDhuhr(dhuhr - countAdjust)
+    if (prayer === "asr") setAsr(asr - countAdjust)
+    if (prayer === "maghrib") setMaghrib(maghrib - countAdjust)
+    if (prayer === "isha") setIsha(isha - countAdjust)
+    if (prayer === "witr") setWitr(witr - countAdjust)
+  }
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const currentTime = moment().format('HH:mm');
-      if (currentTime === '00:00') {
-        setFajr(fajr + 1);
-        setDhuhr(dhuhr + 1);
-        setAsr(asr + 1);
-        setMaghrib(maghrib + 1);
-        setIsha(isha + 1);
-        setWitr(witr + 1);
+      const currentTime = moment().format("HH:mm")
+      if (currentTime === "00:00") {
+        setFajr(fajr + 1)
+        setDhuhr(dhuhr + 1)
+        setAsr(asr + 1)
+        setMaghrib(maghrib + 1)
+        setIsha(isha + 1)
+        setWitr(witr + 1)
       }
-    }, 60000);
+    }, 60000)
 
-    return () => clearInterval(interval);
-  }, [fajr, dhuhr, asr, maghrib, isha, witr]);
-
-  const getTotalPrayersCountForDate = useMemo(() => {
-    const counts = ldailyPrayerCounts[selectedDate] || {};
-    return Object.values(counts).reduce((total, count) => total + count, 0);
-  }, [ldailyPrayerCounts, selectedDate]);
-
-  const renderDateItem = ({ item }) => {
-    const isSelected = item === selectedDate;
-    const isToday = item === today;
-    const isFuture = moment(item).isAfter(today);
-  
-    const selectedPrayers = prayerStates[item] || {};
-    const selectedCount = Object.values(selectedPrayers).filter(value => value).length;
-    const circleColor = selectedCount === 0 ? 'black' :
-                        selectedCount === 1 ? 'crimson' :
-                        selectedCount === 2 ? 'red' :
-                        selectedCount === 3 ? 'orange' :
-                        selectedCount === 4 ? 'yellow' :
-                        selectedCount === 5 ? 'lightgreen' :
-                        selectedCount === 6 ? 'green' :
-                        selectedCount === '#40916c';
-                
-    return (
-      <TouchableOpacity
-      onPress={() => handleDateSelect(item)}
-      style={styles.dateItem}
-      disabled={isFuture}
-    >
-      <View
-        style={[
-          styles.dateCircle,
-          { backgroundColor: circleColor },
-          isSelected && styles.selectedDateCircle,
-          isFuture && styles.futureDateCircle,
-        ]}
-      >
-        {isToday && <Text style={styles.todayLabel}>Today</Text>}
-        <Text style={styles.dateText}>{moment(item).format('DD')}</Text>
-        <Text style={styles.monthText}>{moment(item).format('MMM')}</Text>
-      </View>
-    </TouchableOpacity>
-    );
-  };
-
-  const goToProgress = () => {
-    setDailyPrayerCounts(ldailyPrayerCounts);
-    navigation.navigate('Progress');
-  };
+    return () => clearInterval(interval)
+  }, [fajr, dhuhr, asr, maghrib, isha, witr, setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr])
 
   const getMarkedDates = () => {
-    const markedDates = {};
-    Object.keys(prayerStates).forEach(date => {
-      const selectedPrayers = prayerStates[date] || {};
-      const selectedCount = Object.values(selectedPrayers).filter(value => value).length;
-      const color = selectedCount === 0 ? 'black' :
-                    selectedCount === 1 ? 'crimson' :
-                    selectedCount === 2 ? 'red' :
-                    selectedCount === 3 ? 'orange' :
-                    selectedCount === 4 ? 'yellow' :
-                    selectedCount === 5 ? 'lightgreen' :
-                    selectedCount === 6 ? 'green' :
-                    selectedCount === '#40916c';
+    const markedDates = {}
+    Object.keys(prayerStates).forEach((date) => {
+      const selectedPrayers = prayerStates[date] || {}
+      const selectedCount = Object.values(selectedPrayers).filter((value) => value).length
+      const color =
+        selectedCount === 0
+          ? "#FF0000"
+          : selectedCount === 1
+            ? "#FF3300"
+            : selectedCount === 2
+              ? "#FF6600"
+              : selectedCount === 3
+                ? "#FF9900"
+                : selectedCount === 4
+                  ? "#FFCC00"
+                  : selectedCount === 5
+                    ? "#CCFF00"
+                    : selectedCount === 6
+                      ? "#00FF00"
+                      : "#00FF00"
 
       markedDates[date] = {
         customStyles: {
@@ -223,302 +170,234 @@ const DailyChart = () => {
             backgroundColor: color,
           },
           text: {
-            color: 'white',
+            color: "white",
           },
         },
-      };
-    });
-    return markedDates;
-  };
+      }
+    })
+    return markedDates
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.calendarBar}>
-        <FlatList
-          ref={flatListRef}
-          data={generateDates()}
-          renderItem={renderDateItem}
-          keyExtractor={(item) => item}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.dateList}
-        />
-        <TouchableOpacity
-          onPress={() => setIsModalVisible(true)}
-          style={styles.fullCalendarButton}
-        >
-          <Icon name="calendar" size={20} color="#fff" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Daily Chart</Text>
+      </View>
+
+      <View style={styles.card}>
+        <TouchableOpacity style={styles.dateButton} onPress={() => setIsModalVisible(true)}>
+          <Text style={styles.dateButtonText}>{moment(selectedDate).format("MMMM D, YYYY")}</Text>
+          <Icon name="calendar" size={20} color="#777777" />
         </TouchableOpacity>
+
+        <View style={styles.prayersContainer}>
+          {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
+            <View key={prayer} style={styles.prayerWrapper}>
+              <TouchableOpacity
+                style={[styles.prayerButton, prayerStates[selectedDate]?.[prayer] && styles.selectedPrayerButton]}
+                onPress={() => handlePrayerSelect(prayer)}
+              >
+                <Text
+                  style={[
+                    styles.prayerButtonText,
+                    prayerStates[selectedDate]?.[prayer] && styles.selectedPrayerButtonText,
+                  ]}
+                >
+                  {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
+                </Text>
+                {prayerStates[selectedDate]?.[prayer] && (
+                  <View style={styles.counterContainer}>
+                    <TouchableOpacity
+                      style={styles.counterButton}
+                      onPress={() => adjustCount(prayer, -1)}
+                      disabled={ldailyPrayerCounts[selectedDate]?.[prayer] === 0}
+                    >
+                      <Icon
+                        name="minus"
+                        size={20}
+                        color={ldailyPrayerCounts[selectedDate]?.[prayer] === 0 ? "#ccc" : "#FFFFFF"}
+                      />
+                    </TouchableOpacity>
+                    <Text style={styles.counterText}>{ldailyPrayerCounts[selectedDate]?.[prayer]}</Text>
+                    <TouchableOpacity style={styles.counterButton} onPress={() => adjustCount(prayer, 1)}>
+                      <Icon name="plus" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
       </View>
 
       <Modal
         visible={isModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setIsModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <Calendar
-            current={today}
-            onDayPress={(day) => {
-              handleDateSelect(day.dateString);
-              setIsModalVisible(false);
-            }}
-            markingType={'custom'}
-            markedDates={getMarkedDates()}
-            style={styles.calendar}
-          />
-          <TouchableOpacity
-            onPress={() => setIsModalVisible(false)}
-            style={styles.closeButton}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
+          <View style={styles.modalContent}>
+            <Calendar
+              current={selectedDate}
+              onDayPress={(day) => {
+                handleDateSelect(day.dateString)
+                setIsModalVisible(false)
+              }}
+              markingType={"custom"}
+              markedDates={getMarkedDates()}
+              theme={{
+                backgroundColor: "#ffffff",
+                calendarBackground: "#ffffff",
+                textSectionTitleColor: "#b6c1cd",
+                selectedDayBackgroundColor: "#5CB390",
+                selectedDayTextColor: "#ffffff",
+                todayTextColor: "#5CB390",
+                dayTextColor: "#2d4150",
+                textDisabledColor: "#d9e1e8",
+                dotColor: "#5CB390",
+                selectedDotColor: "#ffffff",
+                arrowColor: "#5CB390",
+                monthTextColor: "#5CB390",
+                indicatorColor: "#5CB390",
+                textDayFontFamily: "System",
+                textMonthFontFamily: "System",
+                textDayHeaderFontFamily: "System",
+                textDayFontWeight: "300",
+                textMonthFontWeight: "bold",
+                textDayHeaderFontWeight: "300",
+                textDayFontSize: 16,
+                textMonthFontSize: 16,
+                textDayHeaderFontSize: 16,
+              }}
+            />
+            <TouchableOpacity style={styles.closeButton} onPress={() => setIsModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
-
-      <View style={styles.chartContainer}>
-        <View style={styles.salahButtonsContainer}>
-          <Text style={styles.text}>Select the salah that you have prayed</Text>
-          {['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', ...(madhab === 'Hanafi' ? ['witr'] : [])].map((prayer) => (
-            <View key={prayer} style={styles.prayerWrapper}>
-            <TouchableOpacity
-              style={[styles.salahButton, prayerStates[selectedDate]?.[prayer] && styles.selectedSalahButton]}
-              onPress={() => handlePrayerSelect(prayer)}
-            >
-              <Text style={[styles.salahButtonText, prayerStates[selectedDate]?.[prayer] && styles.selectedSalahButtonText]}>
-                {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
-              </Text>
-              {prayerStates[selectedDate]?.[prayer] && (
-                <View style={styles.counterContainer}>
-                  <Text style={styles.addQadha}>Add Qadha</Text>
-                  <TouchableOpacity
-                    onPress={() => adjustCount(prayer, -1)}
-                    style={[
-                    styles.counterButtonN,
-                    ldailyPrayerCounts[selectedDate]?.[prayer] === 0 && styles.disabledButton,
-                    ]}
-                    disabled={ldailyPrayerCounts[selectedDate]?.[prayer] === 0}
-                  >
-                    <Text style={styles.counterButtonText}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.prayerCount}>{ldailyPrayerCounts[selectedDate]?.[prayer]}</Text>
-                  <TouchableOpacity onPress={() => adjustCount(prayer, 1)} style={styles.counterButtonP}>
-                    <Text style={styles.counterButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </TouchableOpacity>
-            </View>
-            ))}
-        </View>
-      </View>
-
-      <View style={styles.totalContainer}>
-        <TouchableOpacity onPress={() => { navigation.navigate('Home') }} style={styles.bottomButton}>
-          <Text style={styles.bottomButtonText}>All Qadha</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={goToProgress} style={styles.bottomButton}>
-          <Text style={styles.bottomButtonText}>Progress</Text>
-        </TouchableOpacity>
-      </View>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#66435a',
+    backgroundColor: "#5CB390",
+    padding: 20,
   },
-  calendarBar: {
-    height: 110,
-    backgroundColor: '#259591',
-    flexDirection: 'row',
+  header: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    alignItems: "center",
   },
-  dateList: {
-    alignItems: 'flex-end',
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textAlign: "center",
   },
-  dateItem: {
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    borderRightWidth: 0.5,
-    borderRightColor: '#fff',
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 5,
+    maxHeight: height * 0.7,
   },
-  dateCircle: {
-    width: 55,
-    height: 55,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
-    marginBottom: 10,
+  dateButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#EEEEEE",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
   },
-  selectedDateCircle: {
-    borderWidth: 2,
-    borderColor: 'white'
-  },
-  futureDateCircle: {
-    backgroundColor: '#ccc',
-  },
-  todayLabel: {
-    position: 'absolute',
-    top: -17,
-    fontSize: 10,
-    color: '#fff',
-  },
-  dateText: {
-    color: '#fff',
+  dateButtonText: {
     fontSize: 18,
+    fontWeight: "600",
+    color: "#777777",
   },
-  monthText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  chartContainer: {
-    flex: 1,
-    top: '5%',
-  },
-  salahButtonsContainer: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    top: -15,
+  prayersContainer: {
+    flexGrow: 0,
   },
   prayerWrapper: {
-    marginBottom: 15,
-    width: '90%',
+    marginBottom: 12,
   },
-  salahButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 21,
-    borderRadius: 15,
-    backgroundColor: '#259591',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
+  prayerButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#EEEEEE",
+    padding: 16,
+    borderRadius: 12,
   },
-  selectedSalahButton: {
-    backgroundColor: '#1A6866',
-    padding: 15,
+  selectedPrayerButton: {
+    backgroundColor: "#4BD4A2",
   },
-  salahButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    flex: 1,
-    textAlign: 'center',
+  prayerButtonText: {
+    fontSize: 16,
+    color: "#777777",
+    fontWeight: "500",
   },
-  selectedSalahButtonText: {
-    color: '#fff',
-    flex: 1,
-    textAlign: 'left',
-    left: '50%'
+  selectedPrayerButtonText: {
+    color: "#FFFFFF",
   },
   counterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#155553',
-    padding: 5,
-    borderRadius: 10,
-    width: '35%',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  counterButtonN: {
-    backgroundColor: 'crimson',
-    padding: 5,
-    borderRadius: 5,
-    width: '25%',
-  },
-  counterButtonP: {
-    backgroundColor: '#52b788',
-    padding: 5,
-    borderRadius: 5,
-    width: '25%',
-  },
-  disabledButton: {
-    backgroundColor: '#aaa',
-  },
-  counterButtonText: {
-    fontSize: 14,
-    color: '#ffffff',
-    textAlign: 'center',
-  },
-  prayerCount: {
-    fontSize: 20,
-    color: '#ffffff',
-  },
-  text: {
-    top: -10,
-    fontSize: 20,
-    color: '#E0F7F4',
-  },
-  addQadha: {
-    position: 'absolute',
-    color: '#fff',
-    fontSize: 10,
-    top: -13,
-    left: 34,
-  },
-  totalContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '80%',
-    marginLeft: '10%',
-    marginBottom: '10%',
-  },
-  bottomButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 21,
-    borderRadius: 15,
-    backgroundColor: '#259591',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
-  },
-  bottomButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    textAlign: 'center',
-  },
-  fullCalendarButton: {
+  counterButton: {
     width: 40,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
-    backgroundColor: '#1A6866',
-    marginHorizontal: 7,
-    bottom: -47,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    borderRadius: 12,
+  },
+  counterText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    marginHorizontal: 12,
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 20,
+    width: "90%",
+    maxWidth: 400,
   },
   closeButton: {
-    backgroundColor: '#40916c',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
+    backgroundColor: "#FBC742",
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 20,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   closeButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
   },
-  calendar: {
-    padding: 20,
-  },
-});
+})
 
-export default DailyChart;
+export default DailyChart
