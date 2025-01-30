@@ -15,6 +15,7 @@ web-build/
 *.p12
 *.key
 *.mobileprovision
+android/app/google-services.json
 
 # Metro
 .metro-health-check*
@@ -75,4 +76,3 @@ yarn-error.*
 
 # @end expo-cli
 
-android/app/google-services.json
