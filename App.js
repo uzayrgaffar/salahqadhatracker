@@ -49,16 +49,22 @@ const MainPages = () => {
       Hindi: 'मंचों',
     },
     'Profile': {
-      English: 'Profile',
-      Arabic: 'الصفحة الشخصية',
-      Urdu: 'پروفائل',
-      Hindi: 'प्रोफ़ाइल',
+      English: 'Settings',  // Changed label to Settings
+      Arabic: 'الإعدادات',
+      Urdu: 'ترتیبات',
+      Hindi: 'सेटिंग्स',
     },
     'About': {
       English: 'About',
       Arabic: 'معلومات عنا',
       Urdu: 'ہمارے بارے میں',
       Hindi: 'हमारे बारे में',
+    },
+    'Progress': {
+      English: 'Progress',
+      Arabic: 'التقدم',
+      Urdu: 'ترقی',
+      Hindi: 'प्रगति',
     }
   };
 
@@ -72,15 +78,17 @@ const MainPages = () => {
             iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           } else if (route.name === 'FAQ') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
+          } else if (route.name === 'Profile') {  // Profile tab, but labeled as Settings
+            iconName = focused ? 'settings' : 'settings-outline';
           } else if (route.name === 'About') {
             iconName = focused ? 'information-circle' : 'information-circle-outline';
+          } else if (route.name === 'Progress') {
+            iconName = focused ? 'trending-up' : 'trending-up-outline';
           }
 
           return <Icon name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#081C15',
+        tabBarActiveTintColor: '#FBC742',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
           paddingBottom: 5,
@@ -98,8 +106,9 @@ const MainPages = () => {
       })}
     >
       <Tab.Screen name="Daily Chart" component={DailyChart} options={{ headerShown: false }} />
+      <Tab.Screen name="Progress" component={Progress} options={{ headerShown: false }} />
       <Tab.Screen name="FAQ" component={Forum} options={{ headerShown: false }} />
-      <Tab.Screen name="Profile" component={Profile} options={{ headerShown: false }} />
+      <Tab.Screen name="Profile" component={Profile} options={{ headerShown: false }} /> 
       <Tab.Screen name="About" component={About} options={{ headerShown: false }} />
     </Tab.Navigator>
   );

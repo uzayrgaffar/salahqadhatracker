@@ -1,54 +1,85 @@
-import React, { useContext } from 'react';
-import { View, Text, StyleSheet, ImageBackground } from 'react-native';
-import { AppContext } from '../AppContext';
+import { useContext } from "react"
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from "react-native"
+import { AppContext } from "../AppContext"
 
 export const About = () => {
-  
-  const { selectedLanguage, gender, madhab } = useContext(AppContext);
+  const { selectedLanguage } = useContext(AppContext)
+
+  const getTitle = () => {
+    switch (selectedLanguage) {
+      case "Arabic":
+        return "معلومات عنا"
+      case "Urdu":
+        return "ہمارے بارے میں"
+      case "Hindi":
+        return "हमारे बारे में"
+      default:
+        return "About Us"
+    }
+  }
+
+  const getContent = () => {
+    switch (selectedLanguage) {
+      case "Arabic":
+        return "محتوى عربي هنا"
+      case "Urdu":
+        return "یہاں اردو مواد ہے"
+      case "Hindi":
+        return "यहां हिंदी सामग्री है"
+      default:
+        return "English content here"
+    }
+  }
 
   return (
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* <ImageBackground source={require('../assets/Masjid.jpg')} style={styles.imageBackground}> */}
-            
-            {selectedLanguage === 'English' ? <Text style={styles.title}>About Us</Text>
-              : selectedLanguage === 'Arabic' ? <Text style={styles.title}>معلومات عنا</Text>
-              : selectedLanguage === 'Urdu' ? <Text style={styles.title}>ہمارے بارے میں</Text>
-              : selectedLanguage === 'Hindi' ? <Text style={styles.title}>हमारे बारे में</Text>
-              : <Text style={styles.title}>About Us</Text>
-            }
-            
-            
-            {selectedLanguage === 'English' ? <Text style={styles.content}></Text>
-              : selectedLanguage === 'Arabic' ? <Text style={styles.content}></Text>
-              : selectedLanguage === 'Urdu' ? <Text style={styles.content}></Text>
-              : selectedLanguage === 'Hindi' ? <Text style={styles.content}></Text>
-              : <Text style={styles.content}></Text>
-            }
-
-        {/* </ImageBackground> */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{getTitle()}</Text>
+        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+          <Text style={styles.contentText}>{getContent()}</Text>
+        </ScrollView>
       </View>
-  );
-};
+    </SafeAreaView>
+  )
+}
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#5CB390",
+  },
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#66435a',
   },
-  title: {
-    fontSize: 70,
-    marginBottom: 20,
-    color: 'white',
+  header: {
+    paddingTop: 20,
+    paddingBottom: 20,
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textAlign: "center",
+    paddingTop: 40,
   },
   content: {
-    fontSize: 40,
-    textAlign: 'center',
-    marginLeft: 10,
-    marginRight: 10,
-    color: 'white',
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
-});
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  contentText: {
+    fontSize: 16,
+    color: "#333333",
+    lineHeight: 24,
+  },
+})
 
-export default About;
+export default About
