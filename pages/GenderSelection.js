@@ -2,7 +2,9 @@ import React, { useContext, useState } from "react"
 import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
-import { Ionicons } from "@expo/vector-icons"
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { db } from "../FirebaseConfig";
 
 const GenderSelection = () => {
   const navigation = useNavigation()
@@ -13,12 +15,45 @@ const GenderSelection = () => {
     setSelectedGender(gender)
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedGender) {
-      setGender(selectedGender)
-      navigation.navigate(selectedGender === "Female" ? "DaysOfCycle" : "YearsMissed")
+      setGender(selectedGender);
+  
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+  
+        if (user) {
+          const userId = user.uid;
+          const userDocRef = doc(db, "users", userId);
+  
+          const userDoc = await getDoc(userDocRef);
+  
+          if (userDoc.exists()) {
+            // Update existing user document with gender
+            await updateDoc(userDocRef, {
+              gender: selectedGender,
+              updatedAt: new Date(),
+            });
+          } else {
+            // Create a new document if it doesn't exist
+            await setDoc(userDocRef, {
+              gender: selectedGender,
+              createdAt: new Date(),
+            });
+          }
+  
+          console.log("Gender saved successfully!");
+        } else {
+          console.error("No authenticated user found!");
+        }
+      } catch (error) {
+        console.error("Error saving gender:", error);
+      }
+  
+      navigation.navigate(selectedGender === "Female" ? "DaysOfCycle" : "YearsMissed");
     }
-  }
+  };
 
   return (
     <View style={styles.container}>
