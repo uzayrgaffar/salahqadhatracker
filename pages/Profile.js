@@ -1,9 +1,11 @@
 import { useContext, useState } from "react"
-import { View, TouchableOpacity, StyleSheet, Text, ScrollView, SafeAreaView } from "react-native"
+import { View, TouchableOpacity, StyleSheet, Text, ScrollView, SafeAreaView, Alert } from "react-native"
 import Dialog from "react-native-dialog"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
 import { ChevronRight } from "lucide-react-native"
+import { auth } from "../FirebaseConfig"
+import { getAuth } from "@firebase/auth"
 
 const Profile = () => {
   const navigation = useNavigation()
@@ -58,16 +60,6 @@ const Profile = () => {
     const selections = `
       ${
         localSelectedLanguage === "English"
-          ? "Language: English"
-          : localSelectedLanguage === "Arabic"
-            ? "اللغة: العربية"
-            : localSelectedLanguage === "Urdu"
-              ? "زبان: اردو"
-              : "भाषा: हिंदी"
-      }
-      
-      ${
-        localSelectedLanguage === "English"
           ? "Gender"
           : localSelectedLanguage === "Arabic"
             ? "جنس"
@@ -99,6 +91,10 @@ const Profile = () => {
     }
   }
 
+  getAuth().onAuthStateChanged((user) => {
+    if (!user) navigation.navigate("Login")
+  })
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.scrollView}>
@@ -107,7 +103,7 @@ const Profile = () => {
             <Text style={styles.headerTitle}>Profile</Text>
           </View>
           <View style={styles.content}>
-            <View style={styles.section}>
+            {/* <View style={styles.section}>
               <Text style={styles.sectionTitle}>Language</Text>
               <View style={styles.optionsContainer}>
                 {["English", "Arabic", "Urdu", "Hindi"].map((lang) => (
@@ -123,7 +119,7 @@ const Profile = () => {
                   </TouchableOpacity>
                 ))}
               </View>
-            </View>
+            </View> */}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Gender</Text>
@@ -174,6 +170,22 @@ const Profile = () => {
                       ? "قضاء صلاۃ مقرر کریں"
                       : "क़ाधा सलाह सेट करें"}
               </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.qadhaButton2}
+              onPress={() => {
+                Alert.alert(
+                  "Sign Out",
+                  "Are you sure you want to sign out?",
+                  [{
+                    text: "Cancel",
+                    style: "cancel"
+                  },
+                  {
+                    text: "Yes",
+                    onPress: () => auth.signOut()
+                }])}}>   
+              <Text style={styles.qadhaButtonText}>Sign Out</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -278,6 +290,17 @@ const styles = StyleSheet.create({
   },
   qadhaButton: {
     backgroundColor: "#FBC742",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 24,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 5,
+  },
+  qadhaButton2: {
+    backgroundColor: "red",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",

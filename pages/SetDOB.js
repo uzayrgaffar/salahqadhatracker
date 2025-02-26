@@ -2,7 +2,6 @@ import React, { useContext, useState } from "react"
 import { View, TouchableOpacity, StyleSheet, Text, Platform, Modal } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
-import { Ionicons } from "@expo/vector-icons"
 import DateTimePicker from "@react-native-community/datetimepicker"
 
 const SetDOB = () => {
