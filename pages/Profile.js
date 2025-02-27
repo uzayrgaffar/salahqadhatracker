@@ -26,7 +26,7 @@ const Profile = () => {
           }
         })
       } else {
-        navigation.navigate("Login")
+        navigation.navigate("SelectLanguage")
       }
     })
 
@@ -84,7 +84,7 @@ const Profile = () => {
                 await deleteDoc(userDocRef)
                 await deleteUser(user)
                 Alert.alert("Account Deleted", "Your account and all data have been successfully deleted.")
-                navigation.navigate("Login")
+                navigation.navigate("SelectLanguage")
               }
             } catch (error) {
               Alert.alert("Error", "Failed to delete account. Please try again.")
