@@ -51,6 +51,7 @@ const Login = () => {
         onChangeText={setPassword}
         secureTextEntry
         style={styles.input}
+        autoCapitalize="none"
       />
 
       <TouchableOpacity style={styles.button} onPress={signIn}>

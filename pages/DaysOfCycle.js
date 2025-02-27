@@ -1,25 +1,62 @@
-import React, { useContext, useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native"
+import React, { useState } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
-import { AppContext } from "../AppContext"
+import { db } from "../FirebaseConfig"
+import { doc, setDoc, serverTimestamp, getDoc, updateDoc } from "firebase/firestore"
+import { getAuth } from "firebase/auth"
 
 const DaysOfCycle = () => {
   const navigation = useNavigation()
-  const { setDaysOfCycle } = useContext(AppContext)
   const [showCyclePicker, setShowCyclePicker] = useState(false)
   const [selectedDays, setSelectedDays] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   const handleCycleSelection = (days) => {
     setSelectedDays(days)
     setShowCyclePicker(false)
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedDays) {
-      setDaysOfCycle(selectedDays)
-      navigation.navigate("Children")
+        setLoading(true);
+
+        try {
+            const auth = getAuth();
+            const user = auth.currentUser;
+
+            if (user) {
+                const userId = user.uid;
+                const userDocRef = doc(db, "users", userId);
+
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    await updateDoc(userDocRef, {
+                        daysOfCycle: selectedDays,
+                        updatedAt: serverTimestamp(),
+                    });
+                } else {
+                    await setDoc(userDocRef, {
+                        daysOfCycle: selectedDays,
+                        createdAt: serverTimestamp(),
+                    });
+                }
+
+                console.log("Cycle days saved successfully!");
+                navigation.navigate("Children");
+            } else {
+                console.error("No authenticated user found!");
+                Alert.alert("Error", "You need to be logged in to save your cycle data.");
+            }
+        } catch (error) {
+            console.error("Error saving cycle days:", error);
+            Alert.alert("Error", "Failed to save data. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     }
-  }
+};
+
 
   return (
     <View style={styles.container}>
