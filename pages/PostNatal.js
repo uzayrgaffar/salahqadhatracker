@@ -2,6 +2,9 @@ import { useContext, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { db } from "../FirebaseConfig";
 
 const PostNatal = () => {
   const navigation = useNavigation()
@@ -15,11 +18,44 @@ const PostNatal = () => {
     setShowPNBPicker(false)
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedPNB !== null) {
-      navigation.navigate("YearsMissed")
+        try {
+            const auth = getAuth();
+            const user = auth.currentUser;
+
+            if (user) {
+                const userId = user.uid;
+                const userDocRef = doc(db, "users", userId);
+
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    // Update existing user document
+                    await updateDoc(userDocRef, {
+                        postNatalBleedingDays: selectedPNB,
+                        updatedAt: serverTimestamp(),
+                    });
+                } else {
+                    // Create a new document if it doesn't exist
+                    await setDoc(userDocRef, {
+                        postNatalBleedingDays: selectedPNB,
+                        createdAt: serverTimestamp(),
+                    });
+                }
+
+                console.log("Post Natal Bleeding data saved successfully!");
+                navigation.navigate("YearsMissed");
+            } else {
+                console.error("No authenticated user found!");
+                Alert.alert("Error", "You need to be logged in to save your data.");
+            }
+        } catch (error) {
+            console.error("Error saving Post Natal Bleeding data:", error);
+            Alert.alert("Error", "Failed to save data. Please try again.");
+        }
     }
-  }
+};
 
   return (
     <View style={styles.container}>

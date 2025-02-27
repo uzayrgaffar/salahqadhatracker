@@ -2,6 +2,9 @@ import { useContext, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { db } from "../FirebaseConfig";
 
 const YearsMissed = () => {
   const navigation = useNavigation()
@@ -19,20 +22,58 @@ const YearsMissed = () => {
     setShowYearsPicker(false)
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedYears !== null) {
-      setYearsMissed(selectedYears)
-      if (selectedYears === 0) {
-        setFajr(0)
-        setDhuhr(0)
-        setAsr(0)
-        setMaghrib(0)
-        setIsha(0)
-        setWitr(0)
-      }
-      navigation.navigate("MadhabSelection")
+        try {
+            const auth = getAuth();
+            const user = auth.currentUser;
+
+            if (user) {
+                const userId = user.uid;
+                const userDocRef = doc(db, "users", userId);
+
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    // Update existing user document
+                    await updateDoc(userDocRef, {
+                        yearsMissed: selectedYears,
+                        updatedAt: serverTimestamp(),
+                    });
+                } else {
+                    // Create a new document if it doesn't exist
+                    await setDoc(userDocRef, {
+                        yearsMissed: selectedYears,
+                        createdAt: serverTimestamp(),
+                    });
+                }
+
+                console.log("Years missed data saved successfully!");
+                
+                // Store locally in context
+                setYearsMissed(selectedYears);
+                
+                // If no years were missed, set all prayers to 0
+                if (selectedYears === 0) {
+                    setFajr(0);
+                    setDhuhr(0);
+                    setAsr(0);
+                    setMaghrib(0);
+                    setIsha(0);
+                    setWitr(0);
+                }
+
+                navigation.navigate("MadhabSelection");
+            } else {
+                console.error("No authenticated user found!");
+                Alert.alert("Error", "You need to be logged in to save your data.");
+            }
+        } catch (error) {
+            console.error("Error saving years missed data:", error);
+            Alert.alert("Error", "Failed to save data. Please try again.");
+        }
     }
-  }
+};
 
   return (
     <View style={styles.container}>

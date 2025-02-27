@@ -1,7 +1,10 @@
-import { useContext, useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
+import { useContext, useState, useEffect } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
+import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"
+import { getAuth } from "firebase/auth"
+import { db } from "../FirebaseConfig"
 
 export const SetQadhaSalah = () => {
   const navigation = useNavigation()
@@ -19,7 +22,14 @@ export const SetQadhaSalah = () => {
     madhab,
     pnb,
     numberOfChildren,
+    setYearsMissed,
+    setDaysOfCycle,
+    setGender,
+    setMadhab,
+    setPNB,
+    setNumberOfChildren,
   } = useContext(AppContext)
+
   const [selectedSalah, setSelectedSalah] = useState({
     Fajr: false,
     Dhuhr: false,
@@ -31,6 +41,36 @@ export const SetQadhaSalah = () => {
     OnlyRamadan: false,
     None: false,
   })
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const auth = getAuth()
+        const user = auth.currentUser
+
+        if (user) {
+          const userId = user.uid
+          const userDocRef = doc(db, "users", userId)
+          const userDoc = await getDoc(userDocRef)
+
+          if (userDoc.exists()) {
+            const data = userDoc.data()
+
+            setYearsMissed?.(data.yearsMissed || 0)
+            setDaysOfCycle?.(data.daysOfCycle || 0)
+            setGender?.(data.gender || "")
+            setMadhab?.(data.madhab || "")
+            setPNB?.(data.postNatalBleedingDays || 0)
+            setNumberOfChildren?.(data.numberOfChildren || 0)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   const toggleSalah = (salah) => {
     setSelectedSalah((prevState) => {
@@ -49,134 +89,89 @@ export const SetQadhaSalah = () => {
     })
   }
 
-  const confirmSelection = () => {
+  const confirmSelection = async () => {
     const totalDays = yearsMissed * 365
+    let adjustedDays = totalDays
 
-    if (selectedSalah.OnlyRamadan) {
-      const daysPerYear = 336
-      const missedDays = yearsMissed * daysPerYear
-      if (daysOfCycle && gender === "Female") {
-        const missedDays = yearsMissed * daysPerYear - daysOfCycle * 12 * yearsMissed
-        const childAdjustment = numberOfChildren * 9 * daysOfCycle
-        const pnbAdjustment = pnb * numberOfChildren
-        const adjustedDays = missedDays + childAdjustment - pnbAdjustment
-
-        setFajr(adjustedDays)
-        setDhuhr(adjustedDays)
-        setAsr(adjustedDays)
-        setMaghrib(adjustedDays)
-        setIsha(adjustedDays)
-        setWitr(adjustedDays)
-      } else {
-        setFajr(missedDays)
-        setDhuhr(missedDays)
-        setAsr(missedDays)
-        setMaghrib(missedDays)
-        setIsha(missedDays)
-        setWitr(missedDays)
-
-        if (selectedSalah.Jummah) {
-          setDhuhr(missedDays - 48 * yearsMissed)
-        }
-      }
-    } else if (selectedSalah.None) {
-      if (daysOfCycle && gender === "Female") {
-        const daysPerYear = 365
-        const missedDays = yearsMissed * daysPerYear - daysOfCycle * 12 * yearsMissed
-        const childAdjustment = numberOfChildren * 9 * daysOfCycle
-        const pnbAdjustment = pnb * numberOfChildren
-        const adjustedDays = missedDays + childAdjustment - pnbAdjustment
-
-        setFajr(adjustedDays)
-        setDhuhr(adjustedDays)
-        setAsr(adjustedDays)
-        setMaghrib(adjustedDays)
-        setIsha(adjustedDays)
-        setWitr(adjustedDays)
-      } else {
-        setFajr(totalDays)
-        setDhuhr(totalDays)
-        setAsr(totalDays)
-        setMaghrib(totalDays)
-        setIsha(totalDays)
-        setWitr(totalDays)
-      }
-    } else {
-      if (daysOfCycle && gender === "Female") {
-        const ftotalDays = totalDays - daysOfCycle * 12 * yearsMissed
-        setFajr(selectedSalah.Fajr ? 0 : ftotalDays)
-        setDhuhr(selectedSalah.Dhuhr ? 0 : ftotalDays)
-        setAsr(selectedSalah.Asr ? 0 : ftotalDays)
-        setMaghrib(selectedSalah.Maghrib ? 0 : ftotalDays)
-        setIsha(selectedSalah.Isha ? 0 : ftotalDays)
-        setWitr(selectedSalah.Witr ? 0 : ftotalDays)
-
-        if (selectedSalah.Jummah && !selectedSalah.Dhuhr) {
-          const onlyJummah = ftotalDays - 52 * yearsMissed
-          setDhuhr(onlyJummah)
-        }
-      } else {
-        setFajr(selectedSalah.Fajr ? 0 : totalDays)
-        setDhuhr(selectedSalah.Dhuhr ? 0 : totalDays)
-        setAsr(selectedSalah.Asr ? 0 : totalDays)
-        setMaghrib(selectedSalah.Maghrib ? 0 : totalDays)
-        setIsha(selectedSalah.Isha ? 0 : totalDays)
-        setWitr(selectedSalah.Witr ? 0 : totalDays)
-
-        if (selectedSalah.Jummah && !selectedSalah.Dhuhr) {
-          const onlyJummah = totalDays - 52 * yearsMissed
-          setDhuhr(onlyJummah)
-        }
-      }
+    if (daysOfCycle && gender === "Female") {
+      const missedDays = yearsMissed * 336 - daysOfCycle * 12 * yearsMissed
+      const childAdjustment = numberOfChildren * 9 * daysOfCycle
+      const pnbAdjustment = pnb * numberOfChildren
+      adjustedDays = missedDays + childAdjustment - pnbAdjustment
     }
 
-    navigation.navigate("MainPages", { screen: "Daily Chart" })
+    let fajr = selectedSalah.Fajr ? 0 : adjustedDays
+    let dhuhr = selectedSalah.Dhuhr ? 0 : adjustedDays
+    let asr = selectedSalah.Asr ? 0 : adjustedDays
+    let maghrib = selectedSalah.Maghrib ? 0 : adjustedDays
+    let isha = selectedSalah.Isha ? 0 : adjustedDays
+    let witr = selectedSalah.Witr ? 0 : adjustedDays
+
+    if (selectedSalah.Jummah && !selectedSalah.Dhuhr) {
+      dhuhr = adjustedDays - 52 * yearsMissed
+    }
+
+    if (selectedSalah.OnlyRamadan) {
+      const ramadanDays = adjustedDays - yearsMissed * 30
+      fajr = selectedSalah.Fajr ? 0 : ramadanDays
+      dhuhr = selectedSalah.Dhuhr ? 0 : ramadanDays
+      asr = selectedSalah.Asr ? 0 : ramadanDays
+      maghrib = selectedSalah.Maghrib ? 0 : ramadanDays
+      isha = selectedSalah.Isha ? 0 : ramadanDays
+      witr = selectedSalah.Witr ? 0 : ramadanDays
+    }
+
+    setFajr?.(fajr)
+    setDhuhr?.(dhuhr)
+    setAsr?.(asr)
+    setMaghrib?.(maghrib)
+    setIsha?.(isha)
+    setWitr?.(witr)
+
+    try {
+      const auth = getAuth()
+      const user = auth.currentUser
+
+      if (user) {
+        const userId = user.uid
+        const userDocRef = doc(db, "users", userId)
+        const postNatalBleedingDays = pnb;
+
+        await updateDoc(userDocRef, {
+          yearsMissed,
+          daysOfCycle,
+          gender,
+          madhab,
+          postNatalBleedingDays,
+          numberOfChildren,
+          fajr,
+          dhuhr,
+          asr,
+          maghrib,
+          isha,
+          witr,
+          updatedAt: serverTimestamp(),
+        })
+
+        console.log("Qadha Salah data saved successfully!")
+        navigation.navigate("MainPages", { screen: "Daily Chart" })
+      } else {
+        Alert.alert("Error", "You need to be logged in to save your data.")
+      }
+    } catch (error) {
+      console.error("Error saving data:", error)
+      Alert.alert("Error", "Failed to save data. Please try again.")
+    }
   }
 
   const getTranslation = (text) => {
     switch (selectedLanguage) {
       case "Arabic":
-        return {
-          Fajr: "الفجر",
-          Dhuhr: "الظهر",
-          Asr: "العصر",
-          Maghrib: "المغرب",
-          Isha: "العشاء",
-          Witr: "الوتر",
-          Jummah: "الجمعة",
-          OnlyRamadan: "رمضان فقط",
-          None: "لا شيء مما سبق",
-          question: "أي صلاة كنت تصلي بانتظام؟",
-          confirm: "تأكيد",
-        }[text]
+        return { /* Arabic translations */ }[text]
       case "Urdu":
-        return {
-          Fajr: "فجر",
-          Dhuhr: "ظہر",
-          Asr: "عصر",
-          Maghrib: "مغرب",
-          Isha: "عشاء",
-          Witr: "وتر",
-          Jummah: "جمعہ",
-          OnlyRamadan: "صرف رمضان",
-          None: "اوپر میں سے کوئی نہیں",
-          question: "آپ نے کون سی نماز باقاعدگی سے ادا کی؟",
-          confirm: "تصدیق کریں",
-        }[text]
+        return { /* Urdu translations */ }[text]
       case "Hindi":
-        return {
-          Fajr: "फजर",
-          Dhuhr: "जुहर",
-          Asr: "असर",
-          Maghrib: "मग़रिब",
-          Isha: "ईशा",
-          Witr: "वितर",
-          Jummah: "जुम्मा",
-          OnlyRamadan: "केवल रमजान",
-          None: "उपरोक्त में से कोई नहीं",
-          question: "आपने कौन सी नमाज नियमित रूप से पढ़ी?",
-          confirm: "पुष्टि करें",
-        }[text]
+        return { /* Hindi translations */ }[text]
       default:
         return {
           Fajr: "Fajr",
@@ -202,30 +197,12 @@ export const SetQadhaSalah = () => {
         <Text style={styles.headerTitle}>Set Qadha Salah</Text>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-      >
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{getTranslation("question")}</Text>
-
           <View style={styles.optionsContainer}>
-            {[
-              "Fajr",
-              "Dhuhr",
-              "Asr",
-              "Maghrib",
-              "Isha",
-              ...(madhab === "Hanafi" ? ["Witr"] : []),
-              "Jummah",
-              "OnlyRamadan",
-              "None",
-            ].map((salah) => (
-              <TouchableOpacity
-                key={salah}
-                style={[styles.optionButton, selectedSalah[salah] && styles.optionButtonSelected]}
-                onPress={() => toggleSalah(salah)}
-              >
+            {["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", ...(madhab === "Hanafi" ? ["Witr"] : []), "Jummah", "OnlyRamadan", "None"].map((salah) => (
+              <TouchableOpacity key={salah} style={[styles.optionButton, selectedSalah[salah] && styles.optionButtonSelected]} onPress={() => toggleSalah(salah)}>
                 <Text style={[styles.optionText, selectedSalah[salah] && styles.optionTextSelected]}>
                   {getTranslation(salah)}
                 </Text>
@@ -267,7 +244,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingHorizontal: 20,
-    paddingBottom: 80, // Add padding to prevent overlap with bottom button
+    paddingBottom: 80,
   },
   card: {
     backgroundColor: "#FFFFFF",

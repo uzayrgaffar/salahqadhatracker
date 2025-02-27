@@ -1,9 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import { AppContext } from '../AppContext';
-import { auth } from '../FirebaseConfig'; // Ensure this path is correct
+import { auth } from '../FirebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "../FirebaseConfig"
 
 const Login = () => {
   const navigation = useNavigation();
@@ -13,13 +14,31 @@ const Login = () => {
 
   const signIn = async () => {
     try {
-      const user = await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate('SetDOB');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+  
+      if (!user) return;
+  
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+  
+        // Check if required fields exist
+        if (userData.dob && userData.madhab && userData.yearsMissed !== undefined) {
+          navigation.navigate("MainPages", { screen: "Daily Chart" });
+        } else {
+          navigation.navigate("SetDOB");
+        }
+      } else {
+        navigation.navigate("SetDOB");
+      }
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error("Sign in error:", error);
       alert(`Sign in failed: ${error.message}`);
     }
-  };
+  };  
 
   const signUp = async () => {
     try {

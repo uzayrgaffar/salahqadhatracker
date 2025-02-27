@@ -2,6 +2,9 @@ import { useContext, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { db } from "../FirebaseConfig";
 
 const NumberOfChildren = () => {
   const navigation = useNavigation()
@@ -15,11 +18,44 @@ const NumberOfChildren = () => {
     setShowChildrenPicker(false)
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedChildren !== null) {
-      navigation.navigate("PostNatal")
+        try {
+            const auth = getAuth();
+            const user = auth.currentUser;
+
+            if (user) {
+                const userId = user.uid;
+                const userDocRef = doc(db, "users", userId);
+
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    // Update existing user document
+                    await updateDoc(userDocRef, {
+                        numberOfChildren: selectedChildren,
+                        updatedAt: serverTimestamp(),
+                    });
+                } else {
+                    // Create a new document if it doesn't exist
+                    await setDoc(userDocRef, {
+                        numberOfChildren: selectedChildren,
+                        createdAt: serverTimestamp(),
+                    });
+                }
+
+                console.log("Number of children saved successfully!");
+                navigation.navigate("PostNatal");
+            } else {
+                console.error("No authenticated user found!");
+                Alert.alert("Error", "You need to be logged in to save your data.");
+            }
+        } catch (error) {
+            console.error("Error saving number of children:", error);
+            Alert.alert("Error", "Failed to save data. Please try again.");
+        }
     }
-  }
+};
 
   return (
     <View style={styles.container}>

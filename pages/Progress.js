@@ -1,34 +1,78 @@
-import { useContext } from "react"
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, SafeAreaView } from "react-native"
-import { AppContext } from "../AppContext"
+import { useState, useEffect } from "react"
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
 import { useNavigation } from "@react-navigation/native"
-import { ChevronLeft } from "lucide-react-native"
+import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { db, auth } from '../FirebaseConfig'
 
 const Progress = () => {
   const navigation = useNavigation()
-  const { dailyPrayerCounts, fajr, dhuhr, asr, maghrib, isha, witr } = useContext(AppContext)
+  const [userData, setUserData] = useState(null)
+  const [dailyPrayerCounts, setDailyPrayerCounts] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Use today's date to extract the values from the prayer objects.
-  const today = moment().format("YYYY-MM-DD")
-  
-  // Helper to extract a value from the context objects.
-  const getPrayerValue = (prayerObj) => {
-    return typeof prayerObj === "object" ? (prayerObj[today] || 0) : prayerObj
-  }
-  
-  const fajrCount = getPrayerValue(fajr)
-  const dhuhrCount = getPrayerValue(dhuhr)
-  const asrCount = getPrayerValue(asr)
-  const maghribCount = getPrayerValue(maghrib)
-  const ishaCount = getPrayerValue(isha)
-  const witrCount = getPrayerValue(witr)
-  
-  // Now totalPrayers is the sum of today's prayer counts.
-  const totalPrayers = fajrCount + dhuhrCount + asrCount + maghribCount + ishaCount + witrCount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Get the current user ID from Firebase Auth
+        const userId = auth.currentUser?.uid
+        
+        if (!userId) {
+          throw new Error('No authenticated user found')
+        }
+        
+        // Fetch the user document
+        const userDocRef = doc(db, 'users', userId)
+        const userDocSnap = await getDoc(userDocRef)
+        
+        if (!userDocSnap.exists()) {
+          throw new Error('User document not found')
+        }
+        
+        setUserData(userDocSnap.data())
+        
+        // Fetch prayer history from the prayerHistory subcollection
+        const dates = generateDates()
+        const historyData = {}
+        
+        const historyCollectionRef = collection(db, 'users', userId, 'prayerHistory')
+        const historyQuery = query(
+          historyCollectionRef,
+          where('date', '>=', dates[0]),
+          orderBy('date', 'asc')
+        )
+        
+        const historyQuerySnapshot = await getDocs(historyQuery)
+        
+        historyQuerySnapshot.forEach(doc => {
+          const data = doc.data()
+          if (data.date) {
+            historyData[data.date] = {
+              fajr: data.fajr || 0,
+              dhuhr: data.dhuhr || 0,
+              asr: data.asr || 0,
+              maghrib: data.maghrib || 0,
+              isha: data.isha || 0,
+              witr: data.witr || 0
+            }
+          }
+        })
+        
+        setDailyPrayerCounts(historyData)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        setError(error.message)
+        setLoading(false)
+      }
+    }
 
-  // The following code remains the same for generating chart data
+    fetchUserData()
+  }, [])
+
+  // Generate dates for the last 14 days
   const generateDates = () => {
     const dates = []
     for (let i = 0; i < 14; i++) {
@@ -39,6 +83,7 @@ const Progress = () => {
 
   const dates = generateDates()
 
+  // Get prayer counts for chart
   const getPrayerCounts = () => {
     return dates.map((date) => {
       const counts = dailyPrayerCounts[date] || { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 }
@@ -46,10 +91,84 @@ const Progress = () => {
     })
   }
 
+  // If still loading
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Progress</Text>
+          </View>
+          <View style={[styles.content, styles.centerContent]}>
+            <ActivityIndicator size="large" color="#5CB390" />
+            <Text style={styles.loadingText}>Loading data...</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // If there was an error
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Progress</Text>
+          </View>
+          <View style={[styles.content, styles.centerContent]}>
+            <Text style={styles.errorText}>Unable to load data</Text>
+            <Text style={styles.errorSubtext}>Please try again later</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // If no user data found
+  if (!userData) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Progress</Text>
+          </View>
+          <View style={[styles.content, styles.centerContent]}>
+            <Text style={styles.errorText}>No user data found</Text>
+            <Text style={styles.errorSubtext}>Please complete your profile setup</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   const prayerCounts = getPrayerCounts()
   const totalQadhaPrayed = prayerCounts.reduce((sum, count) => sum + count, 0)
-  const averageQadhaPerDay = (totalQadhaPrayed / 14).toFixed(2)
-  const daysToFinish = (totalPrayers / (totalQadhaPrayed / 14)).toFixed(0)
+  const averageQadhaPerDay = totalQadhaPrayed > 0 ? (totalQadhaPrayed / 14).toFixed(2) : "0.00"
+  
+  // Get the remaining prayers from user data
+  const fajrCount = userData.fajr || 0
+  const dhuhrCount = userData.dhuhr || 0
+  const asrCount = userData.asr || 0
+  const maghribCount = userData.maghrib || 0
+  const ishaCount = userData.isha || 0
+  const witrCount = userData.witr || 0
+  
+  const totalRemainingPrayers = fajrCount + dhuhrCount + asrCount + maghribCount + ishaCount + witrCount
+  
+  // Calculate days to finish - handle as strings properly
+  let daysToFinish = "∞"; // Default value
+  if (parseFloat(averageQadhaPerDay) > 0) {
+    const days = Math.ceil(totalRemainingPrayers / parseFloat(averageQadhaPerDay));
+    daysToFinish = days.toString();
+  }
+
+  // Prepare years string for display
+  let yearsToFinish = "";
+  if (daysToFinish !== "∞") {
+    const years = (parseInt(daysToFinish, 10) / 365).toFixed(2);
+    yearsToFinish = `(${years} years)`;
+  }
 
   const screenWidth = Dimensions.get("window").width
 
@@ -67,7 +186,7 @@ const Progress = () => {
                 labels: dates.map((date) => moment(date).format("DD")),
                 datasets: [
                   {
-                    data: prayerCounts,
+                    data: prayerCounts.length > 0 ? prayerCounts : [0],
                     color: (opacity = 1) => `rgba(75, 212, 162, ${opacity})`,
                     strokeWidth: 2,
                   },
@@ -112,7 +231,7 @@ const Progress = () => {
             <Text style={styles.summaryText}>Total Qadha Prayed: {totalQadhaPrayed}</Text>
             <Text style={styles.summaryText}>Average Qadha per Day: {averageQadhaPerDay}</Text>
             <Text style={styles.summaryText}>
-              Estimated Completion: {daysToFinish} days ({(daysToFinish / 365).toFixed(2)} years)
+              Estimated Completion: {daysToFinish} days {yearsToFinish}
             </Text>
           </View>
           <View style={styles.summaryContainer}>
@@ -123,7 +242,7 @@ const Progress = () => {
             <Text style={styles.summaryText}>
               Maghrib: {maghribCount} | Isha: {ishaCount} | Witr: {witrCount}
             </Text>
-            <Text style={styles.summaryText}>Total Remaining Qadha: {totalPrayers}</Text>
+            <Text style={styles.summaryText}>Total Remaining Qadha: {totalRemainingPrayers}</Text>
           </View>
         </ScrollView>
       </View>
@@ -146,9 +265,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 20,
   },
-  backButton: {
-    padding: 8,
-  },
   headerTitle: {
     flex: 1,
     fontSize: 28,
@@ -162,6 +278,25 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666666',
+    marginTop: 16,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FF6B6B',
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: '#666666',
   },
   chartContainer: {
     backgroundColor: "#FFFFFF",
@@ -199,7 +334,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 14,
-    color: "#666666",
+    color: '#666666',
     marginBottom: 8,
   },
 })
