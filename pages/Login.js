@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView, Linking } from 'react-native';
 import { auth, db } from '../FirebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
@@ -119,20 +119,21 @@ const Login = () => {
     try {
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+  
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        if (userData.dob && userData.madhab && userData.yearsMissed !== undefined) {
-          navigation.replace("MainPages", { screen: "Daily Chart" });
-        } else {
+        
+        if (!userData.dob || !userData.madhab || userData.yearsMissed === undefined) {
           navigation.replace("SetDOB");
+        } else {
+          navigation.replace("MainPages", { screen: "Daily Chart" });
         }
       } else {
-        // Create a basic user document
         await setDoc(userDocRef, {
           email: user.email,
           createdAt: Timestamp.now()
         });
+  
         navigation.replace("SetDOB");
       }
     } catch (error) {
@@ -140,6 +141,7 @@ const Login = () => {
       Alert.alert("Error", "Could not retrieve user data. Please try again.");
     }
   };
+  
 
   const signIn = async () => {
     if (!validateInputs()) return;
@@ -169,18 +171,39 @@ const Login = () => {
 
   const signUp = async () => {
     if (!validateInputs()) return;
-    
-    setLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      await handleUserNavigation(user);
-    } catch (error) {
-      handleAuthError(error);
-    } finally {
-      setLoading(false);
-    }
+  
+    Alert.alert(
+      "Data Usage Consent",
+      "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties. You can review our Privacy Policy for more details.",
+      [
+        {
+          text: "Privacy Policy",
+          onPress: () => Linking.openURL("https://www.termsfeed.com/live/60b07c67-c303-41bc-9f7c-e39397a3fc1e"),
+        },
+        {
+          text: "Decline",
+          style: "cancel",
+          onPress: () => console.log("User declined consent"),
+        },
+        {
+          text: "Accept",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+              const user = userCredential.user;
+              await handleUserNavigation(user);
+            } catch (error) {
+              handleAuthError(error);
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
+  
 
   const handleSubmit = () => {
     if (isSignUp) {
