@@ -39,7 +39,6 @@ const DailyChart = () => {
   useEffect(() => {
     if (userId) {
       const fetchPrayerData = async () => {
-        const pullmadhab = doc(db, "users", userId)
         const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate)
         const docSnap = await getDoc(dailyPrayerRef)
 
@@ -103,43 +102,67 @@ const DailyChart = () => {
       }
     }
   }
-
+  
   const handlePrayerSelect = async (prayer) => {
+    const wasSelected = prayerStates[selectedDate]?.[prayer] || false;
     const updatedStates = {
       ...prayerStates,
       [selectedDate]: {
         ...prayerStates[selectedDate],
-        [prayer]: !prayerStates[selectedDate][prayer],
+        [prayer]: !wasSelected,
       },
-    }
-    setPrayerStates(updatedStates)
-
-    const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate)
+    };
+    setPrayerStates(updatedStates);
+  
+    const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate);
     await updateDoc(dailyPrayerRef, {
       prayers: updatedStates[selectedDate],
-    })
-  }
-
+    });
+  
+    // Adjust Qadha count when deselecting
+    if (wasSelected) {
+      await adjustCount(prayer, -1);
+    } else {
+      await adjustCount(prayer, 1);
+    }
+  };
+  
   const adjustCount = async (prayer, amount) => {
-    lsetDailyPrayerCounts((prevCounts) => {
-      const currentCount = prevCounts[selectedDate][prayer]
-      if (amount < 0 && currentCount === 0) return prevCounts
-
-      const updatedCount = currentCount + amount
-      return {
-        ...prevCounts,
-        [selectedDate]: {
-          ...prevCounts[selectedDate],
-          [prayer]: updatedCount,
-        },
-      }
-    })
-
-    const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate)
+    const currentCount = ldailyPrayerCounts[selectedDate]?.[prayer] || 0;
+    const newCount = currentCount + amount;
+  
+    // Prevent negative Qadha count update
+    if (newCount < 0) return;
+  
+    lsetDailyPrayerCounts((prevCounts) => ({
+      ...prevCounts,
+      [selectedDate]: {
+        ...prevCounts[selectedDate],
+        [prayer]: newCount,
+      },
+    }));
+  
+    const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate);
     await updateDoc(dailyPrayerRef, {
-      [`counts.${prayer}`]: ldailyPrayerCounts[selectedDate][prayer] + amount,
-    })
-  }
+      [`counts.${prayer}`]: newCount,
+    });
+  
+    const totalQadhaRef = doc(db, "users", userId, "totalQadha/qadhaSummary");
+    const totalQadhaSnap = await getDoc(totalQadhaRef);
+  
+    if (totalQadhaSnap.exists()) {
+      const totalData = totalQadhaSnap.data();
+      const totalQadhaLeft = totalData[prayer] || 0;
+      const updatedTotal = totalQadhaLeft - amount;
+  
+      // Prevent increasing Qadha when deselecting if it's already 0
+      if (amount === -1 && totalQadhaLeft === 0) return;
+  
+      await updateDoc(totalQadhaRef, {
+        [prayer]: updatedTotal < 0 ? 0 : updatedTotal,
+      });
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -226,10 +249,10 @@ const DailyChart = () => {
                   <TextInput
                     style={styles.counterInput}
                     keyboardType="numeric"
-                    value={String(ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0)}
+                    value={String((ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0) - 1)}
                     onChangeText={(text) => {
-                    const newValue = parseInt(text, 10) || 0;
-                    adjustCount(prayer, newValue - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
+                      const newValue = parseInt(text, 10) || 0;
+                      adjustCount(prayer, newValue + 1 - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
                     }}
                   />
                   </View>
