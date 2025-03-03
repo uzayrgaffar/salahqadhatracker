@@ -86,7 +86,7 @@ const Profile = () => {
               const userId = user.uid;
               const userDocRef = doc(db, "users", userId);
               const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
-              const totalQadhaRef = collection(db, "users", userId, "totalQadha");
+              const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
   
               // Function to delete all documents in a subcollection
               const deleteCollection = async (collectionRef) => {
@@ -96,9 +96,11 @@ const Profile = () => {
                 await batch.commit();
               };
   
-              // Delete all daily prayers and totalQadha entries
+              // Delete all daily prayers
               await deleteCollection(dailyPrayersRef);
-              await deleteCollection(totalQadhaRef);
+  
+              // Delete totalQadha/qadhaSummary document
+              await deleteDoc(totalQadhaRef);
   
               // Delete user document
               await deleteDoc(userDocRef);
