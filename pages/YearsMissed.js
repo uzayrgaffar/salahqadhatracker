@@ -1,79 +1,102 @@
-import { useContext, useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from "react-native"
+import { useContext, useState, useCallback, useMemo } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { db } from "../FirebaseConfig";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore"
+import { getAuth } from "firebase/auth"
+import { db } from "../FirebaseConfig"
 
 const YearsMissed = () => {
   const navigation = useNavigation()
-  const { dob, dop, setYearsMissed, setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr } = useContext(AppContext)
+  const { 
+    dob, 
+    dop, 
+    setYearsMissed, 
+    setFajr, 
+    setDhuhr, 
+    setAsr, 
+    setMaghrib, 
+    setIsha, 
+    setWitr 
+  } = useContext(AppContext)
+  
   const [showYearsPicker, setShowYearsPicker] = useState(false)
   const [selectedYears, setSelectedYears] = useState(null)
 
-  const currentYear = new Date().getFullYear()
-  const dopYear = new Date(dop).getFullYear()
-  const maxYearsMissed = currentYear - dopYear
-  const yearsOptions = Array.from({ length: maxYearsMissed + 1 }, (_, i) => i)
+  // Calculate years options only when dop changes
+  const yearsOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear()
+    const dopYear = new Date(dop).getFullYear()
+    const maxYearsMissed = currentYear - dopYear
+    return Array.from({ length: maxYearsMissed + 1 }, (_, i) => i)
+  }, [dop])
 
-  const handleYearSelection = (years) => {
+  const handleYearSelection = useCallback((years) => {
     setSelectedYears(years)
     setShowYearsPicker(false)
-  }
+  }, [])
 
-  const handleConfirm = async () => {
-    if (selectedYears !== null) {
-        try {
-            const auth = getAuth();
-            const user = auth.currentUser;
+  const resetAllPrayers = useCallback(() => {
+    setFajr(0)
+    setDhuhr(0)
+    setAsr(0)
+    setMaghrib(0)
+    setIsha(0)
+    setWitr(0)
+  }, [setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr])
 
-            if (user) {
-                const userId = user.uid;
-                const userDocRef = doc(db, "users", userId);
+  const saveToFirestore = useCallback(async (userId, selectedYears) => {
+    const userDocRef = doc(db, "users", userId)
+    const userDoc = await getDoc(userDocRef)
 
-                const userDoc = await getDoc(userDocRef);
-
-                if (userDoc.exists()) {
-                    // Update existing user document
-                    await updateDoc(userDocRef, {
-                        yearsMissed: selectedYears,
-                        updatedAt: serverTimestamp(),
-                    });
-                } else {
-                    // Create a new document if it doesn't exist
-                    await setDoc(userDocRef, {
-                        yearsMissed: selectedYears,
-                        createdAt: serverTimestamp(),
-                    });
-                }
-
-                console.log("Years missed data saved successfully!");
-                
-                // Store locally in context
-                setYearsMissed(selectedYears);
-                
-                // If no years were missed, set all prayers to 0
-                if (selectedYears === 0) {
-                    setFajr(0);
-                    setDhuhr(0);
-                    setAsr(0);
-                    setMaghrib(0);
-                    setIsha(0);
-                    setWitr(0);
-                }
-
-                navigation.navigate("MadhabSelection");
-            } else {
-                console.error("No authenticated user found!");
-                Alert.alert("Error", "You need to be logged in to save your data.");
-            }
-        } catch (error) {
-            console.error("Error saving years missed data:", error);
-            Alert.alert("Error", "Failed to save data. Please try again.");
-        }
+    if (userDoc.exists()) {
+      await updateDoc(userDocRef, {
+        yearsMissed: selectedYears,
+      })
+    } else {
+      await setDoc(userDocRef, {
+        yearsMissed: selectedYears,
+        createdAt: Timestamp.now(),
+      },
+      { merge: true }
+    )
     }
-};
+  }, [])
+
+  const handleConfirm = useCallback(async () => {
+    if (selectedYears === null) return
+
+    try {
+      const auth = getAuth()
+      const user = auth.currentUser
+
+      if (!user) {
+        console.error("No authenticated user found!")
+        Alert.alert("Error", "You need to be logged in to save your data.")
+        return
+      }
+
+      await saveToFirestore(user.uid, selectedYears)
+      console.log("Years missed data saved successfully!")
+      
+      // Store locally in context
+      setYearsMissed(selectedYears)
+      
+      // If no years were missed, reset all prayers
+      if (selectedYears === 0) {
+        resetAllPrayers()
+      }
+
+      navigation.navigate("MadhabSelection")
+    } catch (error) {
+      console.error("Error saving years missed data:", error)
+      Alert.alert("Error", "Failed to save data. Please try again.")
+    }
+  }, [selectedYears, saveToFirestore, setYearsMissed, resetAllPrayers, navigation])
+
+  const toggleYearsPicker = useCallback(() => {
+    setShowYearsPicker(prev => !prev)
+  }, [])
 
   return (
     <View style={styles.container}>
@@ -85,7 +108,7 @@ const YearsMissed = () => {
         <Text style={styles.cardTitle}>Please select the number of years of salah you have missed:</Text>
         <TouchableOpacity
           style={[styles.selectButton, selectedYears !== null && styles.selectedButton]}
-          onPress={() => setShowYearsPicker(true)}
+          onPress={toggleYearsPicker}
         >
           <Text style={[styles.selectButtonText, selectedYears !== null && styles.selectedButtonText]}>
             {selectedYears !== null ? `${selectedYears} Years` : "Select Years"}
@@ -100,13 +123,17 @@ const YearsMissed = () => {
             <ScrollView style={styles.yearsScrollView}>
               <View style={styles.yearsButtonsContainer}>
                 {yearsOptions.map((year) => (
-                  <TouchableOpacity key={year} style={styles.yearButton} onPress={() => handleYearSelection(year)}>
+                  <TouchableOpacity 
+                    key={year} 
+                    style={styles.yearButton} 
+                    onPress={() => handleYearSelection(year)}
+                  >
                     <Text style={styles.yearButtonText}>{year}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </ScrollView>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowYearsPicker(false)}>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={toggleYearsPicker}>
               <Text style={styles.modalCloseButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>

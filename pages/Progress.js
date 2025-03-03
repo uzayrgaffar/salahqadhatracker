@@ -2,75 +2,91 @@ import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
-import { useNavigation } from "@react-navigation/native"
-import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { doc, collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db, auth } from '../FirebaseConfig'
 
 const Progress = () => {
-  const navigation = useNavigation()
   const [userData, setUserData] = useState(null)
   const [dailyPrayerCounts, setDailyPrayerCounts] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-
+  
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        // Get the current user ID from Firebase Auth
-        const userId = auth.currentUser?.uid
-        
-        if (!userId) {
-          throw new Error('No authenticated user found')
-        }
-        
-        // Fetch the user document
-        const userDocRef = doc(db, 'users', userId)
-        const userDocSnap = await getDoc(userDocRef)
-        
-        if (!userDocSnap.exists()) {
-          throw new Error('User document not found')
-        }
-        
-        setUserData(userDocSnap.data())
-        
-        // Fetch prayer history from the prayerHistory subcollection
-        const dates = generateDates()
-        const historyData = {}
-        
-        const historyCollectionRef = collection(db, 'users', userId, 'prayerHistory')
-        const historyQuery = query(
-          historyCollectionRef,
-          where('date', '>=', dates[0]),
-          orderBy('date', 'asc')
-        )
-        
-        const historyQuerySnapshot = await getDocs(historyQuery)
-        
-        historyQuerySnapshot.forEach(doc => {
-          const data = doc.data()
-          if (data.date) {
-            historyData[data.date] = {
-              fajr: data.fajr || 0,
-              dhuhr: data.dhuhr || 0,
-              asr: data.asr || 0,
-              maghrib: data.maghrib || 0,
-              isha: data.isha || 0,
-              witr: data.witr || 0
-            }
-          }
-        })
-        
-        setDailyPrayerCounts(historyData)
-        setLoading(false)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-        setError(error.message)
-        setLoading(false)
-      }
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      setLoading(false);
+      return;
     }
-
-    fetchUserData()
-  }, [])
+  
+    const userDocRef = doc(db, "users", userId);
+    const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
+    const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
+    const historyQuery = query(dailyPrayersRef, orderBy("__name__", "asc")); // Dates are doc IDs
+  
+    let fetchedUserData = {}; // Store data before updating state
+    let fetchedHistory = {}; // Store prayer history
+  
+    const unsubscribeUser = onSnapshot(
+      userDocRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          fetchedUserData = { ...fetchedUserData, ...docSnap.data() };
+          setUserData(fetchedUserData);
+        }
+      },
+      (error) => {
+        console.error("Error fetching user data:", error);
+        setError(error.message);
+      }
+    );
+  
+    const unsubscribeQadha = onSnapshot(
+      totalQadhaRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          fetchedUserData = { ...fetchedUserData, ...docSnap.data() };
+          setUserData(fetchedUserData);
+        }
+      },
+      (error) => {
+        console.error("Error fetching Qadha data:", error);
+        setError(error.message);
+      }
+    );
+  
+    const unsubscribeHistory = onSnapshot(
+      historyQuery,
+      (querySnapshot) => {
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const date = docSnap.id; // Document ID is the date
+  
+          fetchedHistory[date] = {
+            fajr: data.counts?.fajr || 0,
+            dhuhr: data.counts?.dhuhr || 0,
+            asr: data.counts?.asr || 0,
+            maghrib: data.counts?.maghrib || 0,
+            isha: data.counts?.isha || 0,
+            witr: data.counts?.witr || 0
+          };
+        });
+  
+        setDailyPrayerCounts(fetchedHistory);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching daily prayers:", error);
+        setError(error.message);
+        setLoading(false);
+      }
+    );
+  
+    return () => {
+      unsubscribeUser();
+      unsubscribeQadha();
+      unsubscribeHistory();
+    };
+  }, []);    
 
   // Generate dates for the last 14 days
   const generateDates = () => {
@@ -212,7 +228,6 @@ const Progress = () => {
                   stroke: "#5CB390",
                 },
                 propsForBackgroundLines: {
-                  stroke: "#e0e0e0",
                   strokeDasharray: "",
                 },
                 propsForHorizontalLabels: {
@@ -227,12 +242,10 @@ const Progress = () => {
             />
           </View>
           <View style={styles.summaryContainer}>
-            <Text style={styles.summaryTitle}>Summary</Text>
+            <Text style={styles.summaryTitle}>Summary (Last 14 days)</Text>
             <Text style={styles.summaryText}>Total Qadha Prayed: {totalQadhaPrayed}</Text>
             <Text style={styles.summaryText}>Average Qadha per Day: {averageQadhaPerDay}</Text>
-            <Text style={styles.summaryText}>
-              Estimated Completion: {daysToFinish} days {yearsToFinish}
-            </Text>
+            <Text style={styles.summaryText}>Estimated Completion: {daysToFinish} days {yearsToFinish}</Text>
           </View>
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryTitle}>Breakdown</Text>
@@ -300,14 +313,9 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
     marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   chartTitle: {
     fontSize: 16,
@@ -318,7 +326,6 @@ const styles = StyleSheet.create({
   },
   chart: {
     marginVertical: 8,
-    borderRadius: 16,
   },
   summaryContainer: {
     backgroundColor: "#F5F5F5",

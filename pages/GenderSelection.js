@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react"
 import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../FirebaseConfig";
 
@@ -33,14 +33,17 @@ const GenderSelection = () => {
             // Update existing user document with gender
             await updateDoc(userDocRef, {
               gender: selectedGender,
-              updatedAt: new Date(),
             });
           } else {
             // Create a new document if it doesn't exist
-            await setDoc(userDocRef, {
-              gender: selectedGender,
-              createdAt: new Date(),
-            });
+            await setDoc(
+              userDocRef,
+              {
+                gender: selectedGender,
+                createdAt: Timestamp.now(),
+              },
+              { merge: true } // Ensures other data is not erased
+            );            
           }
   
           console.log("Gender saved successfully!");

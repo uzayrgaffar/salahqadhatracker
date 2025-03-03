@@ -97,11 +97,15 @@ const SetDOB = () => {
           });
         } else {
           // Create a new document if it doesn't exist
-          await setDoc(userDocRef, {
-            dob: Timestamp.fromDate(selectedDOB),
-            dop: Timestamp.fromDate(selectedDOP),
-            createdAt: Timestamp.now(),
-          });
+          await setDoc(
+            userDocRef,
+            {
+              dob: Timestamp.fromDate(selectedDOB),
+              dop: Timestamp.fromDate(selectedDOP),
+              createdAt: Timestamp.now(),
+            },
+            { merge: true } // Merges existing data instead of overwriting everything
+          );          
         }
 
         console.log("Dates saved successfully!");

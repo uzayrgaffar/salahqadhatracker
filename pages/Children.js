@@ -2,66 +2,34 @@ import { useContext, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../FirebaseConfig";
+import React from "react";
 
 const Children = () => {
   const navigation = useNavigation()
   const { selectedLanguage, gender, madhab } = useContext(AppContext)
   const [selectedOption, setSelectedOption] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   const handleOptionSelect = (option) => {
     setSelectedOption(option)
   }
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     if (selectedOption) {
-        try {
-            const auth = getAuth();
-            const user = auth.currentUser;
+        // Convert selection to a boolean
+        const hadChildrenBeforeSalah = selectedOption !== "No";
 
-            if (user) {
-                const userId = user.uid;
-                const userDocRef = doc(db, "users", userId);
-
-                const userDoc = await getDoc(userDocRef);
-
-                // Convert selection to a boolean
-                const hadChildrenBeforeSalah = selectedOption !== "No";
-
-                if (userDoc.exists()) {
-                    // Update existing user document
-                    await updateDoc(userDocRef, {
-                        hadChildrenBeforeSalah,
-                        updatedAt: serverTimestamp(),
-                    });
-                } else {
-                    // Create a new document if it doesn't exist
-                    await setDoc(userDocRef, {
-                        hadChildrenBeforeSalah,
-                        createdAt: serverTimestamp(),
-                    });
-                }
-
-                console.log("Childbirth data saved successfully!");
-
-                // Navigate based on user selection
-                if (!hadChildrenBeforeSalah) {
-                    navigation.navigate("YearsMissed");
-                } else {
-                    navigation.navigate("NumberOfChildren");
-                }
-            } else {
-                console.error("No authenticated user found!");
-                Alert.alert("Error", "You need to be logged in to save your data.");
-            }
-        } catch (error) {
-            console.error("Error saving childbirth data:", error);
-            Alert.alert("Error", "Failed to save data. Please try again.");
+        // Navigate based on user selection
+        if (!hadChildrenBeforeSalah) {
+            navigation.navigate("YearsMissed");
+        } else {
+            navigation.navigate("NumberOfChildren");
         }
     }
-};
+};  
 
   return (
     <View style={styles.container}>

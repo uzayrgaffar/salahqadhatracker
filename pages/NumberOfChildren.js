@@ -1,61 +1,63 @@
-import { useContext, useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { AppContext } from "../AppContext"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { useContext, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { AppContext } from "../AppContext";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../FirebaseConfig";
 
 const NumberOfChildren = () => {
-  const navigation = useNavigation()
-  const { numberOfChildren, setNumberOfChildren } = useContext(AppContext)
-  const [showChildrenPicker, setShowChildrenPicker] = useState(false)
-  const [selectedChildren, setSelectedChildren] = useState(numberOfChildren)
+  const navigation = useNavigation();
+  const { numberOfChildren, setNumberOfChildren } = useContext(AppContext);
+  const [showChildrenPicker, setShowChildrenPicker] = useState(false);
+  const [selectedChildren, setSelectedChildren] = useState(numberOfChildren);
 
   const handleChildrenSelection = (children) => {
-    setSelectedChildren(children)
-    setNumberOfChildren(children)
-    setShowChildrenPicker(false)
-  }
+    setSelectedChildren(children);
+    setNumberOfChildren(children);
+    setShowChildrenPicker(false);
+  };
 
   const handleConfirm = async () => {
     if (selectedChildren !== null) {
-        try {
-            const auth = getAuth();
-            const user = auth.currentUser;
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
 
-            if (user) {
-                const userId = user.uid;
-                const userDocRef = doc(db, "users", userId);
+        if (user) {
+          const userId = user.uid;
+          const userDocRef = doc(db, "users", userId);
+          const userDoc = await getDoc(userDocRef);
 
-                const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            // Update only the numberOfChildren field
+            await updateDoc(userDocRef, {
+              numberOfChildren: selectedChildren,
+            });
+          } else {
+            // Create a new document if it doesn't exist
+            await setDoc(
+              userDocRef,
+              {
+                numberOfChildren: selectedChildren,
+                createdAt: Timestamp.now(),
+              },
+              { merge: true } // Ensures other data is not erased
+            );
+          }
 
-                if (userDoc.exists()) {
-                    // Update existing user document
-                    await updateDoc(userDocRef, {
-                        numberOfChildren: selectedChildren,
-                        updatedAt: serverTimestamp(),
-                    });
-                } else {
-                    // Create a new document if it doesn't exist
-                    await setDoc(userDocRef, {
-                        numberOfChildren: selectedChildren,
-                        createdAt: serverTimestamp(),
-                    });
-                }
-
-                console.log("Number of children saved successfully!");
-                navigation.navigate("PostNatal");
-            } else {
-                console.error("No authenticated user found!");
-                Alert.alert("Error", "You need to be logged in to save your data.");
-            }
-        } catch (error) {
-            console.error("Error saving number of children:", error);
-            Alert.alert("Error", "Failed to save data. Please try again.");
+          console.log("Number of children saved successfully!");
+          navigation.navigate("PostNatal");
+        } else {
+          console.error("No authenticated user found!");
+          Alert.alert("Error", "You need to be logged in to save your data.");
         }
+      } catch (error) {
+        console.error("Error saving number of children:", error);
+        Alert.alert("Error", "Failed to save data. Please try again.");
+      }
     }
-};
+  };
 
   return (
     <View style={styles.container}>
@@ -64,7 +66,9 @@ const NumberOfChildren = () => {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>How many children did you have before you started praying salah regularly?</Text>
+        <Text style={styles.cardTitle}>
+          How many children did you have before you started praying salah regularly?
+        </Text>
         <TouchableOpacity
           style={[styles.selectButton, selectedChildren !== null && styles.selectedButton]}
           onPress={() => setShowChildrenPicker(true)}
@@ -105,8 +109,8 @@ const NumberOfChildren = () => {
         )}
       </View>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

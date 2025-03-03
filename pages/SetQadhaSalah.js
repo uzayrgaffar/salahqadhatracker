@@ -2,7 +2,7 @@ import { useContext, useState, useEffect } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"
+import { doc, getDoc, updateDoc, setDoc, Timestamp, collection } from "firebase/firestore"
 import { getAuth } from "firebase/auth"
 import { db } from "../FirebaseConfig"
 
@@ -144,14 +144,30 @@ export const SetQadhaSalah = () => {
           madhab,
           postNatalBleedingDays,
           numberOfChildren,
-          fajr,
-          dhuhr,
-          asr,
-          maghrib,
-          isha,
-          witr,
-          updatedAt: serverTimestamp(),
         })
+
+        const totalQadhaRef = doc(collection(db, "users", userId, "totalQadha"), "qadhaSummary");
+        try {
+          // Attempt to update the document
+          await updateDoc(totalQadhaRef, {
+            fajr,
+            dhuhr,
+            asr,
+            maghrib,
+            isha,
+            witr,
+          });
+        } catch (error) {
+          // If updateDoc fails (because document doesn’t exist), use setDoc to create it
+          await setDoc(totalQadhaRef, {
+            fajr,
+            dhuhr,
+            asr,
+            maghrib,
+            isha,
+            witr,
+          });
+        }
 
         console.log("Qadha Salah data saved successfully!")
         navigation.navigate("MainPages", { screen: "Daily Chart" })

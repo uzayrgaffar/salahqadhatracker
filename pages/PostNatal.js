@@ -1,61 +1,59 @@
-import { useContext, useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { AppContext } from "../AppContext"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { useContext, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { AppContext } from "../AppContext";
+import { doc, getDoc, setDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../FirebaseConfig";
 
 const PostNatal = () => {
-  const navigation = useNavigation()
-  const { pnb, setPNB } = useContext(AppContext)
-  const [showPNBPicker, setShowPNBPicker] = useState(false)
-  const [selectedPNB, setSelectedPNB] = useState(pnb)
+  const navigation = useNavigation();
+  const { pnb, setPNB } = useContext(AppContext);
+  const [showPNBPicker, setShowPNBPicker] = useState(false);
+  const [selectedPNB, setSelectedPNB] = useState(pnb);
 
   const handlePNBSelection = (days) => {
-    setSelectedPNB(days)
-    setPNB(days)
-    setShowPNBPicker(false)
-  }
+    setSelectedPNB(days);
+    setPNB(days);
+    setShowPNBPicker(false);
+  };
 
   const handleConfirm = async () => {
     if (selectedPNB !== null) {
-        try {
-            const auth = getAuth();
-            const user = auth.currentUser;
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
 
-            if (user) {
-                const userId = user.uid;
-                const userDocRef = doc(db, "users", userId);
+        if (user) {
+          const userId = user.uid;
+          const userDocRef = doc(db, "users", userId);
+          const userDoc = await getDoc(userDocRef);
 
-                const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            await updateDoc(userDocRef, {
+              postNatalBleedingDays: selectedPNB,
+            });
+          } else {
+            await setDoc(userDocRef, {
+              postNatalBleedingDays: selectedPNB,
+              createdAt: Timestamp.now(),
+            },
+            { merge: true }
+          );
+          }
 
-                if (userDoc.exists()) {
-                    // Update existing user document
-                    await updateDoc(userDocRef, {
-                        postNatalBleedingDays: selectedPNB,
-                        updatedAt: serverTimestamp(),
-                    });
-                } else {
-                    // Create a new document if it doesn't exist
-                    await setDoc(userDocRef, {
-                        postNatalBleedingDays: selectedPNB,
-                        createdAt: serverTimestamp(),
-                    });
-                }
-
-                console.log("Post Natal Bleeding data saved successfully!");
-                navigation.navigate("YearsMissed");
-            } else {
-                console.error("No authenticated user found!");
-                Alert.alert("Error", "You need to be logged in to save your data.");
-            }
-        } catch (error) {
-            console.error("Error saving Post Natal Bleeding data:", error);
-            Alert.alert("Error", "Failed to save data. Please try again.");
+          console.log("Post Natal Bleeding data saved successfully!");
+          navigation.navigate("YearsMissed");
+        } else {
+          console.error("No authenticated user found!");
+          Alert.alert("Error", "You need to be logged in to save your data.");
         }
+      } catch (error) {
+        console.error("Error saving Post Natal Bleeding data:", error);
+        Alert.alert("Error", "Failed to save data. Please try again.");
+      }
     }
-};
+  };
 
   return (
     <View style={styles.container}>
@@ -101,8 +99,8 @@ const PostNatal = () => {
         )}
       </View>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

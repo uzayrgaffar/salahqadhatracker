@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import { View, TouchableOpacity, StyleSheet, Text, ScrollView, SafeAreaView, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { ChevronRight } from "lucide-react-native"
 import { auth, db } from "../FirebaseConfig"
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore"
+import { doc, getDoc, updateDoc, deleteDoc, collection, getDocs, writeBatch } from "firebase/firestore"
 import { onAuthStateChanged, deleteUser } from "firebase/auth"
+import { AppContext } from "../AppContext"
 
 const Profile = () => {
   const navigation = useNavigation()
+  const {madhab, setMadhab} = useContext(AppContext)
   const [gender, setGender] = useState("")
-  const [madhab, setMadhab] = useState("")
   const [userDocRef, setUserDocRef] = useState(null)
 
   useEffect(() => {
@@ -79,22 +80,44 @@ const Profile = () => {
           text: "Delete",
           onPress: async () => {
             try {
-              const user = auth.currentUser
-              if (user && userDocRef) {
-                await deleteDoc(userDocRef)
-                await deleteUser(user)
-                Alert.alert("Account Deleted", "Your account and all data have been successfully deleted.")
-                navigation.navigate("SelectLanguage")
-              }
+              const user = auth.currentUser;
+              if (!user) throw new Error("No authenticated user found");
+  
+              const userId = user.uid;
+              const userDocRef = doc(db, "users", userId);
+              const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
+              const totalQadhaRef = collection(db, "users", userId, "totalQadha");
+  
+              // Function to delete all documents in a subcollection
+              const deleteCollection = async (collectionRef) => {
+                const querySnapshot = await getDocs(collectionRef);
+                const batch = writeBatch(db);
+                querySnapshot.forEach((doc) => batch.delete(doc.ref));
+                await batch.commit();
+              };
+  
+              // Delete all daily prayers and totalQadha entries
+              await deleteCollection(dailyPrayersRef);
+              await deleteCollection(totalQadhaRef);
+  
+              // Delete user document
+              await deleteDoc(userDocRef);
+  
+              // Delete user from Firebase Auth
+              await deleteUser(user);
+  
+              Alert.alert("Account Deleted", "Your account and all data have been successfully deleted.");
+              navigation.navigate("SelectLanguage");
             } catch (error) {
-              Alert.alert("Error", "Failed to delete account. Please try again.")
+              console.error("Error deleting account:", error);
+              Alert.alert("Error", "Failed to delete account. Please try again.");
             }
           },
           style: "destructive"
         }
       ]
-    )
-  }
+    );
+  };  
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -216,6 +239,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
     borderRadius: 12,
     overflow: "hidden",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 5,
   },
   option: {
     flexDirection: "row",

@@ -2,7 +2,7 @@ import { useContext, useState } from "react"
 import { View, TouchableOpacity, StyleSheet, Text, Alert } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore"
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, collection } from "firebase/firestore"
 import { getAuth } from "firebase/auth"
 import { db } from "../FirebaseConfig"
 
@@ -37,13 +37,14 @@ const MadhabSelection = () => {
         yearsMissed = userDoc.data()?.yearsMissed || 0;
         await updateDoc(userDocRef, {
           madhab: selectedMadhab,
-          updatedAt: serverTimestamp(),
         });
       } else {
         await setDoc(userDocRef, {
           madhab: selectedMadhab,
-          createdAt: serverTimestamp(),
-        });
+          createdAt: Timestamp.now(),
+        },
+        { merge: true }
+      );
       }
   
       console.log("Madhab selection saved successfully!");
@@ -51,15 +52,28 @@ const MadhabSelection = () => {
       setMadhab(selectedMadhab);
   
       if (yearsMissed === 0) {
-        // Set all prayers to 0
-        await updateDoc(userDocRef, {
-          fajr: 0,
-          dhuhr: 0,
-          asr: 0,
-          maghrib: 0,
-          isha: 0,
-          witr: 0,
-        });
+        const totalQadhaRef = doc(collection(db, "users", userId, "totalQadha"), "qadhaSummary");
+        try {
+          // Attempt to update the document
+          await updateDoc(totalQadhaRef, {
+            fajr: 0,
+            dhuhr: 0,
+            asr: 0,
+            maghrib: 0,
+            isha: 0,
+            witr: 0,
+          });
+        } catch (error) {
+          // If updateDoc fails (because document doesn’t exist), use setDoc to create it
+          await setDoc(totalQadhaRef, {
+            fajr: 0,
+            dhuhr: 0,
+            asr: 0,
+            maghrib: 0,
+            isha: 0,
+            witr: 0,
+          });
+        }
   
         console.log("All prayers set to 0 for user with no missed years.");
         navigation.navigate("MainPages", { screen: "Daily Chart" });

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator,
 import { auth, db } from '../FirebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 
 const Login = () => {
   const navigation = useNavigation();
@@ -131,7 +131,7 @@ const Login = () => {
         // Create a basic user document
         await setDoc(userDocRef, {
           email: user.email,
-          createdAt: new Date().toISOString()
+          createdAt: Timestamp.now()
         });
         navigation.replace("SetDOB");
       }

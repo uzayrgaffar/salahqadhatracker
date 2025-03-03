@@ -1,15 +1,16 @@
 import { useContext, useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, TextInput } from "react-native"
 import { Calendar } from "react-native-calendars"
-import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
 import moment from "moment"
 import Icon from "react-native-vector-icons/FontAwesome"
+import { getAuth } from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { db } from "../FirebaseConfig";
 
 const { height } = Dimensions.get("window")
 
 const DailyChart = () => {
-  const navigation = useNavigation()
   const {
     fajr,
     setFajr,
@@ -23,34 +24,54 @@ const DailyChart = () => {
     setIsha,
     witr,
     setWitr,
-    dailyPrayerCounts,
-    setDailyPrayerCounts,
-    madhab,
+    madhab
   } = useContext(AppContext)
+  const auth = getAuth()
+  const user = auth.currentUser
+  const userId = user ? user.uid : null
+
   const today = moment().format("YYYY-MM-DD")
   const [selectedDate, setSelectedDate] = useState(today)
-  const [prayerStates, setPrayerStates] = useState({
-    [today]: {
-      fajr: false,
-      dhuhr: false,
-      asr: false,
-      maghrib: false,
-      isha: false,
-      witr: false,
-    },
-  })
-  const [ldailyPrayerCounts, lsetDailyPrayerCounts] = useState({
-    [today]: {
-      fajr: 0,
-      dhuhr: 0,
-      asr: 0,
-      maghrib: 0,
-      isha: 0,
-      witr: 0,
-    },
-  })
+  const [prayerStates, setPrayerStates] = useState({})
+  const [ldailyPrayerCounts, lsetDailyPrayerCounts] = useState({})
   const [isModalVisible, setIsModalVisible] = useState(false)
 
+  useEffect(() => {
+    if (userId) {
+      const fetchPrayerData = async () => {
+        const pullmadhab = doc(db, "users", userId)
+        const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate)
+        const docSnap = await getDoc(dailyPrayerRef)
+
+        if (docSnap.exists()) {
+          const data = docSnap.data()
+          setPrayerStates((prevStates) => ({ ...prevStates, [selectedDate]: data.prayers }))
+          lsetDailyPrayerCounts((prevCounts) => ({ ...prevCounts, [selectedDate]: data.counts }))
+        } else {
+          await setDoc(dailyPrayerRef, {
+            prayers: {
+              fajr: false,
+              dhuhr: false,
+              asr: false,
+              maghrib: false,
+              isha: false,
+              witr: false,
+            },
+            counts: {
+              fajr: 0,
+              dhuhr: 0,
+              asr: 0,
+              maghrib: 0,
+              isha: 0,
+              witr: 0,
+            },
+          })
+        }
+      }
+      fetchPrayerData()
+    }
+  }, [userId, selectedDate])
+  
   const handleDateSelect = (date) => {
     if (moment(date).isSameOrBefore(today)) {
       setSelectedDate(date)
@@ -83,7 +104,7 @@ const DailyChart = () => {
     }
   }
 
-  const handlePrayerSelect = (prayer) => {
+  const handlePrayerSelect = async (prayer) => {
     const updatedStates = {
       ...prayerStates,
       [selectedDate]: {
@@ -93,16 +114,13 @@ const DailyChart = () => {
     }
     setPrayerStates(updatedStates)
 
-    const countAdjust = updatedStates[selectedDate][prayer] ? -1 : 1
-    if (prayer === "fajr") setFajr(fajr + countAdjust)
-    if (prayer === "dhuhr") setDhuhr(dhuhr + countAdjust)
-    if (prayer === "asr") setAsr(asr + countAdjust)
-    if (prayer === "maghrib") setMaghrib(maghrib + countAdjust)
-    if (prayer === "isha") setIsha(isha + countAdjust)
-    if (prayer === "witr") setWitr(witr + countAdjust)
+    const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate)
+    await updateDoc(dailyPrayerRef, {
+      prayers: updatedStates[selectedDate],
+    })
   }
 
-  const adjustCount = (prayer, amount) => {
+  const adjustCount = async (prayer, amount) => {
     lsetDailyPrayerCounts((prevCounts) => {
       const currentCount = prevCounts[selectedDate][prayer]
       if (amount < 0 && currentCount === 0) return prevCounts
@@ -117,13 +135,10 @@ const DailyChart = () => {
       }
     })
 
-    const countAdjust = amount < 0 ? -1 : 1
-    if (prayer === "fajr") setFajr(fajr - countAdjust)
-    if (prayer === "dhuhr") setDhuhr(dhuhr - countAdjust)
-    if (prayer === "asr") setAsr(asr - countAdjust)
-    if (prayer === "maghrib") setMaghrib(maghrib - countAdjust)
-    if (prayer === "isha") setIsha(isha - countAdjust)
-    if (prayer === "witr") setWitr(witr - countAdjust)
+    const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate)
+    await updateDoc(dailyPrayerRef, {
+      [`counts.${prayer}`]: ldailyPrayerCounts[selectedDate][prayer] + amount,
+    })
   }
 
   useEffect(() => {
@@ -207,27 +222,25 @@ const DailyChart = () => {
                 </Text>
                 {prayerStates[selectedDate]?.[prayer] && (
                   <View style={styles.counterContainer}>
-                    <TouchableOpacity
-                      style={styles.counterButton}
-                      onPress={() => adjustCount(prayer, -1)}
-                      disabled={ldailyPrayerCounts[selectedDate]?.[prayer] === 0}
-                    >
-                      <Icon
-                        name="minus"
-                        size={20}
-                        color={ldailyPrayerCounts[selectedDate]?.[prayer] === 0 ? "#ccc" : "#FFFFFF"}
-                      />
-                    </TouchableOpacity>
-                    <Text style={styles.counterText}>{ldailyPrayerCounts[selectedDate]?.[prayer]}</Text>
-                    <TouchableOpacity style={styles.counterButton} onPress={() => adjustCount(prayer, 1)}>
-                      <Icon name="plus" size={20} color="#FFFFFF" />
-                    </TouchableOpacity>
+                  <Text style={styles.placeholder}>Qadha: </Text>
+                  <TextInput
+                    style={styles.counterInput}
+                    keyboardType="numeric"
+                    value={String(ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0)}
+                    onChangeText={(text) => {
+                    const newValue = parseInt(text, 10) || 0;
+                    adjustCount(prayer, newValue - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
+                    }}
+                  />
                   </View>
                 )}
               </TouchableOpacity>
             </View>
           ))}
         </View>
+        <TouchableOpacity style={styles.prayQadhaButton}>
+          <Text style={styles.prayQadhaButtonText}>Pray Qadha</Text>
+        </TouchableOpacity>
       </View>
 
       <Modal
@@ -285,7 +298,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#5CB390",
-    padding: 20,
   },
   header: {
     paddingTop: 60,
@@ -299,15 +311,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   card: {
+    flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
-    maxHeight: height * 0.7,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
   },
   dateButton: {
     flexDirection: "row",
@@ -317,6 +327,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 5,
   },
   dateButtonText: {
     fontSize: 18,
@@ -336,6 +350,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#EEEEEE",
     padding: 16,
     borderRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 5,
+    marginLeft: 10,
+    marginRight: 10,
   },
   selectedPrayerButton: {
     backgroundColor: "#4BD4A2",
@@ -353,8 +373,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderRadius: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingVertical: 4,
+  },
+  placeholder: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '500',
+  },
+  counterInput: {
+    fontSize: 16,
+    color: "#FFFFFF",
   },
   counterButton: {
     width: 40,
@@ -397,6 +426,23 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
+  },
+  prayQadhaButton: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FBC742",
+    padding: 20,
+    borderRadius: 12,
+    marginTop: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 5,
+  },
+  prayQadhaButtonText: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    fontWeight: "bold",
   },
 })
 

@@ -21,10 +21,10 @@ const Forum = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedIndex, setExpandedIndex] = useState(null)
 
-  const { selectedLanguage, gender, madhab } = useContext(AppContext)
+  const { selectedLanguage } = useContext(AppContext)
 
   const questionsEN = [
-    { question: "1", answer: "1" },
+    { question: "When can you not pray qadha salah?", answer: "5 minutes before sunrise, 10 minutes before dhuhr and 15 minutes before sunset" },
     { question: "2", answer: "2" },
     { question: "3", answer: "3" },
     { question: "4", answer: "4" },
