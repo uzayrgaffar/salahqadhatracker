@@ -35,6 +35,7 @@ const DailyChart = () => {
   const [prayerStates, setPrayerStates] = useState({})
   const [ldailyPrayerCounts, lsetDailyPrayerCounts] = useState({})
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isQadhaModalVisible, setIsQadhaModalVisible] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -259,7 +260,7 @@ const adjustTotalQadha = async (prayer, amount) => {
                 >
                   {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
                 </Text>
-                {prayerStates[selectedDate]?.[prayer] && (
+                {/* {prayerStates[selectedDate]?.[prayer] && (
                   <View style={styles.counterContainer}>
                   <Text style={styles.placeholder}>Qadha: </Text>
                   <TextInput
@@ -272,12 +273,12 @@ const adjustTotalQadha = async (prayer, amount) => {
                     }}
                   />
                   </View>
-                )}
+                )} */}
               </TouchableOpacity>
             </View>
           ))}
         </View>
-        <TouchableOpacity style={styles.prayQadhaButton}>
+        <TouchableOpacity style={styles.prayQadhaButton} onPress={() => setIsQadhaModalVisible(true)}>
           <Text style={styles.prayQadhaButtonText}>Pray Qadha</Text>
         </TouchableOpacity>
       </View>
@@ -329,6 +330,50 @@ const adjustTotalQadha = async (prayer, amount) => {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={isQadhaModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsQadhaModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Qadha Salah</Text>
+            <Text style={styles.modalText}>
+              Select the number of qadha salah you want to pray for the selected date
+            </Text>
+
+            {/* Qadha Counters */}
+            <View style={styles.qadhaCountersContainer}>
+              {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
+                <View key={prayer} style={styles.qadhaCounterWrapper}>
+                  <Text style={styles.qadhaCounterLabel}>
+                    {prayer.charAt(0).toUpperCase() + prayer.slice(1)}:
+                  </Text>
+                  <TextInput
+                    style={styles.qadhaCounterInput}
+                    keyboardType="numeric"
+                    value={String(ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0)}
+                    onChangeText={(text) => {
+                      const newValue = parseInt(text, 10) || 0;
+                      adjustCount(prayer, newValue - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setIsQadhaModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   )
 }
@@ -479,9 +524,48 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   prayQadhaButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#FFFFFF",
     fontWeight: "bold",
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#5CB390",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    color: "#777777",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  qadhaCountersContainer: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  qadhaCounterWrapper: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  qadhaCounterLabel: {
+    fontSize: 16,
+    color: "#777777",
+    fontWeight: "500",
+  },
+  qadhaCounterInput: {
+    fontSize: 16,
+    color: "#5CB390",
+    borderWidth: 1,
+    borderColor: "#5CB390",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    width: 60,
+    textAlign: "center",
   },
 })
 
