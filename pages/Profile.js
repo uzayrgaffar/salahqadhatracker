@@ -12,10 +12,12 @@ const Profile = () => {
   const {madhab, setMadhab} = useContext(AppContext)
   const [gender, setGender] = useState("")
   const [userDocRef, setUserDocRef] = useState(null)
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
+        setEmail(user.email)
         const docRef = doc(db, "users", user.uid)
         setUserDocRef(docRef)
         // Fetch user data
@@ -129,6 +131,7 @@ const Profile = () => {
             <Text style={styles.headerTitle}>Profile</Text>
           </View>
           <View style={styles.content}>
+          <Text style={styles.emailText}>{email}</Text>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Gender</Text>
               <View style={styles.optionsContainer}>
@@ -305,6 +308,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
+  },
+  emailText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
   },
 })
 
