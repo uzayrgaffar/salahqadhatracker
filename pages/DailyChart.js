@@ -113,19 +113,35 @@ const DailyChart = () => {
       },
     };
     setPrayerStates(updatedStates);
-  
+
     const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate);
     await updateDoc(dailyPrayerRef, {
       prayers: updatedStates[selectedDate],
     });
-  
-    // Adjust Qadha count when deselecting
+
     if (wasSelected) {
-      await adjustCount(prayer, -1);
+      // Deselecting -> Increase total Qadha count
+      await adjustTotalQadha(prayer, 1);
     } else {
-      await adjustCount(prayer, 1);
+      // Selecting -> Decrease total Qadha count
+      await adjustTotalQadha(prayer, -1);
     }
-  };
+};
+
+const adjustTotalQadha = async (prayer, amount) => {
+    const totalQadhaRef = doc(db, "users", userId, "totalQadha/qadhaSummary");
+    const totalQadhaSnap = await getDoc(totalQadhaRef);
+
+    if (totalQadhaSnap.exists()) {
+      const totalData = totalQadhaSnap.data();
+      const totalQadhaLeft = totalData[prayer] || 0;
+      const updatedTotal = totalQadhaLeft + amount;
+
+      await updateDoc(totalQadhaRef, {
+        [prayer]: updatedTotal < 0 ? 0 : updatedTotal,
+      });
+    }
+};
   
   const adjustCount = async (prayer, amount) => {
     const currentCount = ldailyPrayerCounts[selectedDate]?.[prayer] || 0;
@@ -249,10 +265,10 @@ const DailyChart = () => {
                   <TextInput
                     style={styles.counterInput}
                     keyboardType="numeric"
-                    value={String((ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0) - 1)}
+                    value={String(ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0)}
                     onChangeText={(text) => {
-                      const newValue = parseInt(text, 10) || 0;
-                      adjustCount(prayer, newValue + 1 - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
+                    const newValue = parseInt(text, 10) || 0;
+                    adjustCount(prayer, newValue - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
                     }}
                   />
                   </View>
