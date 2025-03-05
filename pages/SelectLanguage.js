@@ -252,7 +252,7 @@ const SelectLanguage = () => {
 
   return (
     <TouchableOpacity style={styles.container} onPress={() => navigation.navigate('Login')}>
-      <Animated.Text style={[styles.title, { opacity: fadeAnim }]}>Qadha App</Animated.Text>
+      <Animated.Text style={[styles.title, { opacity: fadeAnim }]}>iQadha</Animated.Text>
       <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>Tap anywhere to continue</Animated.Text>
     </TouchableOpacity>
   );
