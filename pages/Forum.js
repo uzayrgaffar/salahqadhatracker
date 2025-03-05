@@ -24,20 +24,17 @@ const Forum = () => {
   const { selectedLanguage } = useContext(AppContext)
 
   const questionsEN = [
-    { question: "When can you not pray qadha salah?", answer: "5 minutes before sunrise, 10 minutes before dhuhr and 15 minutes before sunset" },
-    { question: "2", answer: "2" },
-    { question: "3", answer: "3" },
-    { question: "4", answer: "4" },
-    { question: "5", answer: "5" },
-    { question: "6", answer: "6" },
-    { question: "7", answer: "7" },
-    { question: "8", answer: "8" },
-    { question: "9", answer: "9" },
-    { question: "10", answer: "10" },
-    { question: "11", answer: "11" },
-    { question: "12", answer: "12" },
-    { question: "13", answer: "13" },
-    { question: "14", answer: "14" },
+    { question: "Is it necessary to make up missed Salah?", answer: "Yes, it is obligatory to make up missed Fard prayers" },
+    { question: "Can I perform Qadha Salah at any time throughout the day?", answer: "Yes, except for 5 minutes before sunrise, 10 minutes before dhuhr and 15 minutes before sunset" },
+    { question: "Do I have to pray my Qadha Salah in order?", answer: "If you have only a few Qadha prayers, they should be made up in order. However, if there are many, then performing them regularly is sufficient without strict order." },
+    { question: "What intention (niyyah) should I make for Qadha Salah?", answer: "You should specify which Salah you are making up, e.g., 'I intend to perform Qadha of Fajr prayer'. If the exact date is unknown, then a general intention is sufficient." },
+    { question: "Can I pray Qadha Salah in congregation (Jama'ah)?", answer: "No, Qadha Salah should generally be performed individually. However, if a group agrees to perform Qadha together, it is permissible" },
+    { question: "Can I pray Qadha Salah in place of Sunnah or Nafl prayers?", answer: "If you have a large backlog of missed Salah, it is recommended to prioritize Qadha over optional Sunnah/Nafl prayers (except emphasized Sunnah)" },
+    { question: "Can I perform Qadha Salah for someone who has passed away?", answer: "No, Qadha Salah cannot be performed on behalf of a deceased person. Instead, you can give Sadaqah (charity) on their behalf." },
+    { question: "If I was ignorant about the obligation of making up missed Salah, am I still responsible?", answer: "Yes, ignorance does not remove responsibility. You must sincerely repent and make up the missed prayers as soon as possible" },
+    { question: "What if I converted to Islam—do I have to make up past missed prayers?", answer: "No, a convert does not need to make up missed Salah before embracing Islam. They start fresh upon conversion." },
+    { question: "Does missing Salah intentionally make me a non-Muslim?", answer: "While neglecting Salah is a major sin, a person does not become a non-Muslim unless they completely reject the obligation of Salah. However, they must repent and start praying immediately." },
+    { question: "What if I was unconscious or in a coma—do I need to make up missed prayers?", answer: "If unconscious for more than six Salah times, Qadha is not required. If it was less, then the missed Salah must be made up." },
   ]
 
   const questionsAR = [
@@ -52,9 +49,6 @@ const Forum = () => {
     { question: "٩", answer: "٩" },
     { question: "١٠", answer: "١٠" },
     { question: "١١", answer: "١١" },
-    { question: "١٢", answer: "١٢" },
-    { question: "١٣", answer: "١٣" },
-    { question: "١٤", answer: "١٤" },
   ]
 
   const questionsUR = [
@@ -69,9 +63,6 @@ const Forum = () => {
     { question: "٩", answer: "٩" },
     { question: "١٠", answer: "١٠" },
     { question: "١١", answer: "١١" },
-    { question: "١٢", answer: "١٢" },
-    { question: "١٣", answer: "١٣" },
-    { question: "١۴", answer: "١۴" },
   ]
 
   const questionsHI = [
@@ -86,9 +77,6 @@ const Forum = () => {
     { question: "९", answer: "९" },
     { question: "१०", answer: "१०" },
     { question: "११", answer: "११" },
-    { question: "१२", answer: "१२" },
-    { question: "१३", answer: "१३" },
-    { question: "१४", answer: "१४" },
   ]
 
   const filteredQuestions =
@@ -138,7 +126,7 @@ const Forum = () => {
                 onPress={() => handlePress(index)}
                 style={[styles.questionContainer, expandedIndex === index && styles.questionContainerExpanded]}
               >
-                <Text style={styles.questionText}>{item.question}</Text>
+                <Text style={[styles.questionText, expandedIndex === index && styles.questionTextExpanded]}>{item.question}</Text>
               </TouchableOpacity>
               {expandedIndex === index && (
                 <View style={styles.answerContainer}>
@@ -219,6 +207,11 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 16,
     color: "#777777",
+    fontWeight: "500",
+  },
+  questionTextExpanded: {
+    fontSize: 16,
+    color: "#FFFFFF",
     fontWeight: "500",
   },
   answerContainer: {
