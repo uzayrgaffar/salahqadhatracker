@@ -90,6 +90,27 @@ const DailyChart = () => {
       fetchPrayerData()
     }
   }, [userId, selectedDate])
+
+  useEffect(() => {
+    const fetchPrayerCounts = async () => {
+      if (userId) {
+        const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
+        const totalQadhaSnap = await getDoc(totalQadhaRef);
+  
+        if (totalQadhaSnap.exists()) {
+          const data = totalQadhaSnap.data();
+          setFajr(data.fajr || 0);
+          setDhuhr(data.dhuhr || 0);
+          setAsr(data.asr || 0);
+          setMaghrib(data.maghrib || 0);
+          setIsha(data.isha || 0);
+          setWitr(data.witr || 0);
+        }
+      }
+    };
+  
+    fetchPrayerCounts();
+  }, [userId]);
   
   const handleDateSelect = (date) => {
     if (moment(date).isSameOrBefore(today)) {
@@ -199,22 +220,6 @@ const adjustTotalQadha = async (prayer, amount) => {
       });
     }
   };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentTime = moment().format("HH:mm")
-      if (currentTime === "00:00") {
-        setFajr(fajr + 1)
-        setDhuhr(dhuhr + 1)
-        setAsr(asr + 1)
-        setMaghrib(maghrib + 1)
-        setIsha(isha + 1)
-        setWitr(witr + 1)
-      }
-    }, 60000)
-
-    return () => clearInterval(interval)
-  }, [fajr, dhuhr, asr, maghrib, isha, witr, setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr])
 
   const getMarkedDates = () => {
     const markedDates = {}

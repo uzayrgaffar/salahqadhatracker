@@ -77,3 +77,43 @@ yarn-error.*
 *.tsbuildinfo
 
 # @end expo-cli
+
+# Firebase-specific
+firebase-debug.log
+.firebase/
+.runtimeconfig.json
+
+# Functions dependencies
+functions/node_modules
+
+# Environment variables
+functions/.env
+
+# React Native
+node_modules/
+.expo/
+dist/
+*.jks
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+.env
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE-specific
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
