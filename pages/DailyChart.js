@@ -24,7 +24,8 @@ const DailyChart = () => {
     setIsha,
     witr,
     setWitr,
-    madhab
+    madhab,
+    setMadhab,
   } = useContext(AppContext)
   const auth = getAuth()
   const user = auth.currentUser
@@ -36,6 +37,24 @@ const DailyChart = () => {
   const [ldailyPrayerCounts, lsetDailyPrayerCounts] = useState({})
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isQadhaModalVisible, setIsQadhaModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (userId) {
+      const fetchMadhab = async () => {
+        const userRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userRef);
+  
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          if (userData.madhab) {
+            setMadhab(userData.madhab);
+          }
+        }
+      };
+  
+      fetchMadhab();
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {

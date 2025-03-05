@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
 import { doc, collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db, auth } from '../FirebaseConfig'
+import { AppContext } from "../AppContext"
 
 const Progress = () => {
   const [userData, setUserData] = useState(null)
   const [dailyPrayerCounts, setDailyPrayerCounts] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const {madhab} = useContext(AppContext)
   
   useEffect(() => {
     const userId = auth.currentUser?.uid;
@@ -170,7 +172,10 @@ const Progress = () => {
   const ishaCount = userData.isha || 0
   const witrCount = userData.witr || 0
   
-  const totalRemainingPrayers = fajrCount + dhuhrCount + asrCount + maghribCount + ishaCount + witrCount
+  let totalRemainingPrayers = fajrCount + dhuhrCount + asrCount + maghribCount + ishaCount
+  if (madhab === "Hanafi") {
+    totalRemainingPrayers += witrCount
+  }
   
   // Calculate days to finish - handle as strings properly
   let daysToFinish = "∞"; // Default value
@@ -241,22 +246,25 @@ const Progress = () => {
               style={styles.chart}
             />
           </View>
+
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryTitle}>Summary (Last 14 days)</Text>
             <Text style={styles.summaryText}>Total Qadha Prayed: {totalQadhaPrayed}</Text>
             <Text style={styles.summaryText}>Average Qadha per Day: {averageQadhaPerDay}</Text>
             <Text style={styles.summaryText}>Estimated Completion: {daysToFinish} days {yearsToFinish}</Text>
           </View>
+          
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryTitle}>Breakdown</Text>
             <Text style={styles.summaryText}>
               Fajr: {fajrCount} | Dhuhr: {dhuhrCount} | Asr: {asrCount}
             </Text>
             <Text style={styles.summaryText}>
-              Maghrib: {maghribCount} | Isha: {ishaCount} | Witr: {witrCount}
+              Maghrib: {maghribCount} | Isha: {ishaCount} {madhab === "Hanafi" ? `| Witr: ${witrCount}` : ""}
             </Text>
             <Text style={styles.summaryText}>Total Remaining Qadha: {totalRemainingPrayers}</Text>
           </View>
+
         </ScrollView>
       </View>
     </SafeAreaView>
