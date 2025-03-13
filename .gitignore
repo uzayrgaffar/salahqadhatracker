@@ -121,3 +121,7 @@ yarn-error.log*
 # Native directories
 # android/
 # ios/
+
+# Bundle files
+*.bundle
+*.jsbundle

@@ -12,10 +12,10 @@ export default {
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
-    plugins: [
-      "@react-native-google-signin/google-signin",
-      "expo-build-properties"
-    ],
+    // plugins: [
+    //   "@react-native-google-signin/google-signin",
+    //   "expo-build-properties"
+    // ],
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.qadhaapp"

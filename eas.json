@@ -1,12 +1,17 @@
 {
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {}
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "autoIncrement": false
+      },
+      "env": {
+        "NODE_OPTIONS": "--max-old-space-size=8192"
+      },
+      "cache": {
+        "disabled": true
+      }
+    }
   }
 }
