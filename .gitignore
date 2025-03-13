@@ -17,7 +17,7 @@ web-build/
 *.mobileprovision
 
 # Firebase config
-FirebaseConfig.ts
+FirebaseConfig.js
 
 # Metro
 .metro-health-check*
