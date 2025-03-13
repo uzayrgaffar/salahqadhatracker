@@ -119,5 +119,5 @@ yarn-debug.log*
 yarn-error.log*
 
 # Native directories
-android/
-ios/
+# android/
+# ios/
