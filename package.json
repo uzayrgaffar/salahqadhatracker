@@ -13,8 +13,10 @@
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/checkbox": "^0.5.17",
     "@react-native-community/datetimepicker": "8.0.1",
-    "@react-native-firebase/analytics": "^21.4.0",
-    "@react-native-firebase/app": "^21.4.0",
+    "@react-native-firebase/analytics": "^21.12.0",
+    "@react-native-firebase/app": "^21.12.0",
+    "@react-native-firebase/auth": "^21.12.0",
+    "@react-native-firebase/database": "^21.12.0",
     "@react-native-google-signin/google-signin": "^13.1.0",
     "@react-native-picker/picker": "2.7.5",
     "@react-navigation/bottom-tabs": "^6.5.20",
@@ -24,16 +26,11 @@
     "expo": "~51.0.39",
     "expo-build-properties": "~0.12.5",
     "expo-dev-client": "~4.0.29",
-    "expo-firebase-auth": "^2.0.0",
-    "expo-firebase-database": "^2.0.0",
     "expo-status-bar": "~1.12.1",
     "firebase": "^10.14.1",
     "hijri-converter": "^1.1.1",
     "lucide-react": "^0.474.0",
     "lucide-react-native": "^0.474.0",
-    "metro": "^0.80.8",
-    "metro-config": "^0.80.8",
-    "metro-resolver": "^0.80.8",
     "moment": "^2.30.1",
     "moment-hijri": "^2.1.2",
     "react": "18.2.0",
@@ -55,7 +52,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "eslint": "^9.2.0"
+    "eslint": "^9.2.0",
+    "metro": "^0.80.8",
+    "metro-config": "^0.80.8",
+    "metro-resolver": "^0.80.8"
   },
   "private": true
 }
