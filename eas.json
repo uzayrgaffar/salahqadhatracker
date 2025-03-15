@@ -2,9 +2,9 @@
   "build": {
     "production": {
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease",
-        "autoIncrement": false
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "autoIncrement": "version"
       },
       "env": {
         "NODE_OPTIONS": "--max-old-space-size=8192"
