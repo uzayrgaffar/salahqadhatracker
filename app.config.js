@@ -7,10 +7,12 @@ export default {
     userInterfaceStyle: "light",
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.uzayrgaffar.qadhaapp"
+      bundleIdentifier: "com.uzayrgaffar.qadhaapp",
+      buildNumber: "1.0.0"
     },
     android: {
-      package: "com.uzayrgaffar.qadhaapp"
+      package: "com.uzayrgaffar.qadhaapp",
+      versionCode: 1
     },
     extra: {
       eas: {

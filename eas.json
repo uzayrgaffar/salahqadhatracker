@@ -3,8 +3,7 @@
     "production": {
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease",
-        "autoIncrement": "version"
+        "gradleCommand": ":app:bundleRelease"
       },
       "env": {
         "NODE_OPTIONS": "--max-old-space-size=8192"
