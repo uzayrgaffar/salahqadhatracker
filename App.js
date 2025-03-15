@@ -1,4 +1,3 @@
-import './FirebaseConfig';
 import React, { useContext, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -23,12 +22,6 @@ import Children from './pages/Children';
 import NumberOfChildren from './pages/NumberOfChildren';
 import { Text } from 'react-native';
 import PostNatal from './pages/PostNatal';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-
-GoogleSignin.configure({
-  webClientId: "830908046759-km16cn4tcvnm25pc7a1494i7jhsl3cdh.apps.googleusercontent.com",
-  offlineAccess: true,
-});
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
