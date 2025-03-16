@@ -9,8 +9,8 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.qadhaapp",
       buildNumber: "1.0.0",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false
       }
     },
     android: {
@@ -21,6 +21,16 @@ export default {
       eas: {
         projectId: "7de41553-636c-42ad-b26d-7027d42cf51b"
       }
-    }
+    },
+    plugins: [
+      [
+        "expo-build-properties",
+        {
+          ios: {
+            useFrameworks: "static"
+          }
+        }
+      ]
+    ]
   }
 };
