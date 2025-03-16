@@ -5,6 +5,11 @@
         "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"
       },
+      "ios": {
+        "env": {
+          "EXPO_USE_MODULAR_HEADERS": "1"
+        }
+      },
       "env": {
         "NODE_OPTIONS": "--max-old-space-size=8192"
       },
