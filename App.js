@@ -85,13 +85,14 @@ const MainPages = () => {
         tabBarActiveTintColor: '#FBC742',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
-          paddingBottom: 5,
+          paddingBottom: 10, // Increased padding
           paddingTop: 5,
-          height: 60,
+          height: 70, // Increased height
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: 'bold',
+          paddingBottom: 5, // Added padding
         },
         tabBarLabel: ({ color }) => {
           const translatedLabel = tabLabels[route.name]?.[selectedLanguage] || route.name;
