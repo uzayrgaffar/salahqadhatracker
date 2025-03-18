@@ -212,6 +212,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  content: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 600,
+  },
   header: {
     paddingTop: 60,
     paddingBottom: 20,
@@ -222,14 +230,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FFFFFF",
     textAlign: "center",
-  },
-  content: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 40,
   },
   section: {
     marginBottom: 24,
