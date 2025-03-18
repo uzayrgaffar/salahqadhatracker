@@ -8,7 +8,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.qadhaapp",
-      buildNumber: "2",
+      buildNumber: "3",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       }
