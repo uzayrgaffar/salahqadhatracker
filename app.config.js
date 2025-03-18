@@ -17,7 +17,7 @@ export default {
     },
     android: {
       package: "com.uzayrgaffar.qadhaapp",
-      versionCode: 1
+      versionCode: 2
     },
     extra: {
       eas: {
