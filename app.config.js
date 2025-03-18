@@ -5,6 +5,7 @@ export default {
     slug: "QadhaApp",
     version: "1.0.0",
     userInterfaceStyle: "light",
+    jsEngine: "jsc", // Switched to JavaScriptCore to mitigate Hermes-related crashes
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.qadhaapp",

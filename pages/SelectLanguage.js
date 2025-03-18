@@ -232,23 +232,29 @@ const SelectLanguage = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        navigation.replace("MainPages", { screen: "Daily Chart" });
+        setTimeout(() => {
+          navigation.replace("MainPages", { screen: "Daily Chart" });
+        }, 500);
       }
       setLoading(false);
     });
-
+  
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 2000,
       useNativeDriver: true,
     }).start();
-
+  
     return () => unsubscribe();
-  }, []);
+  }, [fadeAnim]);  
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" style={{ flex: 1, justifyContent: 'center' }} />;
-  }
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }  
 
   return (
     <TouchableOpacity style={styles.container} onPress={() => navigation.navigate('Login')}>
@@ -275,6 +281,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginTop: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },  
 });
 
 export default SelectLanguage;
