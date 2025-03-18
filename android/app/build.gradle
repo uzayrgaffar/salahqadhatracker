@@ -109,7 +109,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.uzayrgaffar.qadhaapp"
+    namespace 'com.uzayrgaffar.qadhaapp'
     defaultConfig {
         applicationId 'com.uzayrgaffar.qadhaapp'
         minSdkVersion rootProject.ext.minSdkVersion
