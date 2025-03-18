@@ -3,6 +3,7 @@ export default {
   expo: {
     name: "QadhaApp",
     slug: "QadhaApp",
+    icon: "./assets/icon.png",
     version: "1.0.0",
     userInterfaceStyle: "light",
     jsEngine: "jsc",
