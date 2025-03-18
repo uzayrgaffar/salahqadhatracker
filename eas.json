@@ -1,14 +1,22 @@
 {
+  "cli": {
+    "version": ">= 0.34.0"
+  },
   "build": {
     "production": {
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
+        "gradleCommand": ":app:bundleRelease",
+        "versionCode": "$EAS_BUILD_NUMBER", 
+        "env": {
+          "NODE_OPTIONS": "--max-old-space-size=8192"
+        }
       },
       "ios": {
         "env": {
           "EXPO_USE_MODULAR_HEADERS": "1"
-        }
+        },
+        "buildNumber": "$EAS_BUILD_NUMBER"
       },
       "env": {
         "NODE_OPTIONS": "--max-old-space-size=8192"
@@ -16,6 +24,27 @@
       "cache": {
         "disabled": true
       }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "C:/Users/uzayr/Downloads/service-account-file.json",
+        "track": "internal"
+      },
+      "ios": {
+        "ascAppId": "6743376881"
+      }
+    }
+  },
+  "versioning": {
+    "android": {
+      "increment": "build",
+      "versionCode": "auto"
+    },
+    "ios": {
+      "increment": "build",
+      "buildNumber": "auto"
     }
   }
 }
