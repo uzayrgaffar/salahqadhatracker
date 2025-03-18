@@ -1,4 +1,7 @@
 {
+  "cli": {
+    "version": ">= 0.34.0"
+  },
   "build": {
     "production": {
       "android": {
@@ -19,8 +22,10 @@
     }
   },
   "submit": {
-    "ios": {
-      "ascAppId": "6743376881"
+    "production": {
+      "ios": {
+        "ascAppId": "6743376881"
+      }
     }
   }
 }
