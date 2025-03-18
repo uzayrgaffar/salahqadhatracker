@@ -22,8 +22,7 @@
     },
     "preview": {
       "android": {
-        "buildType": "apk",
-        "autogenerate": true
+        "buildType": "apk"
       }
     }
   },
