@@ -17,7 +17,16 @@ export default {
     },
     android: {
       package: "com.uzayrgaffar.qadhaapp",
-      versionCode: 2
+      versionCode: 3,
+      buildGradle: {
+        extraProguardOptions: [
+          "-keep class com.yourapp.** { *; }",
+          "-dontwarn com.yourapp.**"
+        ]
+      },
+      config: {
+        keepConsistentProguardFile: true,
+      }
     },
     splash: {
       image: "./assets/splash.png",
@@ -36,6 +45,11 @@ export default {
         {
           ios: {
             useFrameworks: "static"
+          },
+          android: {
+            enableProguardInReleaseBuilds: true,
+            minifyEnabled: true,
+            shrinkResources: true,
           }
         }
       ]
