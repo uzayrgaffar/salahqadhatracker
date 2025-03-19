@@ -19,6 +19,12 @@ export default {
       package: "com.uzayrgaffar.qadhaapp",
       versionCode: 2
     },
+    splash: {
+      image: "./assets/splash.png",
+      backgroundColor: "#ffffff",
+      resizeMode: "contain",
+      alignItems: "center"
+    },
     extra: {
       eas: {
         projectId: "7de41553-636c-42ad-b26d-7027d42cf51b"
