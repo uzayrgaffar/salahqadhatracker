@@ -1,6 +1,6 @@
 // import React, { useContext, useState } from "react"
 // import { View, TouchableOpacity, Text, StyleSheet, Image } from "react-native"
-// import { AppContext } from "../AppContext"
+// import { AppContext } from "../AppContext";
 
 // const SelectLanguage = ({ navigation }) => {
 //   const { setSelectedLanguage } = useContext(AppContext)
