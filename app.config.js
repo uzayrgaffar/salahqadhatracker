@@ -26,7 +26,8 @@ export default {
       },
       config: {
         keepConsistentProguardFile: true,
-      }
+      },
+      permissions: []
     },
     splash: {
       image: "./assets/splash.png",
