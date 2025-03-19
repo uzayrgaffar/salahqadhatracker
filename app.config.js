@@ -19,14 +19,8 @@ export default {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.qadhaapp",
       versionCode: 7,
-      buildGradle: {
-        extraProguardOptions: [
-          "-keep class com.uzayrgaffar.qadhaapp.** { *; }",
-          "-dontwarn com.uzayrgaffar.qadhaapp.**"
-        ]
-      },
       config: {
-        keepConsistentProguardFile: true,
+        keepConsistentProguardFile: true
       },
       permissions: []
     },
@@ -49,9 +43,9 @@ export default {
             useFrameworks: "static"
           },
           android: {
-            enableProguardInReleaseBuilds: true,
+            enableProguardInReleaseBuilds: false,
             minifyEnabled: false, 
-            shrinkResources: false,  
+            shrinkResources: false
           }
         }
       ]
