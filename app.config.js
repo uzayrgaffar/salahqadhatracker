@@ -6,8 +6,8 @@ export default {
     icon: "./assets/icon.png",
     version: "1.0.0",
     userInterfaceStyle: "light",
-    jsEngine: "jsc",
     ios: {
+      jsEngine: "jsc",
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.qadhaapp",
       buildNumber: "3",
@@ -16,12 +16,13 @@ export default {
       }
     },
     android: {
+      jsEngine: "hermes",
       package: "com.uzayrgaffar.qadhaapp",
       versionCode: 6,
       buildGradle: {
         extraProguardOptions: [
-          "-keep class com.yourapp.** { *; }",
-          "-dontwarn com.yourapp.**"
+          "-keep class com.uzayrgaffar.qadhaapp.** { *; }",
+          "-dontwarn com.uzayrgaffar.qadhaapp.**"
         ]
       },
       config: {
@@ -49,8 +50,8 @@ export default {
           },
           android: {
             enableProguardInReleaseBuilds: true,
-            minifyEnabled: true,
-            shrinkResources: true,
+            minifyEnabled: false, 
+            shrinkResources: false,  
           }
         }
       ]

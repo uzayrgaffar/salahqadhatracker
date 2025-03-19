@@ -220,7 +220,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
-import { auth, db } from '../FirebaseConfig';
+import { auth } from '../FirebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 
@@ -230,23 +230,28 @@ const SelectLanguage = () => {
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
+    let isMounted = true;
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
+      if (user && isMounted) {
         setTimeout(() => {
-          navigation.replace("MainPages", { screen: "Daily Chart" });
+          navigation.replace("MainPages");
         }, 500);
       }
-      setLoading(false);
+      if (isMounted) setLoading(false);
     });
-  
+
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 2000,
       useNativeDriver: true,
     }).start();
-  
-    return () => unsubscribe();
-  }, [fadeAnim]);  
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [fadeAnim, navigation]);  
 
   if (loading) {
     return (
