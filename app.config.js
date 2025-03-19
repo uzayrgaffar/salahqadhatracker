@@ -17,7 +17,7 @@ export default {
     },
     android: {
       package: "com.uzayrgaffar.qadhaapp",
-      versionCode: 4,
+      versionCode: 5,
       buildGradle: {
         extraProguardOptions: [
           "-keep class com.yourapp.** { *; }",
