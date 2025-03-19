@@ -10,7 +10,7 @@ export default {
       jsEngine: "jsc",
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.qadhaapp",
-      buildNumber: "3",
+      buildNumber: "4",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       }
@@ -18,7 +18,7 @@ export default {
     android: {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.qadhaapp",
-      versionCode: 6,
+      versionCode: 7,
       buildGradle: {
         extraProguardOptions: [
           "-keep class com.uzayrgaffar.qadhaapp.** { *; }",
