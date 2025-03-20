@@ -121,13 +121,7 @@ const Login = () => {
       const userDoc = await getDoc(userDocRef);
   
       if (userDoc.exists()) {
-        const userData = userDoc.data();
-        
-        if (!userData.dob || !userData.madhab || userData.yearsMissed === undefined) {
-          navigation.replace("SetDOB");
-        } else {
-          navigation.replace("MainPages", { screen: "Daily Chart" });
-        }
+        navigation.replace("MainPages", { screen: "Daily Chart" });
       } else {
         await setDoc(userDocRef, {
           email: user.email,
@@ -199,8 +193,7 @@ const Login = () => {
               email: user.email,
               createdAt: Timestamp.now()
             });
-            
-            // Navigate directly to SetDOB for new users
+
             navigation.replace("SetDOB");
           } catch (error) {
             handleAuthError(error);
