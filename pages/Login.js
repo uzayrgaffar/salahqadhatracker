@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator,
 import { auth, db } from '../FirebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
-import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
+import { doc, setDoc, Timestamp } from "firebase/firestore";
 
 const Login = () => {
   const navigation = useNavigation();
@@ -11,22 +11,20 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Basic validation function
   const validateInputs = () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert("Input Error", "Email and password cannot be empty");
       return false;
     }
     
-    // Simple email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert("Input Error", "Please enter a valid email address");
       return false;
     }
     
-    // Password length validation
     if (password.length < 6) {
       Alert.alert("Input Error", "Password must be at least 6 characters long");
       return false;
@@ -36,12 +34,9 @@ const Login = () => {
   };
 
   const handleAuthError = (error) => {
-    console.log("Auth error:", error.code);
     let message = "Something went wrong. Please try again.";
     
-    // Authentication error codes
     switch (error.code) {
-      // Email-related errors
       case 'auth/invalid-email':
         message = "Invalid email format. Please enter a valid email address.";
         break;
@@ -56,8 +51,6 @@ const Login = () => {
         message = "This email is already registered. Please sign in instead.";
         setIsSignUp(false);
         break;
-      
-      // Password-related errors
       case 'auth/wrong-password':
         message = "Incorrect password. Please try again.";
         break;
@@ -67,16 +60,12 @@ const Login = () => {
       case 'auth/missing-password':
         message = "Please enter a password.";
         break;
-      
-      // Account-related errors
       case 'auth/account-exists-with-different-credential':
         message = "An account already exists with the same email but different sign-in credentials.";
         break;
       case 'auth/operation-not-allowed':
         message = "This operation is not allowed. Please contact support.";
         break;
-      
-      // Network and rate-limiting errors
       case 'auth/network-request-failed':
         message = "Network error. Please check your internet connection.";
         break;
@@ -86,27 +75,12 @@ const Login = () => {
       case 'auth/internal-error':
         message = "An internal error occurred. Please try again later.";
         break;
-        
-      // Timeout errors
       case 'auth/timeout':
         message = "The operation has timed out. Please try again.";
         break;
-        
-      // Other specific errors
       case 'auth/invalid-credential':
         message = "The authentication credential is invalid. Please try again.";
         break;
-      case 'auth/invalid-verification-code':
-        message = "The verification code is invalid. Please try again.";
-        break;
-      case 'auth/invalid-verification-id':
-        message = "The verification ID is invalid. Please try again.";
-        break;
-      case 'auth/requires-recent-login':
-        message = "This operation requires recent authentication. Please log in again.";
-        break;
-        
-      // Default case for any other errors
       default:
         message = `Authentication error (${error.code}). Please try again.`;
         break;
@@ -121,9 +95,7 @@ const Login = () => {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
       navigation.replace("MainPages", { screen: "Daily Chart" });
-      
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
         Alert.alert(
@@ -140,51 +112,49 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-};
+  };
 
   const signUp = async () => {
-  if (!validateInputs()) return;
+    if (!validateInputs()) return;
 
-  Alert.alert(
-    "Data Usage Consent",
-    "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties. You can review our Privacy Policy for more details.",
-    [
-      {
-        text: "Privacy Policy",
-        onPress: () => Linking.openURL("https://www.termsfeed.com/live/60b07c67-c303-41bc-9f7c-e39397a3fc1e"),
-      },
-      {
-        text: "Decline",
-        style: "cancel",
-        onPress: () => console.log("User declined consent"),
-      },
-      {
-        text: "Accept",
-        onPress: async () => {
-          setLoading(true);
-          try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            
-            // Create the user document
-            const userDocRef = doc(db, "users", user.uid);
-            await setDoc(userDocRef, {
-              email: user.email,
-              createdAt: Timestamp.now()
-            });
-
-            navigation.replace("SetDOB");
-          } catch (error) {
-            handleAuthError(error);
-          } finally {
-            setLoading(false);
-          }
+    Alert.alert(
+      "Data Usage Consent",
+      "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties. You can review our Privacy Policy for more details.",
+      [
+        {
+          text: "Privacy Policy",
+          onPress: () => Linking.openURL("https://www.termsfeed.com/live/60b07c67-c303-41bc-9f7c-e39397a3fc1e"),
         },
-      },
-    ]
-  );
-};
-  
+        {
+          text: "Decline",
+          style: "cancel",
+          onPress: () => console.log("User declined consent"),
+        },
+        {
+          text: "Accept",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+              const user = userCredential.user;
+              
+              const userDocRef = doc(db, "users", user.uid);
+              await setDoc(userDocRef, {
+                email: user.email,
+                createdAt: Timestamp.now()
+              });
+
+              navigation.replace("SetDOB");
+            } catch (error) {
+              handleAuthError(error);
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleSubmit = () => {
     if (isSignUp) {
@@ -209,16 +179,26 @@ const Login = () => {
           placeholderTextColor="#666666"
         />
         
-        <TextInput
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-          autoCapitalize="none"
-          placeholderTextColor="#666666"
-        />
-        
+        <View style={styles.passwordContainer}>
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            style={styles.input}
+            autoCapitalize="none"
+            placeholderTextColor="#666666"
+          />
+          <TouchableOpacity 
+            style={styles.toggleButton}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Text style={styles.toggleText}>
+              {showPassword ? "Hide" : "Show"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity 
           style={styles.signInButton} 
           onPress={handleSubmit} 
@@ -274,6 +254,21 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     fontSize: 16,
     color: "#333333",
+  },
+  passwordContainer: {
+    width: '100%',
+    position: 'relative',
+  },
+  toggleButton: {
+    position: 'absolute',
+    right: 15,
+    top: 22,
+    padding: 5,
+  },
+  toggleText: {
+    color: '#5CB390',
+    fontSize: 14,
+    fontWeight: '600',
   },
   signInButton: {
     backgroundColor: "#5CB390",
