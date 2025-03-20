@@ -1,15 +1,15 @@
 export default {
   owner: "uzayrgaffar",
   expo: {
-    name: "QadhaApp",
-    slug: "QadhaApp",
+    name: "iQadha",
+    slug: "iQadha",
     icon: "./assets/icon.png",
     version: "1.0.0",
     userInterfaceStyle: "light",
     ios: {
       jsEngine: "jsc",
       supportsTablet: true,
-      bundleIdentifier: "com.uzayrgaffar.qadhaapp",
+      bundleIdentifier: "com.uzayrgaffar.iqadha",
       buildNumber: "4",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
@@ -17,7 +17,7 @@ export default {
     },
     android: {
       jsEngine: "hermes",
-      package: "com.uzayrgaffar.qadhaapp",
+      package: "com.uzayrgaffar.iqadha",
       versionCode: 7,
       config: {
         keepConsistentProguardFile: true
