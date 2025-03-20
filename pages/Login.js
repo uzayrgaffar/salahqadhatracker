@@ -115,28 +115,6 @@ const Login = () => {
     Alert.alert("Authentication Error", message);
   };
 
-  const handleUserNavigation = async (user) => {
-    try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-  
-      if (userDoc.exists()) {
-        navigation.replace("MainPages", { screen: "Daily Chart" });
-      } else {
-        await setDoc(userDocRef, {
-          email: user.email,
-          createdAt: Timestamp.now()
-        });
-  
-        navigation.replace("SetDOB");
-      }
-    } catch (error) {
-      console.error("Navigation error:", error);
-      Alert.alert("Error", "Could not retrieve user data. Please try again.");
-    }
-  };
-  
-
   const signIn = async () => {
     if (!validateInputs()) return;
     
@@ -144,7 +122,8 @@ const Login = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      await handleUserNavigation(user);
+      navigation.replace("MainPages", { screen: "Daily Chart" });
+      
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
         Alert.alert(
@@ -161,7 +140,7 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
+};
 
   const signUp = async () => {
   if (!validateInputs()) return;
