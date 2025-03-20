@@ -170,39 +170,48 @@ const Login = () => {
   };
 
   const signUp = async () => {
-    if (!validateInputs()) return;
-  
-    Alert.alert(
-      "Data Usage Consent",
-      "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties. You can review our Privacy Policy for more details.",
-      [
-        {
-          text: "Privacy Policy",
-          onPress: () => Linking.openURL("https://www.termsfeed.com/live/60b07c67-c303-41bc-9f7c-e39397a3fc1e"),
+  if (!validateInputs()) return;
+
+  Alert.alert(
+    "Data Usage Consent",
+    "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties. You can review our Privacy Policy for more details.",
+    [
+      {
+        text: "Privacy Policy",
+        onPress: () => Linking.openURL("https://www.termsfeed.com/live/60b07c67-c303-41bc-9f7c-e39397a3fc1e"),
+      },
+      {
+        text: "Decline",
+        style: "cancel",
+        onPress: () => console.log("User declined consent"),
+      },
+      {
+        text: "Accept",
+        onPress: async () => {
+          setLoading(true);
+          try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            
+            // Create the user document
+            const userDocRef = doc(db, "users", user.uid);
+            await setDoc(userDocRef, {
+              email: user.email,
+              createdAt: Timestamp.now()
+            });
+            
+            // Navigate directly to SetDOB for new users
+            navigation.replace("SetDOB");
+          } catch (error) {
+            handleAuthError(error);
+          } finally {
+            setLoading(false);
+          }
         },
-        {
-          text: "Decline",
-          style: "cancel",
-          onPress: () => console.log("User declined consent"),
-        },
-        {
-          text: "Accept",
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-              const user = userCredential.user;
-              await handleUserNavigation(user);
-            } catch (error) {
-              handleAuthError(error);
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
+      },
+    ]
+  );
+};
   
 
   const handleSubmit = () => {
