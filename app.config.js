@@ -2,7 +2,7 @@ export default {
   owner: "uzayrgaffar",
   expo: {
     name: "iQadha",
-    slug: "iQadha",
+    slug: "QadhaApp",
     icon: "./assets/icon.png",
     version: "1.0.0",
     userInterfaceStyle: "light",
