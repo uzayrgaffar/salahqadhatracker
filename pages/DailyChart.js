@@ -269,6 +269,10 @@ const adjustTotalQadha = async (prayer, amount) => {
           <Icon name="calendar" size={20} color="#777777" />
         </TouchableOpacity>
 
+        <Text style={styles.description}>
+          Tap on a prayer to mark it as completed. You can log your Qadha prayers by selecting the "Pray Qadha" button
+        </Text>
+
         <View style={styles.prayersContainer}>
           {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
             <View key={prayer} style={styles.prayerWrapper}>
@@ -284,20 +288,6 @@ const adjustTotalQadha = async (prayer, amount) => {
                 >
                   {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
                 </Text>
-                {/* {prayerStates[selectedDate]?.[prayer] && (
-                  <View style={styles.counterContainer}>
-                  <Text style={styles.placeholder}>Qadha: </Text>
-                  <TextInput
-                    style={styles.counterInput}
-                    keyboardType="numeric"
-                    value={String(ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0)}
-                    onChangeText={(text) => {
-                    const newValue = parseInt(text, 10) || 0;
-                    adjustCount(prayer, newValue - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
-                    }}
-                  />
-                  </View>
-                )} */}
               </TouchableOpacity>
             </View>
           ))}
@@ -590,6 +580,14 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     width: 60,
     textAlign: "center",
+  },
+  description: {
+    textAlign: "center",
+    fontSize: 14,
+    color: "#777",
+    marginBottom: 10,
+    marginLeft: 5,
+    marginRight: 5,
   },
 })
 
