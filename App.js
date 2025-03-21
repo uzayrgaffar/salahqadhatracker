@@ -22,7 +22,7 @@ import Children from './pages/Children';
 import NumberOfChildren from './pages/NumberOfChildren';
 import { Text } from 'react-native';
 import PostNatal from './pages/PostNatal';
-import SignUp from './pages/Signup';
+import SignUp from './pages/SignUp';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
