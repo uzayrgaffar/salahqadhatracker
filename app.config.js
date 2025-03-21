@@ -18,7 +18,7 @@ export default {
     android: {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.iqadha",
-      versionCode: 8,
+      versionCode: 9,
       config: {
         keepConsistentProguardFile: true
       },
