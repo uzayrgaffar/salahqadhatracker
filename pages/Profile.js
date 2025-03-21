@@ -59,12 +59,7 @@ const Profile = () => {
   const showConfirmation = () => {
     Alert.alert(
       "Confirmation",
-      `You have selected:
-      
-      Gender: ${gender}
-      Madhab: ${madhab}
-      
-      You can change these selections later at any time. Are you sure you want to advance?`,
+      `Are you sure you want to reset your qadha salah?`,
       [
         { text: "Cancel", style: "cancel" },
         { text: "Confirm", onPress: () => navigation.navigate("SetQadhaSalah") }
@@ -90,7 +85,6 @@ const Profile = () => {
               const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
               const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
   
-              // Function to delete all documents in a subcollection
               const deleteCollection = async (collectionRef) => {
                 const querySnapshot = await getDocs(collectionRef);
                 const batch = writeBatch(db);
@@ -98,16 +92,9 @@ const Profile = () => {
                 await batch.commit();
               };
   
-              // Delete all daily prayers
               await deleteCollection(dailyPrayersRef);
-  
-              // Delete totalQadha/qadhaSummary document
               await deleteDoc(totalQadhaRef);
-  
-              // Delete user document
               await deleteDoc(userDocRef);
-  
-              // Delete user from Firebase Auth
               await deleteUser(user);
   
               Alert.alert("Account Deleted", "Your account and all data have been successfully deleted.");
@@ -125,14 +112,14 @@ const Profile = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.scrollView}>
+      <View style={styles.scrollView}>
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Profile</Text>
           </View>
           <View style={styles.content}>
-          <Text style={styles.emailText}>{email}</Text>
-            <View style={styles.section}>
+          <Text style={styles.emailText}>{email || "Anonymous Account"}</Text>
+            {/* <View style={styles.section}>
               <Text style={styles.sectionTitle}>Gender</Text>
               <View style={styles.optionsContainer}>
                 {["Male", "Female"].map((gen) => (
@@ -146,7 +133,7 @@ const Profile = () => {
                   </TouchableOpacity>
                 ))}
               </View>
-            </View>
+            </View> */}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Madhab</Text>
@@ -166,27 +153,29 @@ const Profile = () => {
 
             <TouchableOpacity
               style={[styles.qadhaButton, !(gender && madhab) && styles.disabledQadhaButton]}
-              disabled={!(gender && madhab)}
+              disabled={!(madhab)}
               onPress={showConfirmation}
             >
               <Text style={styles.qadhaButtonText}>Reset Qadha Salah</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.qadhaButton2}
-              onPress={() => {
-                Alert.alert(
-                  "Sign Out",
-                  "Are you sure you want to sign out?",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Yes", onPress: () => auth.signOut() }
-                  ]
-                )
-              }}
-            >
-              <Text style={styles.qadhaButtonText}>Sign Out</Text>
-            </TouchableOpacity>
+            {auth.currentUser && !auth.currentUser?.isAnonymous && (
+              <TouchableOpacity
+                style={styles.qadhaButton2}
+                onPress={() => {
+                  Alert.alert(
+                    "Sign Out",
+                    "Are you sure you want to sign out?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Yes", onPress: () => auth.signOut() }
+                    ]
+                  )
+                }}
+              >
+                <Text style={styles.qadhaButtonText}>Sign Out</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.qadhaButton3}
@@ -196,7 +185,7 @@ const Profile = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   )
 }
@@ -218,7 +207,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    paddingBottom: 600,
   },
   header: {
     paddingTop: 60,
@@ -315,4 +303,5 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 })
+
 export default Profile

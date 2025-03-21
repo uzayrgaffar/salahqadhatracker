@@ -1,7 +1,6 @@
-// SignUp.js
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView, Linking } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { auth, db } from '../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { doc, setDoc, Timestamp } from "firebase/firestore";
@@ -76,6 +75,7 @@ const SignUp = () => {
               
               const userDocRef = doc(db, "users", user.uid);
               await setDoc(userDocRef, {
+                isAnonymous: false,
                 email: user.email,
                 createdAt: Timestamp.now()
               });
@@ -85,6 +85,62 @@ const SignUp = () => {
             } catch (error) {
               handleAuthError(error);
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const signInAnonymouslyHandler = async () => {
+    Alert.alert(
+      "Data Usage Consent",
+      "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties. You can review our Privacy Policy for more details.",
+      [
+        {
+          text: "Privacy Policy",
+          onPress: () => Linking.openURL("https://www.termsfeed.com/live/60b07c67-c303-41bc-9f7c-e39397a3fc1e"),
+        },
+        {
+          text: "Decline",
+          style: "cancel",
+          onPress: () => console.log("User declined consent"),
+        },
+        {
+          text: "Accept",
+          onPress: () => {
+            Alert.alert(
+              "Anonymous Account Limitations",
+              "With an anonymous account, you cannot have multiple accounts on one device. Would you like to continue?",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel",
+                  onPress: () => console.log("User canceled anonymous sign-in"),
+                },
+                {
+                  text: "Continue",
+                  onPress: async () => {
+                    setLoading(true);
+                    try {
+                      const userCredential = await signInAnonymously(auth);
+                      const user = userCredential.user;
+  
+                      const userDocRef = doc(db, "users", user.uid);
+                      await setDoc(userDocRef, {
+                        isAnonymous: true,
+                        createdAt: Timestamp.now()
+                      });
+  
+                      setLoading(false);
+                      navigation.navigate("SetDOB");
+                    } catch (error) {
+                      setLoading(false);
+                      Alert.alert("Authentication Error", "Failed to sign in anonymously. Please try again.");
+                    }
+                  }
+                }
+              ]
+            );
           },
         },
       ]
@@ -125,13 +181,22 @@ const SignUp = () => {
             <Text style={styles.signInButtonText}>Create Account</Text>
           )}
         </TouchableOpacity>
-        
+
+        <TouchableOpacity 
+          style={styles.anonymousButton} 
+          onPress={signInAnonymouslyHandler} 
+          disabled={loading}
+        >
+          <Text style={styles.signInButtonText}>Continue Without Sign up</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity 
           style={styles.switchButton} 
           onPress={() => navigation.navigate('Login')}
         >
           <Text style={styles.switchButtonText}>Already have an account? Sign In</Text>
         </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );
@@ -174,6 +239,14 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
+  },
+  anonymousButton: {
+    backgroundColor: "#CCCCCC",
+    padding: 15,
+    borderRadius: 4,
+    marginVertical: 10,
+    width: "100%",
+    alignItems: "center",
   },
   switchButton: {
     marginTop: 15,
