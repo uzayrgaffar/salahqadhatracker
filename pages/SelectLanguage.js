@@ -39,7 +39,7 @@ const SelectLanguage = () => {
           const userData = userDocSnapshot.data();
           navigation.replace(userData.dob ? "MainPages" : "SetDOB");
         } else {
-          navigation.replace("MainPages");
+          navigation.replace("SetDOB");
         }
       } else {
         navigation.replace("Login");
