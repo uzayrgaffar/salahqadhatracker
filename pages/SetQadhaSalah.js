@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   bottomContainer: {
-    padding: 20,
+    paddingTop: 20,
     paddingBottom: 40,
     backgroundColor: "#5CB390",
     alignItems: "center",
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FBC742",
     paddingVertical: 12,
     paddingHorizontal: 40,
-    maxWidth: "45%",
+    // maxWidth: "45%",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
