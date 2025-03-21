@@ -81,7 +81,7 @@ const SignUp = () => {
               });
                 
               setLoading(false);
-              navigation.replace("SetDOB");
+              navigation.navigate("SetDOB");
             } catch (error) {
               handleAuthError(error);
             }

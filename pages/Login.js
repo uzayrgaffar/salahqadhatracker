@@ -54,7 +54,7 @@ const Login = () => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigation.replace("MainPages", { screen: "Daily Chart" });
+      navigation.navigate("MainPages", { screen: "Daily Chart" });
     } catch (error) {
       handleAuthError(error);
     } finally {
