@@ -22,6 +22,7 @@ import Children from './pages/Children';
 import NumberOfChildren from './pages/NumberOfChildren';
 import { Text } from 'react-native';
 import PostNatal from './pages/PostNatal';
+import SignUp from './pages/Signup';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -117,6 +118,7 @@ const App = () => {
         <Stack.Navigator>
           <Stack.Screen name="SelectLanguage" component={SelectLanguage} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
+          <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
           <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
           <Stack.Screen name="MainPages" component={MainPages} options={{ headerShown: false }} />
           <Stack.Screen name="SetQadhaSalah" component={SetQadhaSalah} options={{ headerShown: false }} />
