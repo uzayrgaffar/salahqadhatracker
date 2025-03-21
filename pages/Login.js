@@ -143,12 +143,11 @@ const Login = () => {
                 email: user.email,
                 createdAt: Timestamp.now()
               });
-
+                
+              setLoading(false);
               navigation.replace("SetDOB");
             } catch (error) {
               handleAuthError(error);
-            } finally {
-              setLoading(false);
             }
           },
         },
