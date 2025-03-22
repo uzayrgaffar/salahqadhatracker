@@ -10,6 +10,8 @@ const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const validateInputs = () => {
@@ -168,23 +170,43 @@ const SignUp = () => {
           keyboardType="email-address"
         />
         
-        <TextInput
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-          autoCapitalize="none"
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            style={styles.passwordInput}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity 
+            style={styles.toggleButton} 
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Text style={styles.toggleButtonText}>
+              {showPassword ? 'Hide' : 'Show'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        <TextInput
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          style={styles.input}
-          autoCapitalize="none"
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!showConfirmPassword}
+            style={styles.passwordInput}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity 
+            style={styles.toggleButton} 
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Text style={styles.toggleButtonText}>
+              {showConfirmPassword ? 'Hide' : 'Show'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity 
           style={styles.signInButton} 
@@ -242,6 +264,32 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     padding: 15,
     borderRadius: 4,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    height: 50,
+    borderColor: "#5CB390",
+    borderWidth: 1,
+    marginVertical: 10,
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    padding: 15,
+  },
+  toggleButton: {
+    paddingHorizontal: 15,
+    height: '100%',
+    justifyContent: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: "#5CB390",
+  },
+  toggleButtonText: {
+    color: "#5CB390",
+    fontWeight: "600",
   },
   signInButton: {
     backgroundColor: "#5CB390",
