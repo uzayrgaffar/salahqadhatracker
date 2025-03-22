@@ -110,7 +110,7 @@ const SignUp = () => {
           onPress: () => {
             Alert.alert(
               "Anonymous Account Limitations",
-              "With an anonymous account, you cannot have multiple accounts on one device. Would you like to continue?",
+              "With an anonymous account, you cannot have multiple accounts on this device. Would you like to continue?",
               [
                 {
                   text: "Cancel",
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   anonymousButton: {
-    backgroundColor: "#CCCCCC",
+    backgroundColor: "#FBC742",
     padding: 15,
     borderRadius: 4,
     marginVertical: 10,
