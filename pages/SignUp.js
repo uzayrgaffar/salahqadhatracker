@@ -9,11 +9,12 @@ const SignUp = () => {
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const validateInputs = () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Input Error", "Email and password cannot be empty");
+    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+      Alert.alert("Input Error", "Email, password, and confirm password cannot be empty");
       return false;
     }
     
@@ -25,6 +26,11 @@ const SignUp = () => {
     
     if (password.length < 6) {
       Alert.alert("Input Error", "Password must be at least 6 characters long");
+      return false;
+    }
+    
+    if (password !== confirmPassword) {
+      Alert.alert("Input Error", "Passwords do not match");
       return false;
     }
     
@@ -83,6 +89,7 @@ const SignUp = () => {
               setLoading(false);
               navigation.navigate("SetDOB");
             } catch (error) {
+              setLoading(false);
               handleAuthError(error);
             }
           },
@@ -165,6 +172,15 @@ const SignUp = () => {
           placeholder="Password"
           value={password}
           onChangeText={setPassword}
+          secureTextEntry
+          style={styles.input}
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
           secureTextEntry
           style={styles.input}
           autoCapitalize="none"
