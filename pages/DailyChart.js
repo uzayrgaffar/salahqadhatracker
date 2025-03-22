@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, TextInput, ScrollView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, TextInput, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from "react-native"
 import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
 import moment from "moment"
@@ -351,41 +351,50 @@ const adjustTotalQadha = async (prayer, amount) => {
         animationType="fade"
         onRequestClose={() => setIsQadhaModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Qadha Salah</Text>
-            <Text style={styles.modalText}>
-              Select the number of qadha salah you want to pray for the selected date
-            </Text>
-
-            {/* Qadha Counters */}
-            <View style={styles.qadhaCountersContainer}>
-              {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
-                <View key={prayer} style={styles.qadhaCounterWrapper}>
-                  <Text style={styles.qadhaCounterLabel}>
-                    {prayer.charAt(0).toUpperCase() + prayer.slice(1)}:
-                  </Text>
-                  <TextInput
-                    style={styles.qadhaCounterInput}
-                    keyboardType="numeric"
-                    value={String(ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0)}
-                    onChangeText={(text) => {
-                      const newValue = parseInt(text, 10) || 0;
-                      adjustCount(prayer, newValue - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
-                    }}
-                  />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Qadha Salah</Text>
+              <Text style={styles.modalText}>
+                Select the number of qadha salah you want to pray for the selected date
+              </Text>
+        
+              <ScrollView>
+                <View style={styles.qadhaCountersContainer}>
+                  {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
+                    <View key={prayer} style={styles.qadhaCounterWrapper}>
+                      <Text style={styles.qadhaCounterLabel}>
+                        {prayer.charAt(0).toUpperCase() + prayer.slice(1)}:
+                      </Text>
+                      <TextInput
+                        style={styles.qadhaCounterInput}
+                        keyboardType="numeric"
+                        value={String(ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0)}
+                        onChangeText={(text) => {
+                          const newValue = parseInt(text, 10) || 0;
+                          adjustCount(prayer, newValue - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0));
+                        }}
+                      />
+                    </View>
+                  ))}
                 </View>
-              ))}
+              </ScrollView>
+        
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setIsQadhaModalVisible(false);
+                }}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setIsQadhaModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
     </View>
@@ -585,7 +594,7 @@ const styles = StyleSheet.create({
   description: {
     textAlign: "center",
     fontSize: 14,
-    color: "#777",
+    color: "#777777",
     marginBottom: 10,
     marginLeft: 5,
     marginRight: 5,
