@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   confirmButtonText: {
-    color: "#EEEEEE",
+    color: "#FFFFFF",
     fontSize: 24,
     fontWeight: "600",
   },

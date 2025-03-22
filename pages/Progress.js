@@ -251,7 +251,10 @@ const Progress = () => {
             <Text style={styles.summaryTitle}>Summary (Last 14 days)</Text>
             <Text style={styles.summaryText}>Total Qadha Prayed: {totalQadhaPrayed}</Text>
             <Text style={styles.summaryText}>Average Qadha per Day: {averageQadhaPerDay}</Text>
-            <Text style={styles.summaryText}>Estimated Completion: {daysToFinish} days {yearsToFinish}</Text>
+            <Text style={styles.summaryText}>
+              {totalRemainingPrayers === 0 ? "MashaAllah! You are all caught up with your Qadha salah! 🎉" : `Estimated Completion: ${daysToFinish} days ${yearsToFinish}`}
+            </Text>
+
           </View>
           
           <View style={styles.summaryContainer}>

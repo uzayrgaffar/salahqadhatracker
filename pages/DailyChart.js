@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, TextInput } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, TextInput, ScrollView } from "react-native"
 import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
 import moment from "moment"
@@ -170,7 +170,7 @@ const DailyChart = () => {
 };
 
 const adjustTotalQadha = async (prayer, amount) => {
-    const totalQadhaRef = doc(db, "users", userId, "totalQadha/qadhaSummary");
+    const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
     const totalQadhaSnap = await getDoc(totalQadhaRef);
 
     if (totalQadhaSnap.exists()) {
@@ -204,7 +204,7 @@ const adjustTotalQadha = async (prayer, amount) => {
       [`counts.${prayer}`]: newCount,
     });
   
-    const totalQadhaRef = doc(db, "users", userId, "totalQadha/qadhaSummary");
+    const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
     const totalQadhaSnap = await getDoc(totalQadhaRef);
   
     if (totalQadhaSnap.exists()) {
@@ -263,7 +263,7 @@ const adjustTotalQadha = async (prayer, amount) => {
         <Text style={styles.headerTitle}>Daily Chart</Text>
       </View>
 
-      <View style={styles.card}>
+      <ScrollView style={styles.card}>
         <TouchableOpacity style={styles.dateButton} onPress={() => setIsModalVisible(true)}>
           <Text style={styles.dateButtonText}>{moment(selectedDate).format("MMMM D, YYYY")}</Text>
           <Icon name="calendar" size={20} color="#777777" />
@@ -295,7 +295,7 @@ const adjustTotalQadha = async (prayer, amount) => {
         <TouchableOpacity style={styles.prayQadhaButton} onPress={() => setIsQadhaModalVisible(true)}>
           <Text style={styles.prayQadhaButtonText}>Pray Qadha</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       <Modal
         visible={isModalVisible}
@@ -536,6 +536,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 5,
+    marginBottom: 40,
   },
   prayQadhaButtonText: {
     fontSize: 18,
