@@ -170,7 +170,7 @@ export const SetQadhaSalah = () => {
         }
 
         console.log("Qadha Salah data saved successfully!")
-        navigation.navigate("MainPages", { screen: "Daily Chart" })
+        navigation.replace("MainPages", { screen: "Daily Chart" })
       } else {
         Alert.alert("Error", "You need to be logged in to save your data.")
       }

@@ -29,7 +29,7 @@ const Profile = () => {
           }
         })
       } else {
-        navigation.navigate("SelectLanguage")
+        navigation.replace("SelectLanguage")
       }
     })
 
@@ -98,7 +98,7 @@ const Profile = () => {
               await deleteUser(user);
   
               Alert.alert("Account Deleted", "Your account and all data have been successfully deleted.");
-              navigation.navigate("SelectLanguage");
+              navigation.replace("SelectLanguage");
             } catch (error) {
               console.error("Error deleting account:", error);
               Alert.alert("Error", "Failed to delete account. Please try again.");

@@ -76,7 +76,7 @@ const MadhabSelection = () => {
         }
   
         console.log("All prayers set to 0 for user with no missed years.");
-        navigation.navigate("MainPages", { screen: "Daily Chart" });
+        navigation.replace("MainPages", { screen: "Daily Chart" });
       } else {
         navigation.navigate("SetQadhaSalah");
       }

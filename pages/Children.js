@@ -22,7 +22,6 @@ const Children = () => {
         // Convert selection to a boolean
         const hadChildrenBeforeSalah = selectedOption !== "No";
 
-        // Navigate based on user selection
         if (!hadChildrenBeforeSalah) {
             navigation.navigate("YearsMissed");
         } else {

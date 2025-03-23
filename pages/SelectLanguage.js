@@ -37,7 +37,7 @@ const SelectLanguage = () => {
 
         if (userDocSnapshot.exists()) {
           const userData = userDocSnapshot.data();
-          navigation.replace(userData.dob && userData.yearsMissed ? "MainPages" : "SetDOB");
+          navigation.replace(userData.dob && userData.yearsMissed !== undefined ? "MainPages" : "SetDOB");
         } else {
           navigation.replace("SetDOB");
         }

@@ -89,7 +89,7 @@ const SignUp = () => {
               });
                 
               setLoading(false);
-              navigation.navigate("SetDOB");
+              navigation.replace("SetDOB");
             } catch (error) {
               setLoading(false);
               handleAuthError(error);
@@ -141,7 +141,7 @@ const SignUp = () => {
                       });
   
                       setLoading(false);
-                      navigation.navigate("SetDOB");
+                      navigation.replace("SetDOB");
                     } catch (error) {
                       setLoading(false);
                       Alert.alert("Authentication Error", "Failed to sign in anonymously. Please try again.");
