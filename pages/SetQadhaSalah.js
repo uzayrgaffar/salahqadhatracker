@@ -199,7 +199,7 @@ export const SetQadhaSalah = () => {
           Jummah: "Jummah",
           OnlyRamadan: "Only Ramadan",
           None: "None of the Above",
-          question: "Which Salah did you pray regularly?",
+          question: "During the years you missed Salah, which prayers did you regularly perform?",
           confirm: "Confirm",
         }[text]
     }

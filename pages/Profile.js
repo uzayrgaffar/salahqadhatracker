@@ -59,10 +59,10 @@ const Profile = () => {
   const showConfirmation = () => {
     Alert.alert(
       "Confirmation",
-      `Are you sure you want to reset your qadha salah?`,
+      `Are you sure you want to setup your account again?`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => navigation.navigate("SetQadhaSalah") }
+        { text: "Confirm", onPress: () => navigation.navigate("SetDOB") }
       ]
     )
   }
@@ -156,7 +156,7 @@ const Profile = () => {
               disabled={!(madhab)}
               onPress={showConfirmation}
             >
-              <Text style={styles.qadhaButtonText}>Reset Qadha Salah</Text>
+              <Text style={styles.qadhaButtonText}>Reset Account Setup</Text>
             </TouchableOpacity>
 
             {auth.currentUser && !auth.currentUser?.isAnonymous && (
