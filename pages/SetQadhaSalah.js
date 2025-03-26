@@ -170,7 +170,7 @@ export const SetQadhaSalah = () => {
         }
 
         console.log("Qadha Salah data saved successfully!")
-        navigation.replace("MainPages", { screen: "Daily Chart" })
+        navigation.navigate("Totals")
       } else {
         Alert.alert("Error", "You need to be logged in to save your data.")
       }
@@ -310,7 +310,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FBC742",
     paddingVertical: 12,
     paddingHorizontal: 40,
-    // maxWidth: "45%",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",

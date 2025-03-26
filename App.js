@@ -6,7 +6,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { AppProvider, AppContext } from './AppContext';
 import SelectLanguage from './pages/SelectLanguage';
 import Login from './pages/Login';
-import Home from './pages/Home';
 import Forum from './pages/Forum';
 import Profile from './pages/Profile';
 import SetQadhaSalah from './pages/SetQadhaSalah';
@@ -23,6 +22,7 @@ import NumberOfChildren from './pages/NumberOfChildren';
 import { Text } from 'react-native';
 import PostNatal from './pages/PostNatal';
 import SignUp from './pages/SignUp';
+import Totals from './pages/Totals';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -73,8 +73,8 @@ const MainPages = () => {
             iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           } else if (route.name === 'FAQ') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          } else if (route.name === 'Profile') {  // Profile tab, but labeled as Settings
-            iconName = focused ? 'settings' : 'settings-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
           } else if (route.name === 'About') {
             iconName = focused ? 'information-circle' : 'information-circle-outline';
           } else if (route.name === 'Progress') {
@@ -119,7 +119,6 @@ const App = () => {
           <Stack.Screen name="SelectLanguage" component={SelectLanguage} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
           <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
-          <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
           <Stack.Screen name="MainPages" component={MainPages} options={{ headerShown: false }} />
           <Stack.Screen name="SetQadhaSalah" component={SetQadhaSalah} options={{ headerShown: false }} />
           <Stack.Screen name="SetDOB" component={SetDOB} options={{ headerShown: false }} />
@@ -131,6 +130,7 @@ const App = () => {
           <Stack.Screen name="PostNatal" component={PostNatal} options={{ headerShown: false }} />
           <Stack.Screen name="YearsMissed" component={YearsMissed} options={{ headerShown: false }} />
           <Stack.Screen name="Progress" component={Progress} options={{ headerShown: false }}/>
+          <Stack.Screen name="Totals" component={Totals} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
     </AppProvider>

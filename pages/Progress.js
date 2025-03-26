@@ -1,12 +1,15 @@
 import { useState, useEffect, useContext } from "react"
-import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView } from "react-native"
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView, TouchableOpacity } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
 import { doc, collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db, auth } from '../FirebaseConfig'
 import { AppContext } from "../AppContext"
+import { useNavigation } from "@react-navigation/native"
 
 const Progress = () => {
+  const navigation = useNavigation()
+
   const [userData, setUserData] = useState(null)
   const [dailyPrayerCounts, setDailyPrayerCounts] = useState({})
   const [loading, setLoading] = useState(true)
@@ -268,6 +271,10 @@ const Progress = () => {
             <Text style={styles.summaryText}>Total Remaining Qadha: {totalRemainingPrayers}</Text>
           </View>
 
+          <TouchableOpacity style={styles.totalQadhaButton} onPress={() => {navigation.navigate('Totals')}} >
+            <Text style={styles.totalQadhaButtonText}>Adjust Total Qadha</Text>
+          </TouchableOpacity>
+
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -354,6 +361,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     marginBottom: 8,
+  },
+  totalQadhaButton: {
+    backgroundColor: "#FBC742",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 80,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 5,
+  },
+  totalQadhaButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
   },
 })
 

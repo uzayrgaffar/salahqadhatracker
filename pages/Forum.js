@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   questionContainerExpanded: {
-    backgroundColor: "#4BD4A2",
+    backgroundColor: "#5cb390",
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },

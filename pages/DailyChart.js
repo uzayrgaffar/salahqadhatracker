@@ -228,20 +228,20 @@ const adjustTotalQadha = async (prayer, amount) => {
       const selectedCount = Object.values(selectedPrayers).filter((value) => value).length
       const color =
         selectedCount === 0
-          ? "#FF0000"
+          ? "#000000"
           : selectedCount === 1
-            ? "#FF3300"
+            ? "#D32F2F"
             : selectedCount === 2
-              ? "#FF6600"
+              ? "#F44336"
               : selectedCount === 3
-                ? "#FF9900"
+                ? "#FF9800"
                 : selectedCount === 4
-                  ? "#FFCC00"
+                  ? "#8BC34A"
                   : selectedCount === 5
-                    ? "#CCFF00"
+                    ? "#4CAF50"
                     : selectedCount === 6
-                      ? "#00FF00"
-                      : "#00FF00"
+                      ? "#00897B"
+                      : "#000000"
 
       markedDates[date] = {
         customStyles: {
