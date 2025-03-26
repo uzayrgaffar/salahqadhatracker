@@ -1,37 +1,36 @@
-import { useState, useEffect, useContext } from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView, TouchableOpacity, TextInput, Modal } from "react-native";
-import { LineChart } from "react-native-chart-kit";
-import moment from "moment";
-import { doc, collection, query, orderBy, onSnapshot, updateDoc } from "firebase/firestore";
-import { db, auth } from "../FirebaseConfig";
-import { AppContext } from "../AppContext";
-import { useNavigation } from "@react-navigation/native";
+import { useState, useEffect, useContext } from "react"
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView, TouchableOpacity } from "react-native"
+import { LineChart } from "react-native-chart-kit"
+import moment from "moment"
+import { doc, collection, query, orderBy, onSnapshot } from 'firebase/firestore'
+import { db, auth } from '../FirebaseConfig'
+import { AppContext } from "../AppContext"
+import { useNavigation } from "@react-navigation/native"
 
 const Progress = () => {
-  const navigation = useNavigation();
-  const [userData, setUserData] = useState(null);
-  const [dailyPrayerCounts, setDailyPrayerCounts] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { madhab } = useContext(AppContext);
-  const [editingTarget, setEditingTarget] = useState(false);
-  const [newTarget, setNewTarget] = useState("");
+  const navigation = useNavigation()
 
+  const [userData, setUserData] = useState(null)
+  const [dailyPrayerCounts, setDailyPrayerCounts] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const {madhab} = useContext(AppContext)
+  
   useEffect(() => {
     const userId = auth.currentUser?.uid;
     if (!userId) {
       setLoading(false);
       return;
     }
-
+  
     const userDocRef = doc(db, "users", userId);
     const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
     const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
     const historyQuery = query(dailyPrayersRef, orderBy("__name__", "asc"));
-
+  
     let fetchedUserData = {};
     let fetchedHistory = {};
-
+  
     const unsubscribeUser = onSnapshot(
       userDocRef,
       (docSnap) => {
@@ -45,7 +44,7 @@ const Progress = () => {
         setError(error.message);
       }
     );
-
+  
     const unsubscribeQadha = onSnapshot(
       totalQadhaRef,
       (docSnap) => {
@@ -59,24 +58,24 @@ const Progress = () => {
         setError(error.message);
       }
     );
-
+  
     const unsubscribeHistory = onSnapshot(
       historyQuery,
       (querySnapshot) => {
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data();
           const date = docSnap.id;
-
+  
           fetchedHistory[date] = {
             fajr: data.counts?.fajr || 0,
             dhuhr: data.counts?.dhuhr || 0,
             asr: data.counts?.asr || 0,
             maghrib: data.counts?.maghrib || 0,
             isha: data.counts?.isha || 0,
-            witr: data.counts?.witr || 0,
+            witr: data.counts?.witr || 0
           };
         });
-
+  
         setDailyPrayerCounts(fetchedHistory);
         setLoading(false);
       },
@@ -86,82 +85,30 @@ const Progress = () => {
         setLoading(false);
       }
     );
-
+  
     return () => {
       unsubscribeUser();
       unsubscribeQadha();
       unsubscribeHistory();
     };
-  }, []);
+  }, []);    
 
   const generateDates = () => {
-    const dates = [];
+    const dates = []
     for (let i = 0; i < 14; i++) {
-      dates.push(moment().subtract(i, "days").format("YYYY-MM-DD"));
+      dates.push(moment().subtract(i, "days").format("YYYY-MM-DD"))
     }
-    return dates.reverse();
-  };
+    return dates.reverse()
+  }
 
-  const dates = generateDates();
+  const dates = generateDates()
 
   const getPrayerCounts = () => {
     return dates.map((date) => {
-      const counts = dailyPrayerCounts[date] || {
-        fajr: 0,
-        dhuhr: 0,
-        asr: 0,
-        maghrib: 0,
-        isha: 0,
-        witr: 0,
-      };
-      return Object.values(counts).reduce((total, count) => total + count, 0);
-    });
-  };
-
-  const handleSaveTarget = async () => {
-    const userId = auth.currentUser?.uid;
-    if (!userId) return;
-
-    const target = parseInt(newTarget, 10);
-    if (isNaN(target) || target <= 0) {
-      alert("Please enter a valid number of days");
-      return;
-    }
-
-    try {
-      await updateDoc(doc(db, "users", userId), {
-        targetDays: target,
-      });
-      setEditingTarget(false);
-      setNewTarget("");
-    } catch (error) {
-      console.error("Error updating target: ", error);
-      alert("Failed to update target");
-    }
-  };
-
-  const renderTargetStatus = () => {
-    if (!userData?.targetDays || totalRemainingPrayers === 0) return null;
-
-    const requiredDaily = totalRemainingPrayers / userData.targetDays;
-    const currentAverage = parseFloat(averageQadhaPerDay);
-    const difference = requiredDaily - currentAverage;
-
-    if (difference <= 0) {
-      return (
-        <Text style={[styles.summaryText, styles.successText]}>
-          On track to meet your {userData.targetDays}-day target! 🎉
-        </Text>
-      );
-    }
-
-    return (
-      <Text style={[styles.summaryText, styles.warningText]}>
-        To meet your {userData.targetDays}-day target, you need to pray{" "}
-        {difference.toFixed(2)} more daily
-      </Text>
-    );
-  };
+      const counts = dailyPrayerCounts[date] || { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 }
+      return Object.values(counts).reduce((total, count) => total + count, 0)
+    })
+  }
 
   if (loading) {
     return (
@@ -176,7 +123,7 @@ const Progress = () => {
           </View>
         </View>
       </SafeAreaView>
-    );
+    )
   }
 
   if (error) {
@@ -192,7 +139,7 @@ const Progress = () => {
           </View>
         </View>
       </SafeAreaView>
-    );
+    )
   }
 
   if (!userData) {
@@ -208,26 +155,25 @@ const Progress = () => {
           </View>
         </View>
       </SafeAreaView>
-    );
+    )
   }
 
-  const prayerCounts = getPrayerCounts();
-  const totalQadhaPrayed = prayerCounts.reduce((sum, count) => sum + count, 0);
-  const averageQadhaPerDay =
-    totalQadhaPrayed > 0 ? (totalQadhaPrayed / 14).toFixed(2) : "0.00";
-
-  const fajrCount = userData.fajr || 0;
-  const dhuhrCount = userData.dhuhr || 0;
-  const asrCount = userData.asr || 0;
-  const maghribCount = userData.maghrib || 0;
-  const ishaCount = userData.isha || 0;
-  const witrCount = userData.witr || 0;
-
-  let totalRemainingPrayers = fajrCount + dhuhrCount + asrCount + maghribCount + ishaCount;
+  const prayerCounts = getPrayerCounts()
+  const totalQadhaPrayed = prayerCounts.reduce((sum, count) => sum + count, 0)
+  const averageQadhaPerDay = totalQadhaPrayed > 0 ? (totalQadhaPrayed / 14).toFixed(2) : "0.00"
+  
+  const fajrCount = userData.fajr || 0
+  const dhuhrCount = userData.dhuhr || 0
+  const asrCount = userData.asr || 0
+  const maghribCount = userData.maghrib || 0
+  const ishaCount = userData.isha || 0
+  const witrCount = userData.witr || 0
+  
+  let totalRemainingPrayers = fajrCount + dhuhrCount + asrCount + maghribCount + ishaCount
   if (madhab === "Hanafi") {
-    totalRemainingPrayers += witrCount;
+    totalRemainingPrayers += witrCount
   }
-
+  
   let daysToFinish = "∞";
   if (parseFloat(averageQadhaPerDay) > 0) {
     const days = Math.ceil(totalRemainingPrayers / parseFloat(averageQadhaPerDay));
@@ -245,35 +191,6 @@ const Progress = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Modal visible={editingTarget} transparent animationType="slide">
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Set Completion Target</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter target in days"
-                keyboardType="numeric"
-                value={newTarget}
-                onChangeText={setNewTarget}
-              />
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setEditingTarget(false)}
-                >
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.saveButton]}
-                  onPress={handleSaveTarget}
-                >
-                  <Text style={styles.buttonText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Progress</Text>
         </View>
@@ -327,58 +244,29 @@ const Progress = () => {
 
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryTitle}>Summary (Last 14 days)</Text>
+            <Text style={styles.summaryText}>Total Qadha Prayed: {totalQadhaPrayed}</Text>
+            <Text style={styles.summaryText}>Average Qadha per Day: {averageQadhaPerDay}</Text>
             <Text style={styles.summaryText}>
               {totalRemainingPrayers === 0 ? "MashaAllah! You are all caught up with your Qadha salah! 🎉" : `Estimated Completion: ${daysToFinish} days ${yearsToFinish}`}
             </Text>
-            <Text style={styles.summaryText}>
-              Average Qadha per Day: {averageQadhaPerDay}
-            </Text>
-            <Text style={styles.summaryText}>
-              {totalRemainingPrayers === 0
-                ? "MashaAllah! You are all caught up with your Qadha salah! 🎉"
-                : `Estimated Completion: ${daysToFinish} days ${yearsToFinish}`}
-            </Text>
-          </View>
 
+          </View>
+          
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryTitle}>Breakdown</Text>
             <Text style={styles.summaryText}>
               Fajr: {fajrCount} | Dhuhr: {dhuhrCount} | Asr: {asrCount}
             </Text>
             <Text style={styles.summaryText}>
-              Maghrib: {maghribCount} | Isha: {ishaCount}{" "}
-              {madhab === "Hanafi" ? `| Witr: ${witrCount}` : ""}
+              Maghrib: {maghribCount} | Isha: {ishaCount} {madhab === "Hanafi" ? `| Witr: ${witrCount}` : ""}
             </Text>
-            <Text style={styles.summaryText}>
-              Total Remaining Qadha: {totalRemainingPrayers}
-            </Text>
-          </View>
-
-          <View style={styles.summaryContainer}>
-            <View style={styles.targetHeader}>
-              <Text style={styles.summaryTitle}>Completion Target</Text>
-              <TouchableOpacity
-                onPress={() => setEditingTarget(true)}
-                style={styles.targetButton}
-              >
-                <Text style={styles.targetButtonText}>
-                  {userData?.targetDays ? "Edit" : "Set Target"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {userData?.targetDays && (
-              <Text style={styles.summaryText}>
-                Current Target: {userData.targetDays} days
-              </Text>
-            )}
-
-            {renderTargetStatus()}
+            <Text style={styles.summaryText}>Total Remaining Qadha: {totalRemainingPrayers}</Text>
           </View>
 
           <TouchableOpacity style={styles.totalQadhaButton} onPress={() => {navigation.navigate('Totals')}} >
             <Text style={styles.totalQadhaButtonText}>Adjust Total Qadha</Text>
           </TouchableOpacity>
+
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -483,76 +371,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
   },
-  targetHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  targetButton: {
-    backgroundColor: "#E8F5E9",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  targetButtonText: {
-    color: "#2E7D32",
-    fontWeight: "600",
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 16,
-    width: "80%",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: "#EEEEEE",
-  },
-  saveButton: {
-    backgroundColor: "#5CB390",
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
-  },
-  successText: {
-    color: "#2E7D32",
-    marginTop: 8,
-  },
-  warningText: {
-    color: "#D32F2F",
-    marginTop: 8,
-  },
-});
+})
 
-export default Progress;
+export default Progress
