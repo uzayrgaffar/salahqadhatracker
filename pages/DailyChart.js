@@ -5,24 +5,18 @@ import { AppContext } from "../AppContext"
 import moment from "moment"
 import Icon from "react-native-vector-icons/FontAwesome"
 import { getAuth } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../FirebaseConfig";
 
 const { height } = Dimensions.get("window")
 
 const DailyChart = () => {
   const {
-    fajr,
     setFajr,
-    dhuhr,
     setDhuhr,
-    asr,
     setAsr,
-    maghrib,
     setMaghrib,
-    isha,
     setIsha,
-    witr,
     setWitr,
     madhab,
     setMadhab,
@@ -110,6 +104,22 @@ const DailyChart = () => {
     };
   
     fetchPrayerCounts();
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      const fetchAllPrayerData = async () => {
+        const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
+        const querySnapshot = await getDocs(dailyPrayersRef);
+        const allPrayerStates = {};
+        querySnapshot.forEach((doc) => {
+          const date = doc.id;
+          allPrayerStates[date] = doc.data().prayers;
+        });
+        setPrayerStates(allPrayerStates);
+      };
+      fetchAllPrayerData();
+    }
   }, [userId]);
   
   const handleDateSelect = (date) => {
@@ -338,6 +348,27 @@ const adjustTotalQadha = async (prayer, amount) => {
                 textDayHeaderFontSize: 16,
               }}
             />
+
+            <View style={styles.colorKeyContainer}>
+              {/* <Text style={styles.colorKeyTitle}>Prayer Completion Key:</Text> */}
+              <View style={styles.colorKeyRow}>
+                {[
+                  { color: "#000000", label: "0 prayers" },
+                  { color: "#D32F2F", label: "1 prayer" },
+                  { color: "#F44336", label: "2 prayers" },
+                  { color: "#FF9800", label: "3 prayers" },
+                  { color: "#8BC34A", label: "4 prayers" },
+                  { color: "#4CAF50", label: "5 prayers" },
+                  { color: "#00897B", label: "6 prayers" },
+                ].map((item) => (
+                <View key={item.color} style={styles.colorKeyItem}>
+                  <View style={[styles.colorBox, { backgroundColor: item.color }]} />
+                    <Text style={styles.colorKeyText}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
             <TouchableOpacity style={styles.closeButton} onPress={() => setIsModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
@@ -599,6 +630,33 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     marginRight: 5,
   },
+  colorKeyContainer: {
+  marginTop: 15,
+  padding: 10,
+  backgroundColor: "#f5f5f5",
+  borderRadius: 8,
+},
+colorKeyRow: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: 10,
+},
+colorKeyItem: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginRight: 12,
+  marginBottom: 6,
+},
+colorBox: {
+  width: 20,
+  height: 20,
+  borderRadius: 10,
+  marginRight: 4,
+},
+colorKeyText: {
+  fontSize: 14,
+  color: "#666666",
+},
 })
 
 export default DailyChart
