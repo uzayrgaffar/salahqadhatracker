@@ -350,7 +350,6 @@ const adjustTotalQadha = async (prayer, amount) => {
             />
 
             <View style={styles.colorKeyContainer}>
-              {/* <Text style={styles.colorKeyTitle}>Prayer Completion Key:</Text> */}
               <View style={styles.colorKeyRow}>
                 {[
                   { color: "#000000", label: "0 prayers" },
@@ -359,10 +358,10 @@ const adjustTotalQadha = async (prayer, amount) => {
                   { color: "#FF9800", label: "3 prayers" },
                   { color: "#8BC34A", label: "4 prayers" },
                   { color: "#4CAF50", label: "5 prayers" },
-                  { color: "#00897B", label: "6 prayers" },
+                  ...(madhab === "Hanafi" ? [{ color: "#00897B", label: "6 prayers" }] : []),
                 ].map((item) => (
-                <View key={item.color} style={styles.colorKeyItem}>
-                  <View style={[styles.colorBox, { backgroundColor: item.color }]} />
+                  <View key={item.color} style={styles.colorKeyItem}>
+                    <View style={[styles.colorBox, { backgroundColor: item.color }]} />
                     <Text style={styles.colorKeyText}>{item.label}</Text>
                   </View>
                 ))}
