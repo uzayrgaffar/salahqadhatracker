@@ -4,13 +4,17 @@ export default {
     name: "iQadha",
     slug: "QadhaApp",
     icon: "./assets/icon.png",
+    adaptiveIcon: {
+      foregroundImage: "./assets/adaptive-icon.png",
+      backgroundColor: "#ffffff"
+    },
     version: "1.0.2",
     userInterfaceStyle: "light",
     ios: {
       jsEngine: "jsc",
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.iqadha",
-      buildNumber: "8",
+      buildNumber: "9",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       }
@@ -18,7 +22,7 @@ export default {
     android: {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.iqadha",
-      versionCode: 3,
+      versionCode: 4,
       config: {
         keepConsistentProguardFile: true
       },
@@ -27,8 +31,7 @@ export default {
     splash: {
       image: "./assets/splash.png",
       backgroundColor: "#ffffff",
-      resizeMode: "contain",
-      alignItems: "center"
+      resizeMode: "cover"
     },
     extra: {
       eas: {

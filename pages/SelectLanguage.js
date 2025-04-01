@@ -20,7 +20,7 @@ const SelectLanguage = () => {
           if (userDocSnapshot.exists()) {
             const userData = userDocSnapshot.data();
 
-            if (userData.dob && userData.dop && userData.gender && userData.yearsMissed && userData.madhab !== undefined) {
+            if (userData.dob && userData.dop && userData.gender && userData.madhab && userData.yearsMissed !== undefined) {
               navigation.replace("MainPages");
             } else {
               navigation.replace("SetDOB");
