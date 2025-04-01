@@ -8,13 +8,13 @@ export default {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#ffffff"
     },
-    version: "1.0.2",
+    version: "1.0.3",
     userInterfaceStyle: "light",
     ios: {
       jsEngine: "jsc",
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.iqadha",
-      buildNumber: "9",
+      buildNumber: "10",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       }
