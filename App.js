@@ -1,9 +1,11 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AppProvider, AppContext } from './AppContext';
+import { Text } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import SelectLanguage from './pages/SelectLanguage';
 import Login from './pages/Login';
 import Forum from './pages/Forum';
@@ -19,7 +21,6 @@ import DailyChart from './pages/DailyChart';
 import Progress from './pages/Progress';
 import Children from './pages/Children';
 import NumberOfChildren from './pages/NumberOfChildren';
-import { Text } from 'react-native';
 import PostNatal from './pages/PostNatal';
 import SignUp from './pages/SignUp';
 import Totals from './pages/Totals';
@@ -44,7 +45,7 @@ const MainPages = () => {
       Hindi: 'मंचों',
     },
     'Profile': {
-      English: 'Settings',  // Changed label to Settings
+      English: 'Settings',
       Arabic: 'الإعدادات',
       Urdu: 'ترتیبات',
       Hindi: 'सेटिंग्स',
@@ -115,6 +116,8 @@ const App = () => {
   return (
     <AppProvider>
       <NavigationContainer>
+        <StatusBar style="light" backgroundColor="#5CB390" />
+
         <Stack.Navigator>
           <Stack.Screen name="SelectLanguage" component={SelectLanguage} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
@@ -136,4 +139,5 @@ const App = () => {
     </AppProvider>
   );
 };
+
 export default App;
