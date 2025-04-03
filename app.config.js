@@ -14,7 +14,7 @@ export default {
       jsEngine: "jsc",
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.iqadha",
-      buildNumber: "10",
+      buildNumber: "11", // Do not increment next time, and delete this comment
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       }
@@ -22,7 +22,7 @@ export default {
     android: {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.iqadha",
-      versionCode: 4,
+      versionCode: 5,
       config: {
         keepConsistentProguardFile: true
       },
