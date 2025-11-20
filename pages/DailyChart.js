@@ -8,19 +8,8 @@ import { getAuth } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../FirebaseConfig";
 
-const { height } = Dimensions.get("window")
-
 const DailyChart = () => {
-  const {
-    setFajr,
-    setDhuhr,
-    setAsr,
-    setMaghrib,
-    setIsha,
-    setWitr,
-    madhab,
-    setMadhab,
-  } = useContext(AppContext)
+  const { setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr, madhab, setMadhab } = useContext(AppContext)
   const auth = getAuth()
   const user = auth.currentUser
   const userId = user ? user.uid : null

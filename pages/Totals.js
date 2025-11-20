@@ -322,17 +322,7 @@
 // export default Totals;
 
 import React, { useContext, useEffect, useState, useCallback } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  Alert,
-  TextInput,
-  Keyboard,
-  StatusBar
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Keyboard, StatusBar } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { AppContext } from "../AppContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
