@@ -24,6 +24,7 @@
     "expo-asset": "~11.0.5",
     "expo-build-properties": "~0.13.3",
     "expo-dev-client": "~5.0.20",
+    "expo-font": "~13.0.4",
     "expo-status-bar": "~2.0.1",
     "firebase": "^10.14.1",
     "lucide-react": "^0.474.0",

@@ -40,6 +40,7 @@ export default {
     },
     plugins: [
       "expo-asset",
+      "expo-font",
       [
         "expo-build-properties",
         {
