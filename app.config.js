@@ -39,6 +39,7 @@ export default {
       }
     },
     plugins: [
+      "expo-asset",
       [
         "expo-build-properties",
         {
