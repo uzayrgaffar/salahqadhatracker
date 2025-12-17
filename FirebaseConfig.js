@@ -13,19 +13,6 @@ const firebaseConfig = {
   appId: Constants.expoConfig.extra.FIREBASE_APP_ID
 };
 
-// TEMPORARY DEBUG - REMOVE AFTER CHECKING
-console.log('Firebase Config Check:', {
-  hasApiKey: !!firebaseConfig.apiKey,
-  hasAuthDomain: !!firebaseConfig.authDomain,
-  hasProjectId: !!firebaseConfig.projectId,
-  hasStorageBucket: !!firebaseConfig.storageBucket,
-  hasMessagingSenderId: !!firebaseConfig.messagingSenderId,
-  hasAppId: !!firebaseConfig.appId,
-  // Log actual values to see what's wrong
-  apiKey: firebaseConfig.apiKey,
-  projectId: firebaseConfig.projectId,
-});
-
 export const app = initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage)
