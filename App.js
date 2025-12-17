@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/Ionicons';
+// import Icon from 'react-native-vector-icons/Ionicons';
 import { AppProvider, AppContext } from './AppContext';
 import { Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -67,23 +67,23 @@ const MainPages = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+        // tabBarIcon: ({ focused, color, size }) => {
+        //   let iconName;
 
-          if (route.name === 'Daily Chart') {
-            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
-          } else if (route.name === 'FAQ') {
-            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
-          } else if (route.name === 'About') {
-            iconName = focused ? 'information-circle' : 'information-circle-outline';
-          } else if (route.name === 'Progress') {
-            iconName = focused ? 'trending-up' : 'trending-up-outline';
-          }
+        //   if (route.name === 'Daily Chart') {
+        //     iconName = focused ? 'bar-chart' : 'bar-chart-outline';
+        //   } else if (route.name === 'FAQ') {
+        //     iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+        //   } else if (route.name === 'Profile') {
+        //     iconName = focused ? 'person' : 'person-outline';
+        //   } else if (route.name === 'About') {
+        //     iconName = focused ? 'information-circle' : 'information-circle-outline';
+        //   } else if (route.name === 'Progress') {
+        //     iconName = focused ? 'trending-up' : 'trending-up-outline';
+        //   }
 
-          return <Icon name={iconName} size={size} color={color} />;
-        },
+        //   return <Icon name={iconName} size={size} color={color} />;
+        // },
         tabBarActiveTintColor: '#FBC742',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
