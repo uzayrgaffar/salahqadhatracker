@@ -1,5 +1,5 @@
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { initializeAuth, getAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore } from 'firebase/firestore';
 import Constants from 'expo-constants';
@@ -10,20 +10,24 @@ const firebaseConfig = {
   projectId: Constants.expoConfig.extra.FIREBASE_PROJECT_ID,
   storageBucket: Constants.expoConfig.extra.FIREBASE_STORAGE_BUCKET,
   messagingSenderId: Constants.expoConfig.extra.FIREBASE_MESSAGING_SENDER_ID,
-  appId: Constants.expoConfig.extra.FIREBASE_APP_ID,
+  appId: Constants.expoConfig.extra.FIREBASE_APP_ID
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// TEMPORARY DEBUG - REMOVE AFTER CHECKING
+console.log('Firebase Config Check:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAuthDomain: !!firebaseConfig.authDomain,
+  hasProjectId: !!firebaseConfig.projectId,
+  hasStorageBucket: !!firebaseConfig.storageBucket,
+  hasMessagingSenderId: !!firebaseConfig.messagingSenderId,
+  hasAppId: !!firebaseConfig.appId,
+  // Log actual values to see what's wrong
+  apiKey: firebaseConfig.apiKey,
+  projectId: firebaseConfig.projectId,
+});
 
-let auth;
-try {
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
-} catch (e) {
-  auth = getAuth(app);
-}
-
-const db = getFirestore(app);
-
-export { app, auth, db };
+export const app = initializeApp(firebaseConfig);
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
+export const db = getFirestore(app);
