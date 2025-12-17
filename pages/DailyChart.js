@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, TextInput,
 import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
 import moment from "moment"
-import Icon from "react-native-vector-icons/FontAwesome"
+import { FontAwesome } from '@expo/vector-icons';
 import { getAuth } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../FirebaseConfig";
@@ -276,7 +276,7 @@ const adjustTotalQadha = async (prayer, amount) => {
       <ScrollView style={styles.card}>
         <TouchableOpacity style={styles.dateButton} onPress={() => setIsModalVisible(true)}>
           <Text style={styles.dateButtonText}>{moment(selectedDate).format("MMMM D, YYYY")}</Text>
-          <Icon name="calendar" size={20} color="#777777" />
+          <FontAwesome name="calendar" size={20} color="#777777" />
         </TouchableOpacity>
 
         <Text style={styles.description}>

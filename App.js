@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { AppProvider, AppContext } from './AppContext';
 import { Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -82,7 +82,7 @@ const MainPages = () => {
             iconName = focused ? 'trending-up' : 'trending-up-outline';
           }
 
-          return <Icon name={iconName} size={size} color={color} />;
+          return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#FBC742',
         tabBarInactiveTintColor: 'gray',
