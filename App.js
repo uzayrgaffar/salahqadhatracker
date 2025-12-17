@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-// import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { AppProvider, AppContext } from './AppContext';
 import { Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -18,12 +18,19 @@ import SetDOB from './pages/SetDOB';
 import DaysOfCycle from './pages/DaysOfCycle';
 import YearsMissed from './pages/YearsMissed';
 import DailyChart from './pages/DailyChart';
-import Progress from './pages/Progress';
+// import Progress from './pages/Progress';
 import Children from './pages/Children';
 import NumberOfChildren from './pages/NumberOfChildren';
 import PostNatal from './pages/PostNatal';
 import SignUp from './pages/SignUp';
 import Totals from './pages/Totals';
+
+// Remove Later
+const Progress = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text>Progress Screen (Temporarily Disabled)</Text>
+  </View>
+);
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -67,23 +74,23 @@ const MainPages = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        // tabBarIcon: ({ focused, color, size }) => {
-        //   let iconName;
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
 
-        //   if (route.name === 'Daily Chart') {
-        //     iconName = focused ? 'bar-chart' : 'bar-chart-outline';
-        //   } else if (route.name === 'FAQ') {
-        //     iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-        //   } else if (route.name === 'Profile') {
-        //     iconName = focused ? 'person' : 'person-outline';
-        //   } else if (route.name === 'About') {
-        //     iconName = focused ? 'information-circle' : 'information-circle-outline';
-        //   } else if (route.name === 'Progress') {
-        //     iconName = focused ? 'trending-up' : 'trending-up-outline';
-        //   }
+          if (route.name === 'Daily Chart') {
+            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
+          } else if (route.name === 'FAQ') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          } else if (route.name === 'About') {
+            iconName = focused ? 'information-circle' : 'information-circle-outline';
+          } else if (route.name === 'Progress') {
+            iconName = focused ? 'trending-up' : 'trending-up-outline';
+          }
 
-        //   return <Icon name={iconName} size={size} color={color} />;
-        // },
+          return <Icon name={iconName} size={size} color={color} />;
+        },
         tabBarActiveTintColor: '#FBC742',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
