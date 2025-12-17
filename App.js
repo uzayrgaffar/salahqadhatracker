@@ -18,19 +18,12 @@ import SetDOB from './pages/SetDOB';
 import DaysOfCycle from './pages/DaysOfCycle';
 import YearsMissed from './pages/YearsMissed';
 import DailyChart from './pages/DailyChart';
-// import Progress from './pages/Progress';
+import Progress from './pages/Progress';
 import Children from './pages/Children';
 import NumberOfChildren from './pages/NumberOfChildren';
 import PostNatal from './pages/PostNatal';
 import SignUp from './pages/SignUp';
 import Totals from './pages/Totals';
-
-// Remove Later
-const Progress = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Progress Screen (Temporarily Disabled)</Text>
-  </View>
-);
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
