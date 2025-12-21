@@ -142,13 +142,45 @@
 
 // export default App;
 
+import { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { AppProvider } from './AppContext';
+import auth from '@react-native-firebase/auth';
+
+const Stack = createStackNavigator();
+
+const TestScreen = () => {
+  const [authReady, setAuthReady] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = auth().onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+      setAuthReady(true);
+    });
+    return unsubscribe;
+  }, []);
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#5CB390' }}>
+      <Text style={{ color: 'white', fontSize: 30 }}>Firebase Native!</Text>
+      <Text style={{ color: 'white', fontSize: 16 }}>Auth ready: {authReady ? 'Yes' : 'No'}</Text>
+      <Text style={{ color: 'white', fontSize: 16 }}>User: {user ? user.email : 'Not logged in'}</Text>
+    </View>
+  );
+};
 
 const App = () => {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#5CB390' }}>
-      <Text style={{ color: 'white', fontSize: 30 }}>App Works!</Text>
-    </View>
+    <AppProvider>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen name="Test" component={TestScreen} options={{ headerShown: false }} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </AppProvider>
   );
 };
 
