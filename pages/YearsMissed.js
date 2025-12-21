@@ -2,23 +2,12 @@ import { useContext, useState, useCallback, useMemo } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore"
-import { getAuth } from "firebase/auth"
-import { db } from "../FirebaseConfig"
+import auth from "@react-native-firebase/auth"
+import firestore from "@react-native-firebase/firestore"
 
 const YearsMissed = () => {
   const navigation = useNavigation()
-  const { 
-    dob, 
-    dop, 
-    setYearsMissed, 
-    setFajr, 
-    setDhuhr, 
-    setAsr, 
-    setMaghrib, 
-    setIsha, 
-    setWitr 
-  } = useContext(AppContext)
+  const { dop, setYearsMissed, setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr } = useContext(AppContext)
   
   const [showYearsPicker, setShowYearsPicker] = useState(false)
   const [selectedYears, setSelectedYears] = useState(null)
@@ -46,17 +35,17 @@ const YearsMissed = () => {
   }, [setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr])
 
   const saveToFirestore = useCallback(async (userId, selectedYears) => {
-    const userDocRef = doc(db, "users", userId)
-    const userDoc = await getDoc(userDocRef)
+    const userDocRef = firestore().collection("users").doc(userId)
+    const userDoc = await userDocRef.get()
 
-    if (userDoc.exists()) {
-      await updateDoc(userDocRef, {
+    if (userDoc.exists) {
+      await userDocRef.update({
         yearsMissed: selectedYears,
       })
     } else {
-      await setDoc(userDocRef, {
+      await userDocRef.set({
         yearsMissed: selectedYears,
-        createdAt: Timestamp.now(),
+        createdAt: firestore.FieldValue.serverTimestamp(),
       },
       { merge: true }
     )
@@ -67,8 +56,7 @@ const YearsMissed = () => {
     if (selectedYears === null) return
 
     try {
-      const auth = getAuth()
-      const user = auth.currentUser
+      const user = auth().currentUser
 
       if (!user) {
         console.error("No authenticated user found!")
@@ -82,7 +70,6 @@ const YearsMissed = () => {
       // Store locally in context
       setYearsMissed(selectedYears)
       
-      // If no years were missed, reset all prayers
       if (selectedYears === 0) {
         resetAllPrayers()
       }

@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView, Linking } from 'react-native';
-import { createUserWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
-import { auth, db } from '../FirebaseConfig';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import { doc, setDoc, Timestamp } from "firebase/firestore";
 
 const SignUp = () => {
   const navigation = useNavigation();
@@ -78,14 +77,14 @@ const SignUp = () => {
           onPress: async () => {
             setLoading(true);
             try {
-              const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+              const userCredential = await auth().createUserWithEmailAndPassword(email, password);
               const user = userCredential.user;
               
-              const userDocRef = doc(db, "users", user.uid);
-              await setDoc(userDocRef, {
+              const userDocRef = firestore().collection("users").doc(user.uid);
+              await userDocRef.set({
                 isAnonymous: false,
                 email: user.email,
-                createdAt: Timestamp.now()
+                createdAt: firestore.FieldValue.serverTimestamp()
               });
                 
               setLoading(false);
@@ -131,13 +130,13 @@ const SignUp = () => {
                   onPress: async () => {
                     setLoading(true);
                     try {
-                      const userCredential = await signInAnonymously(auth);
+                      const userCredential = await auth().signInAnonymously();
                       const user = userCredential.user;
   
-                      const userDocRef = doc(db, "users", user.uid);
-                      await setDoc(userDocRef, {
+                      const userDocRef = firestore().collection("users").doc(user.uid);
+                      await userDocRef.set({
                         isAnonymous: true,
-                        createdAt: Timestamp.now()
+                        createdAt: firestore.FieldValue.serverTimestamp()
                       });
   
                       setLoading(false);

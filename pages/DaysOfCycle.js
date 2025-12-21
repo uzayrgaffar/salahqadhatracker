@@ -1,9 +1,8 @@
-import React, { useState } from "react"
+import { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
-import { db } from "../FirebaseConfig"
-import { doc, setDoc, serverTimestamp, getDoc, updateDoc, Timestamp } from "firebase/firestore"
-import { getAuth } from "firebase/auth"
+import auth from "@react-native-firebase/auth"
+import firestore from "@react-native-firebase/firestore"
 
 const DaysOfCycle = () => {
   const navigation = useNavigation()
@@ -19,11 +18,10 @@ const DaysOfCycle = () => {
   const handleConfirm = async () => {
     if (!selectedDays) return;
   
-    setLoading(true); // Start loading indicator
+    setLoading(true);
   
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
+      const user = auth().currentUser;
   
       if (!user) {
         console.error("No authenticated user found!");
@@ -33,21 +31,20 @@ const DaysOfCycle = () => {
       }
   
       const userId = user.uid;
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
+      const userDocRef = firestore().collection("users").doc(userId);
+      const userDoc = await userDocRef.get();
   
-      if (userDoc.exists()) {
-        await updateDoc(userDocRef, {
+      if (userDoc.exists) {
+        await userDocRef.update({
           daysOfCycle: selectedDays,
         });
       } else {
-        await setDoc(
-          userDocRef,
+        await userDocRef.set(
           {
             daysOfCycle: selectedDays,
-            createdAt: Timestamp.now(),
+            createdAt: firestore.Timestamp.now(),
           },
-          { merge: true } // Prevents overwriting other user data
+          { merge: true }
         );
       }
   
@@ -57,7 +54,7 @@ const DaysOfCycle = () => {
       console.error("Error saving cycle days:", error);
       Alert.alert("Error", "Failed to save data. Please try again.");
     } finally {
-      setLoading(false); // Stop loading indicator
+      setLoading(false);
     }
   };  
 

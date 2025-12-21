@@ -6,7 +6,7 @@ export default {
     icon: "./assets/icon.png",
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#5CB390"
     },
     version: "1.0.3",
     userInterfaceStyle: "light",
@@ -14,15 +14,17 @@ export default {
       jsEngine: "jsc",
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.iqadha",
-      buildNumber: "11", // Do not increment next time, and delete this comment
+      buildNumber: "11",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
-      }
+      },
+      googleServicesFile: "./GoogleService-Info.plist"
     },
     android: {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.iqadha",
       versionCode: 5,
+      googleServicesFile: "./google-services.json",
       config: {
         keepConsistentProguardFile: true
       },
@@ -30,23 +32,18 @@ export default {
     },
     splash: {
       image: "./assets/splash.png",
-      backgroundColor: "#ffffff",
+      backgroundColor: "#5CB390",
       resizeMode: "cover"
     },
     extra: {
       eas: {
         projectId: "7de41553-636c-42ad-b26d-7027d42cf51b"
-      },
-      FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,
-      FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN,
-      FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
-      FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET,
-      FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
-      FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
+      }
     },
     plugins: [
       "expo-asset",
       "expo-font",
+      "@react-native-firebase/app",
       [
         "expo-build-properties",
         {

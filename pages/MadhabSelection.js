@@ -2,9 +2,8 @@ import { useContext, useState } from "react"
 import { View, TouchableOpacity, StyleSheet, Text, Alert } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, collection } from "firebase/firestore"
-import { getAuth } from "firebase/auth"
-import { db } from "../FirebaseConfig"
+import auth from "@react-native-firebase/auth"
+import firestore from "@react-native-firebase/firestore"
 
 const MadhabSelection = () => {
   const navigation = useNavigation()
@@ -19,8 +18,7 @@ const MadhabSelection = () => {
     if (!selectedMadhab) return;
   
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
+      const user = auth().currentUser;
   
       if (!user) {
         Alert.alert("Error", "You need to be logged in to save your data.");
@@ -28,20 +26,20 @@ const MadhabSelection = () => {
       }
   
       const userId = user.uid;
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
+      const userDocRef = firestore().collection("users").doc(userId);
+      const userDoc = await userDocRef.get();
   
       let yearsMissed = 0;
   
-      if (userDoc.exists()) {
+      if (userDoc.exists) {
         yearsMissed = userDoc.data()?.yearsMissed || 0;
-        await updateDoc(userDocRef, {
+        await userDocRef.update({
           madhab: selectedMadhab,
         });
       } else {
-        await setDoc(userDocRef, {
+        await userDocRef.set({
           madhab: selectedMadhab,
-          createdAt: Timestamp.now(),
+          createdAt: firestore.Timestamp.now(),
         },
         { merge: true }
       );
@@ -52,10 +50,13 @@ const MadhabSelection = () => {
       setMadhab(selectedMadhab);
   
       if (yearsMissed === 0) {
-        const totalQadhaRef = doc(collection(db, "users", userId, "totalQadha"), "qadhaSummary");
+        const totalQadhaRef = firestore()
+          .collection("users")
+          .doc(userId)
+          .collection("totalQadha")
+          .doc("qadhaSummary");
         try {
-          // Attempt to update the document
-          await updateDoc(totalQadhaRef, {
+          await totalQadhaRef.update({
             fajr: 0,
             dhuhr: 0,
             asr: 0,
@@ -64,8 +65,7 @@ const MadhabSelection = () => {
             witr: 0,
           });
         } catch (error) {
-          // If updateDoc fails (because document doesn’t exist), use setDoc to create it
-          await setDoc(totalQadhaRef, {
+          await totalQadhaRef.set({
             fajr: 0,
             dhuhr: 0,
             asr: 0,

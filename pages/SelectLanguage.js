@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { auth, db } from '../FirebaseConfig';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import { doc, getDoc } from "firebase/firestore";
 
 const SelectLanguage = () => {
   const navigation = useNavigation();
@@ -10,14 +10,13 @@ const SelectLanguage = () => {
   const isMounted = useRef(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-
+    const unsubscribe = auth().onAuthStateChanged(async (user) => {
       try {
         if (user) {
-          const userDocRef = doc(db, "users", user.uid);
-          const userDocSnapshot = await getDoc(userDocRef);
+          const userDocRef = firestore().collection("users").doc(user.uid);
+          const userDocSnapshot = await userDocRef.get();
 
-          if (userDocSnapshot.exists()) {
+          if (userDocSnapshot.exists) {
             const userData = userDocSnapshot.data();
 
             if (userData.dob && userData.dop && userData.gender && userData.madhab && userData.yearsMissed !== undefined) {

@@ -2,9 +2,8 @@ import { useContext, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { AppContext } from "../AppContext";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { db } from "../FirebaseConfig";
+import auth from "@react-native-firebase/auth";
+import firestore from "@react-native-firebase/firestore";
 
 const NumberOfChildren = () => {
   const navigation = useNavigation();
@@ -21,26 +20,24 @@ const NumberOfChildren = () => {
   const handleConfirm = async () => {
     if (selectedChildren !== null) {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const user = auth().currentUser;
 
         if (user) {
           const userId = user.uid;
-          const userDocRef = doc(db, "users", userId);
-          const userDoc = await getDoc(userDocRef);
+          const userDocRef = firestore().collection("users").doc(userId);
+          const userDoc = await userDocRef.get();
 
-          if (userDoc.exists()) {
+          if (userDoc.exists) {
             // Update only the numberOfChildren field
-            await updateDoc(userDocRef, {
+            await userDocRef.update({
               numberOfChildren: selectedChildren,
             });
           } else {
             // Create a new document if it doesn't exist
-            await setDoc(
-              userDocRef,
+            await userDocRef.set(
               {
                 numberOfChildren: selectedChildren,
-                createdAt: Timestamp.now(),
+                createdAt: firestore.FieldValue.serverTimestamp(),
               },
               { merge: true } // Ensures other data is not erased
             );

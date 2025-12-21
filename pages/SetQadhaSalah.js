@@ -2,9 +2,8 @@ import { useContext, useState, useEffect } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
-import { doc, getDoc, updateDoc, setDoc, Timestamp, collection } from "firebase/firestore"
-import { getAuth } from "firebase/auth"
-import { db } from "../FirebaseConfig"
+import auth from "@react-native-firebase/auth"
+import firestore from "@react-native-firebase/firestore"
 
 export const SetQadhaSalah = () => {
   const navigation = useNavigation()
@@ -45,15 +44,13 @@ export const SetQadhaSalah = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const auth = getAuth()
-        const user = auth.currentUser
+        const user = auth().currentUser
 
         if (user) {
-          const userId = user.uid
-          const userDocRef = doc(db, "users", userId)
-          const userDoc = await getDoc(userDocRef)
+          const userDocRef = firestore().collection("users").doc(user.uid)
+          const userDoc = await userDocRef.get()
 
-          if (userDoc.exists()) {
+          if (userDoc.exists) {
             const data = userDoc.data()
 
             setYearsMissed?.(data.yearsMissed || 0)
@@ -129,15 +126,13 @@ export const SetQadhaSalah = () => {
     setWitr?.(witr)
 
     try {
-      const auth = getAuth()
-      const user = auth.currentUser
+      const user = auth().currentUser
 
       if (user) {
-        const userId = user.uid
-        const userDocRef = doc(db, "users", userId)
+        const userDocRef = firestore().collection("users").doc(user.uid)
         const postNatalBleedingDays = pnb;
 
-        await updateDoc(userDocRef, {
+        await userDocRef.update({
           yearsMissed,
           daysOfCycle,
           gender,
@@ -146,27 +141,30 @@ export const SetQadhaSalah = () => {
           numberOfChildren,
         })
 
-        const totalQadhaRef = doc(collection(db, "users", userId, "totalQadha"), "qadhaSummary");
+        const totalQadhaRef = firestore()
+          .collection("users")
+          .doc(user.uid)
+          .collection("totalQadha")
+          .doc("qadhaSummary")
+
         try {
-          // Attempt to update the document
-          await updateDoc(totalQadhaRef, {
+          await totalQadhaRef.update({
             fajr,
             dhuhr,
             asr,
             maghrib,
             isha,
             witr,
-          });
+          })
         } catch (error) {
-          // If updateDoc fails (because document doesn’t exist), use setDoc to create it
-          await setDoc(totalQadhaRef, {
+          await totalQadhaRef.set({
             fajr,
             dhuhr,
             asr,
             maghrib,
             isha,
             witr,
-          });
+          })
         }
 
         console.log("Qadha Salah data saved successfully!")

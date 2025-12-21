@@ -2,9 +2,8 @@ import { useState, useEffect, useContext } from "react"
 import { View, TouchableOpacity, StyleSheet, Text, ScrollView, SafeAreaView, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { ChevronRight } from "lucide-react-native"
-import { auth, db } from "../FirebaseConfig"
-import { doc, getDoc, updateDoc, deleteDoc, collection, getDocs, writeBatch } from "firebase/firestore"
-import { onAuthStateChanged, deleteUser } from "firebase/auth"
+import auth from "@react-native-firebase/auth"
+import firestore from "@react-native-firebase/firestore"
 import { AppContext } from "../AppContext"
 
 const Profile = () => {
@@ -15,14 +14,14 @@ const Profile = () => {
   const [email, setEmail] = useState("");
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = auth().onAuthStateChanged((user) => {
       if (user) {
         setEmail(user.email)
-        const docRef = doc(db, "users", user.uid)
+        const docRef = firestore().collection("users").doc(user.uid)
         setUserDocRef(docRef)
         // Fetch user data
-        getDoc(docRef).then((docSnap) => {
-          if (docSnap.exists()) {
+        docRef.get().then((docSnap) => {
+          if (docSnap.exists) {
             const data = docSnap.data()
             setGender(data.gender || "")
             setMadhab(data.madhab || "")
@@ -39,7 +38,7 @@ const Profile = () => {
   const selectGender = async (newGender) => {
     if (!userDocRef) return
     try {
-      await updateDoc(userDocRef, { gender: newGender })
+      await userDocRef.update({ gender: newGender })
       setGender(newGender)
     } catch (error) {
       Alert.alert("Error", "Failed to update gender")
@@ -49,7 +48,7 @@ const Profile = () => {
   const selectMadhab = async (newMadhab) => {
     if (!userDocRef) return
     try {
-      await updateDoc(userDocRef, { madhab: newMadhab })
+      await userDocRef.update({ madhab: newMadhab })
       setMadhab(newMadhab)
     } catch (error) {
       Alert.alert("Error", "Failed to update madhab")
@@ -77,25 +76,25 @@ const Profile = () => {
           text: "Delete",
           onPress: async () => {
             try {
-              const user = auth.currentUser;
+              const user = auth().currentUser;
               if (!user) throw new Error("No authenticated user found");
   
               const userId = user.uid;
-              const userDocRef = doc(db, "users", userId);
-              const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
-              const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
+              const userDocRef = firestore().collection("users").doc(userId);
+              const dailyPrayersRef = firestore().collection("users").doc(userId).collection("dailyPrayers");
+              const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
   
               const deleteCollection = async (collectionRef) => {
-                const querySnapshot = await getDocs(collectionRef);
-                const batch = writeBatch(db);
+                const querySnapshot = await collectionRef.get();
+                const batch = firestore().batch();
                 querySnapshot.forEach((doc) => batch.delete(doc.ref));
                 await batch.commit();
               };
   
               await deleteCollection(dailyPrayersRef);
-              await deleteDoc(totalQadhaRef);
-              await deleteDoc(userDocRef);
-              await deleteUser(user);
+              await totalQadhaRef.delete();
+              await userDocRef.delete();
+              await user.delete();
   
               Alert.alert("Account Deleted", "Your account and all data have been successfully deleted.");
               navigation.replace("SelectLanguage");
@@ -119,22 +118,6 @@ const Profile = () => {
           </View>
           <View style={styles.content}>
           <Text style={styles.emailText}>{email || "Anonymous Account"}</Text>
-            {/* <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Gender</Text>
-              <View style={styles.optionsContainer}>
-                {["Male", "Female"].map((gen) => (
-                  <TouchableOpacity
-                    key={gen}
-                    style={[styles.option, gender === gen && styles.selectedOption]}
-                    onPress={() => selectGender(gen)}
-                  >
-                    <Text style={[styles.optionText, gender === gen && styles.selectedOptionText]}>{gen}</Text>
-                    {gender === gen && <ChevronRight color="#FFFFFF" size={20} />}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View> */}
-
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Madhab</Text>
               <View style={styles.optionsContainer}>
@@ -159,7 +142,7 @@ const Profile = () => {
               <Text style={styles.qadhaButtonText}>Reset Account Setup</Text>
             </TouchableOpacity>
 
-            {auth.currentUser && !auth.currentUser?.isAnonymous && (
+            {auth().currentUser && !auth().currentUser?.isAnonymous && (
               <TouchableOpacity
                 style={styles.qadhaButton2}
                 onPress={() => {
@@ -168,7 +151,7 @@ const Profile = () => {
                     "Are you sure you want to sign out?",
                     [
                       { text: "Cancel", style: "cancel" },
-                      { text: "Yes", onPress: () => auth.signOut() }
+                      { text: "Yes", onPress: () => auth().signOut() }
                     ]
                   )
                 }}

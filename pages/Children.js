@@ -1,18 +1,11 @@
-import { useContext, useState } from "react"
+import { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { useNavigation } from "@react-navigation/native"
-import { AppContext } from "../AppContext"
-import { doc, getDoc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { db } from "../FirebaseConfig";
-import React from "react";
 
 const Children = () => {
   const navigation = useNavigation()
-  const { selectedLanguage, gender, madhab } = useContext(AppContext)
   const [selectedOption, setSelectedOption] = useState(null)
-  const [loading, setLoading] = useState(false)
-
+  
   const handleOptionSelect = (option) => {
     setSelectedOption(option)
   }

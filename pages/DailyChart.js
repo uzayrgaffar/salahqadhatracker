@@ -4,11 +4,8 @@ import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
 import moment from "moment"
 import { FontAwesome } from '@expo/vector-icons';
-import { getAuth } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from "firebase/firestore";
-import { db } from "../FirebaseConfig";
-
-const { height } = Dimensions.get("window")
+import auth from "@react-native-firebase/auth";
+import firestore from "@react-native-firebase/firestore";
 
 const DailyChart = () => {
   const {
@@ -21,8 +18,8 @@ const DailyChart = () => {
     madhab,
     setMadhab,
   } = useContext(AppContext)
-  const auth = getAuth()
-  const user = auth.currentUser
+  
+  const user = auth().currentUser
   const userId = user ? user.uid : null
 
   const today = moment().format("YYYY-MM-DD")
@@ -35,10 +32,9 @@ const DailyChart = () => {
   useEffect(() => {
     if (userId) {
       const fetchMadhab = async () => {
-        const userRef = doc(db, "users", userId);
-        const userSnap = await getDoc(userRef);
+        const userSnap = await firestore().collection("users").doc(userId).get();
   
-        if (userSnap.exists()) {
+        if (userSnap.exists) {
           const userData = userSnap.data();
           if (userData.madhab) {
             setMadhab(userData.madhab);
@@ -53,15 +49,15 @@ const DailyChart = () => {
   useEffect(() => {
     if (userId) {
       const fetchPrayerData = async () => {
-        const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate)
-        const docSnap = await getDoc(dailyPrayerRef)
+        const dailyPrayerRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate)
+        const docSnap = await dailyPrayerRef.get()
 
-        if (docSnap.exists()) {
+        if (docSnap.exists) {
           const data = docSnap.data()
           setPrayerStates((prevStates) => ({ ...prevStates, [selectedDate]: data.prayers }))
           lsetDailyPrayerCounts((prevCounts) => ({ ...prevCounts, [selectedDate]: data.counts }))
         } else {
-          await setDoc(dailyPrayerRef, {
+          await dailyPrayerRef.set({
             prayers: {
               fajr: false,
               dhuhr: false,
@@ -88,10 +84,9 @@ const DailyChart = () => {
   useEffect(() => {
     const fetchPrayerCounts = async () => {
       if (userId) {
-        const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
-        const totalQadhaSnap = await getDoc(totalQadhaRef);
+        const totalQadhaSnap = await firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary").get();
   
-        if (totalQadhaSnap.exists()) {
+        if (totalQadhaSnap.exists) {
           const data = totalQadhaSnap.data();
           setFajr(data.fajr || 0);
           setDhuhr(data.dhuhr || 0);
@@ -109,8 +104,7 @@ const DailyChart = () => {
   useEffect(() => {
     if (userId) {
       const fetchAllPrayerData = async () => {
-        const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
-        const querySnapshot = await getDocs(dailyPrayersRef);
+        const querySnapshot = await firestore().collection("users").doc(userId).collection("dailyPrayers").get();
         const allPrayerStates = {};
         querySnapshot.forEach((doc) => {
           const date = doc.id;
@@ -165,8 +159,8 @@ const DailyChart = () => {
     };
     setPrayerStates(updatedStates);
 
-    const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate);
-    await updateDoc(dailyPrayerRef, {
+    const dailyPrayerRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate);
+    await dailyPrayerRef.update({
       prayers: updatedStates[selectedDate],
     });
 
@@ -180,15 +174,15 @@ const DailyChart = () => {
 };
 
 const adjustTotalQadha = async (prayer, amount) => {
-    const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
-    const totalQadhaSnap = await getDoc(totalQadhaRef);
+    const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
+    const totalQadhaSnap = await totalQadhaRef.get();
 
-    if (totalQadhaSnap.exists()) {
+    if (totalQadhaSnap.exists) {
       const totalData = totalQadhaSnap.data();
       const totalQadhaLeft = totalData[prayer] || 0;
       const updatedTotal = totalQadhaLeft + amount;
 
-      await updateDoc(totalQadhaRef, {
+      await totalQadhaRef.update({
         [prayer]: updatedTotal < 0 ? 0 : updatedTotal,
       });
     }
@@ -209,15 +203,15 @@ const adjustTotalQadha = async (prayer, amount) => {
       },
     }));
   
-    const dailyPrayerRef = doc(db, "users", userId, "dailyPrayers", selectedDate);
-    await updateDoc(dailyPrayerRef, {
+    const dailyPrayerRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate);
+    await dailyPrayerRef.update({
       [`counts.${prayer}`]: newCount,
     });
   
-    const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
-    const totalQadhaSnap = await getDoc(totalQadhaRef);
+    const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
+    const totalQadhaSnap = await totalQadhaRef.get();
   
-    if (totalQadhaSnap.exists()) {
+    if (totalQadhaSnap.exists) {
       const totalData = totalQadhaSnap.data();
       const totalQadhaLeft = totalData[prayer] || 0;
       const updatedTotal = totalQadhaLeft - amount;
@@ -225,7 +219,7 @@ const adjustTotalQadha = async (prayer, amount) => {
       // Prevent increasing Qadha when deselecting if it's already 0
       if (amount === -1 && totalQadhaLeft === 0) return;
   
-      await updateDoc(totalQadhaRef, {
+      await totalQadhaRef.update({
         [prayer]: updatedTotal < 0 ? 0 : updatedTotal,
       });
     }

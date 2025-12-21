@@ -2,9 +2,8 @@ import { useContext, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { AppContext } from "../AppContext";
-import { doc, getDoc, setDoc, Timestamp, updateDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { db } from "../FirebaseConfig";
+import auth from "@react-native-firebase/auth";
+import firestore from "@react-native-firebase/firestore";
 
 const PostNatal = () => {
   const navigation = useNavigation();
@@ -21,22 +20,21 @@ const PostNatal = () => {
   const handleConfirm = async () => {
     if (selectedPNB !== null) {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const user = auth().currentUser;
 
         if (user) {
           const userId = user.uid;
-          const userDocRef = doc(db, "users", userId);
-          const userDoc = await getDoc(userDocRef);
+          const userDocRef = firestore().collection("users").doc(userId);
+          const userDoc = await userDocRef.get();
 
-          if (userDoc.exists()) {
-            await updateDoc(userDocRef, {
+          if (userDoc.exists) {
+            await userDocRef.update({
               postNatalBleedingDays: selectedPNB,
             });
           } else {
-            await setDoc(userDocRef, {
+            await userDocRef.set({
               postNatalBleedingDays: selectedPNB,
-              createdAt: Timestamp.now(),
+              createdAt: firestore.Timestamp.now(),
             },
             { merge: true }
           );

@@ -3,9 +3,8 @@ import { View, TouchableOpacity, StyleSheet, Text, Platform, Modal } from "react
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
 import DateTimePicker from "@react-native-community/datetimepicker"
-import { db } from "../FirebaseConfig"
-import { Timestamp, setDoc, getDoc, updateDoc, doc } from "firebase/firestore"
-import { getAuth } from "firebase/auth"
+import auth from "@react-native-firebase/auth"
+import firestore from "@react-native-firebase/firestore"
 
 const SetDOB = () => {
   const navigation = useNavigation()
@@ -73,52 +72,44 @@ const SetDOB = () => {
 
   const handleConfirm = async () => {
     if (selectedDOB && selectedDOP) {
-      setDob(selectedDOB);
-      setDop(selectedDOP);
+      setDob(selectedDOB)
+      setDop(selectedDOP)
 
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
+      try {
+        const user = auth().currentUser
 
-      if (user) {
-        const userId = user.uid; // Get user ID from authentication
+        if (user) {
+          const userId = user.uid
+          const userDocRef = firestore().collection("users").doc(userId)
+          const userDoc = await userDocRef.get()
 
-        // Reference to the user's document in Firestore
-        const userDocRef = doc(db, "users", userId);
+          if (userDoc.exists) {
+            await userDocRef.update({
+              dob: firestore.Timestamp.fromDate(selectedDOB),
+              dop: firestore.Timestamp.fromDate(selectedDOP),
+            })
+          } else {
+            await userDocRef.set(
+              {
+                dob: firestore.Timestamp.fromDate(selectedDOB),
+                dop: firestore.Timestamp.fromDate(selectedDOP),
+                createdAt: firestore.Timestamp.now(),
+              },
+              { merge: true }
+            )
+          }
 
-        // Check if user document exists
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          // Update existing document with new DOB & DOP
-          await updateDoc(userDocRef, {
-            dob: Timestamp.fromDate(selectedDOB),
-            dop: Timestamp.fromDate(selectedDOP),
-          });
+          console.log("Dates saved successfully!")
         } else {
-          // Create a new document if it doesn't exist
-          await setDoc(
-            userDocRef,
-            {
-              dob: Timestamp.fromDate(selectedDOB),
-              dop: Timestamp.fromDate(selectedDOP),
-              createdAt: Timestamp.now(),
-            },
-            { merge: true } // Merges existing data instead of overwriting everything
-          );          
+          console.error("No authenticated user found!")
         }
-
-        console.log("Dates saved successfully!");
-      } else {
-        console.error("No authenticated user found!");
+      } catch (error) {
+        console.error("Error saving dates:", error)
       }
-    } catch (error) {
-      console.error("Error saving dates:", error);
-    }
 
-    navigation.navigate("GenderSelection");
+      navigation.navigate("GenderSelection")
     }
-  };
+  }
 
   return (
     <View style={styles.container}>

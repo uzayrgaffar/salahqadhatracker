@@ -2,8 +2,8 @@ import { useState, useEffect, useContext } from "react"
 import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView, TouchableOpacity } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
-import { doc, collection, query, orderBy, onSnapshot } from 'firebase/firestore'
-import { db, auth } from '../FirebaseConfig'
+import auth from '@react-native-firebase/auth'
+import firestore from '@react-native-firebase/firestore'
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
 
@@ -17,24 +17,23 @@ const Progress = () => {
   const {madhab} = useContext(AppContext)
   
   useEffect(() => {
-    const userId = auth.currentUser?.uid;
+    const userId = auth().currentUser?.uid;
     if (!userId) {
       setLoading(false);
       return;
     }
   
-    const userDocRef = doc(db, "users", userId);
-    const totalQadhaRef = doc(db, "users", userId, "totalQadha", "qadhaSummary");
-    const dailyPrayersRef = collection(db, "users", userId, "dailyPrayers");
-    const historyQuery = query(dailyPrayersRef, orderBy("__name__", "asc"));
+    const userDocRef = firestore().collection("users").doc(userId);
+    const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
+    const dailyPrayersRef = firestore().collection("users").doc(userId).collection("dailyPrayers");
+    const historyQuery = dailyPrayersRef.orderBy(firestore.FieldPath.documentId(), "asc");
   
     let fetchedUserData = {};
     let fetchedHistory = {};
   
-    const unsubscribeUser = onSnapshot(
-      userDocRef,
+    const unsubscribeUser = userDocRef.onSnapshot(
       (docSnap) => {
-        if (docSnap.exists()) {
+        if (docSnap.exists) {
           fetchedUserData = { ...fetchedUserData, ...docSnap.data() };
           setUserData(fetchedUserData);
         }
@@ -45,10 +44,9 @@ const Progress = () => {
       }
     );
   
-    const unsubscribeQadha = onSnapshot(
-      totalQadhaRef,
+    const unsubscribeQadha = totalQadhaRef.onSnapshot(
       (docSnap) => {
-        if (docSnap.exists()) {
+        if (docSnap.exists) {
           fetchedUserData = { ...fetchedUserData, ...docSnap.data() };
           setUserData(fetchedUserData);
         }
@@ -59,8 +57,7 @@ const Progress = () => {
       }
     );
   
-    const unsubscribeHistory = onSnapshot(
-      historyQuery,
+    const unsubscribeHistory = historyQuery.onSnapshot(
       (querySnapshot) => {
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data();

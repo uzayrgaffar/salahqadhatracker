@@ -2,9 +2,8 @@ import React, { useContext, useState } from "react"
 import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
-import { doc, getDoc, setDoc, Timestamp, updateDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { db } from "../FirebaseConfig";
+import auth from "@react-native-firebase/auth"
+import firestore from "@react-native-firebase/firestore"
 
 const GenderSelection = () => {
   const navigation = useNavigation()
@@ -20,27 +19,25 @@ const GenderSelection = () => {
       setGender(selectedGender);
   
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const user = auth().currentUser;
   
         if (user) {
           const userId = user.uid;
-          const userDocRef = doc(db, "users", userId);
+          const userDocRef = firestore().collection("users").doc(userId);
   
-          const userDoc = await getDoc(userDocRef);
+          const userDoc = await userDocRef.get();
   
-          if (userDoc.exists()) {
+          if (userDoc.exists) {
             // Update existing user document with gender
-            await updateDoc(userDocRef, {
+            await userDocRef.update({
               gender: selectedGender,
             });
           } else {
             // Create a new document if it doesn't exist
-            await setDoc(
-              userDocRef,
+            await userDocRef.set(
               {
                 gender: selectedGender,
-                createdAt: Timestamp.now(),
+                createdAt: firestore.Timestamp.now(),
               },
               { merge: true } // Ensures other data is not erased
             );            
