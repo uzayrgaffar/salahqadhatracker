@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "192280788344",
+    "project_id": "iqadha-11db4",
+    "storage_bucket": "iqadha-11db4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:192280788344:android:7ac77c21019a2906f85c8d",
+        "android_client_info": {
+          "package_name": "com.uzayrgaffar.iqadha"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFF0b8bd4wzuOCEDbJqPO6w8ndxx-Tc-Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
