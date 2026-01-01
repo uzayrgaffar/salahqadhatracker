@@ -43,7 +43,10 @@ export default {
     plugins: [
       "expo-asset",
       "expo-font",
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {}
+      ],
       [
         "expo-build-properties",
         {
