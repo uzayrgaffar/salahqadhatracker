@@ -2,16 +2,14 @@ import { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { AppProvider, AppContext } from './AppContext';
-import { Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import SelectLanguage from './pages/SelectLanguage';
 import Login from './pages/Login';
 import Forum from './pages/Forum';
 import Profile from './pages/Profile';
 import SetQadhaSalah from './pages/SetQadhaSalah';
-import About from './pages/About';
 import GenderSelection from './pages/GenderSelection';
 import MadhabSelection from './pages/MadhabSelection';
 import SetDOB from './pages/SetDOB';
@@ -31,59 +29,20 @@ const Tab = createBottomTabNavigator();
 const MainPages = () => {
   const { selectedLanguage } = useContext(AppContext);
 
-  const tabLabels = {
-    'Daily Chart': {
-      English: 'Daily Chart',
-      Arabic: 'الرسم البياني اليومي',
-      Urdu: 'یومیہ چارٹ',
-      Hindi: 'दैनिक चार्ट',
-    },
-    'FAQ': {
-      English: 'FAQ',
-      Arabic: 'المنتديات',
-      Urdu: 'فورم',
-      Hindi: 'मंचों',
-    },
-    'Profile': {
-      English: 'Settings',
-      Arabic: 'الإعدادات',
-      Urdu: 'ترتیبات',
-      Hindi: 'सेटिंग्स',
-    },
-    'About': {
-      English: 'About',
-      Arabic: 'معلومات عنا',
-      Urdu: 'ہمارے بارے میں',
-      Hindi: 'हमारे बारे में',
-    },
-    'Progress': {
-      English: 'Progress',
-      Arabic: 'التقدم',
-      Urdu: 'ترقی',
-      Hindi: 'प्रगति',
-    }
+  const getLabel = (routeName) => {
+    const tabLabels = {
+      'Daily Chart': { English: 'Daily Chart', Arabic: 'الرسم البياني اليومي', Urdu: 'یومیہ چارٹ', Hindi: 'दैनिक चार्ट' },
+      'FAQ': { English: 'FAQ', Arabic: 'المنتديات', Urdu: 'فورم', Hindi: 'مंचों' },
+      'Profile': { English: 'Settings', Arabic: 'الإعدادات', Urdu: 'ترتیبات', Hindi: 'सेटिंग्स' },
+      'Progress': { English: 'Progress', Arabic: 'التقدم', Urdu: 'ترقی', Hindi: 'برکت' }
+    };
+    return tabLabels[routeName]?.[selectedLanguage] || routeName;
   };
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
-          if (route.name === 'Daily Chart') {
-            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
-          } else if (route.name === 'FAQ') {
-            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
-          } else if (route.name === 'About') {
-            iconName = focused ? 'information-circle' : 'information-circle-outline';
-          } else if (route.name === 'Progress') {
-            iconName = focused ? 'trending-up' : 'trending-up-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
+      screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: '#FBC742',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
@@ -94,20 +53,49 @@ const MainPages = () => {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: 'bold',
-          paddingBottom: 5,
         },
-        tabBarLabelPosition: "below-icon",
-        tabBarLabel: ({ color }) => {
-          const translatedLabel = tabLabels[route.name]?.[selectedLanguage] || route.name;
-          return <Text style={{ color }}>{translatedLabel}</Text>;
-        },
-      })}
+      }}
     >
-      <Tab.Screen name="Daily Chart" component={DailyChart} options={{ headerShown: false }} />
-      <Tab.Screen name="Progress" component={Progress} options={{ headerShown: false }} />
-      <Tab.Screen name="FAQ" component={Forum} options={{ headerShown: false }} />
-      <Tab.Screen name="Profile" component={Profile} options={{ headerShown: false }} /> 
-      {/* <Tab.Screen name="About" component={About} options={{ headerShown: false }} /> */}
+      <Tab.Screen 
+        name="Daily Chart" 
+        component={DailyChart} 
+        options={{
+          tabBarLabel: getLabel('Daily Chart'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="stats-chart" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Tab.Screen 
+        name="Progress" 
+        component={Progress} 
+        options={{
+          tabBarLabel: getLabel('Progress'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trending-up" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Tab.Screen 
+        name="FAQ" 
+        component={Forum} 
+        options={{
+          tabBarLabel: getLabel('FAQ'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={Profile} 
+        options={{
+          tabBarLabel: getLabel('Profile'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }} 
+      />
     </Tab.Navigator>
   );
 };
