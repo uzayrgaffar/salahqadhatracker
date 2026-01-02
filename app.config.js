@@ -43,6 +43,7 @@ export default {
     plugins: [
       "expo-asset",
       "expo-font",
+      "@react-native-community/datetimepicker",
       [
         "@react-native-firebase/app",
         {}
@@ -54,8 +55,7 @@ export default {
             useFrameworks: "static"
           },
           android: {
-            enableProguardInReleaseBuilds: false,
-            minifyEnabled: false, 
+            enableMinifyInReleaseBuilds: false, 
             shrinkResources: false
           }
         }
