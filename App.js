@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppProvider, AppContext } from './AppContext';
 import { Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -107,7 +107,7 @@ const MainPages = () => {
       <Tab.Screen name="Progress" component={Progress} options={{ headerShown: false }} />
       <Tab.Screen name="FAQ" component={Forum} options={{ headerShown: false }} />
       <Tab.Screen name="Profile" component={Profile} options={{ headerShown: false }} /> 
-      <Tab.Screen name="About" component={About} options={{ headerShown: false }} />
+      {/* <Tab.Screen name="About" component={About} options={{ headerShown: false }} /> */}
     </Tab.Navigator>
   );
 };
@@ -132,7 +132,6 @@ const App = () => {
           <Stack.Screen name="NumberOfChildren" component={NumberOfChildren} options={{ headerShown: false }} />
           <Stack.Screen name="PostNatal" component={PostNatal} options={{ headerShown: false }} />
           <Stack.Screen name="YearsMissed" component={YearsMissed} options={{ headerShown: false }} />
-          <Stack.Screen name="Progress" component={Progress} options={{ headerShown: false }}/>
           <Stack.Screen name="Totals" component={Totals} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
