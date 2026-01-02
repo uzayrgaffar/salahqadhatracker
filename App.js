@@ -44,7 +44,7 @@ const MainPages = () => {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#FBC742',
-        tabBarInactiveTintColor: 'gray',
+        tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: {
           paddingBottom: 10,
           paddingTop: 5,

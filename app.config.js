@@ -11,7 +11,7 @@ export default {
     version: "1.0.3",
     userInterfaceStyle: "light",
     ios: {
-      jsEngine: "jsc",
+      jsEngine: "hermes",
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.iqadha",
       buildNumber: "11",
