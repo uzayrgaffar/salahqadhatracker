@@ -1,24 +1,29 @@
 import { useContext, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { AppContext } from "../AppContext";
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const NumberOfChildren = () => {
   const navigation = useNavigation();
   const { numberOfChildren, setNumberOfChildren } = useContext(AppContext);
   const [showChildrenPicker, setShowChildrenPicker] = useState(false);
-  const [selectedChildren, setSelectedChildren] = useState(numberOfChildren);
+  const [selectedChildren, setSelectedChildren] = useState(numberOfChildren?.toString() || "");
+  const insets = useSafeAreaInsets();
 
-  const handleChildrenSelection = (children) => {
-    setSelectedChildren(children);
-    setNumberOfChildren(children);
+  const handleConfirmSelection = () => {
+    if (selectedChildren === "" || isNaN(selectedChildren) || Number(selectedChildren) < 0) {
+      Alert.alert("Invalid input", "Please enter a valid number of children.");
+      return;
+    }
+    setNumberOfChildren(Number(selectedChildren));
     setShowChildrenPicker(false);
   };
 
   const handleConfirm = async () => {
-    if (selectedChildren !== null) {
+    if (selectedChildren !== "") {
       try {
         const user = auth().currentUser;
 
@@ -28,18 +33,16 @@ const NumberOfChildren = () => {
           const userDoc = await userDocRef.get();
 
           if (userDoc.exists) {
-            // Update only the numberOfChildren field
             await userDocRef.update({
-              numberOfChildren: selectedChildren,
+              numberOfChildren: Number(selectedChildren),
             });
           } else {
-            // Create a new document if it doesn't exist
             await userDocRef.set(
               {
-                numberOfChildren: selectedChildren,
+                numberOfChildren: Number(selectedChildren),
                 createdAt: firestore.FieldValue.serverTimestamp(),
               },
-              { merge: true } // Ensures other data is not erased
+              { merge: true }
             );
           }
 
@@ -67,11 +70,11 @@ const NumberOfChildren = () => {
           How many children did you have before you started praying salah regularly?
         </Text>
         <TouchableOpacity
-          style={[styles.selectButton, selectedChildren !== null && styles.selectedButton]}
+          style={[styles.selectButton, selectedChildren !== "" && styles.selectedButton]}
           onPress={() => setShowChildrenPicker(true)}
         >
-          <Text style={[styles.selectButtonText, selectedChildren !== null && styles.selectedButtonText]}>
-            {selectedChildren !== null ? `${selectedChildren} Children` : "Select Number"}
+          <Text style={[styles.selectButtonText, selectedChildren !== "" && styles.selectedButtonText]}>
+            {selectedChildren !== "" ? `${selectedChildren} ${Number(selectedChildren) === 1 ? "Child" : "Children"}` : "Enter Number"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -79,27 +82,28 @@ const NumberOfChildren = () => {
       <Modal visible={showChildrenPicker} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Number of Children</Text>
-            <View style={styles.childrenButtonsContainer}>
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((children) => (
-                <TouchableOpacity
-                  key={children}
-                  style={styles.childrenButton}
-                  onPress={() => handleChildrenSelection(children)}
-                >
-                  <Text style={styles.childrenButtonText}>{children}</Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={styles.modalTitle}>Enter Number of Children</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="Number of Children"
+              value={selectedChildren}
+              onChangeText={(text) => setSelectedChildren(text.replace(/[^0-9]/g, ""))}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalConfirmButton} onPress={handleConfirmSelection}>
+                <Text style={styles.modalConfirmButtonText}>Confirm</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowChildrenPicker(false)}>
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowChildrenPicker(false)}>
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      <View style={styles.bottomContainer}>
-        {selectedChildren !== null && (
+      <View style={[styles.bottomContainer, { bottom: (insets.bottom || 20) + 20 }]}>
+        {selectedChildren !== "" && (
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
             <Text style={styles.confirmButtonText}>Confirm</Text>
           </TouchableOpacity>
@@ -168,7 +172,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,
@@ -202,46 +206,56 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#777777",
     marginBottom: 24,
+    textAlign: "center",
   },
-  childrenButtonsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 12,
+  input: {
+    width: "80%",
+    borderWidth: 1,
+    borderColor: "#777777",
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 18,
+    textAlign: "center",
     marginBottom: 24,
   },
-  childrenButton: {
-    backgroundColor: "#4BD4A2",
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 20,
   },
-  childrenButtonText: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  modalCloseButton: {
-    backgroundColor: "#FBC742",
+  modalConfirmButton: {
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    marginRight: 10,
   },
-  modalCloseButtonText: {
+  modalConfirmButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "500",
   },
-})
+  modalCloseButton: {
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#2F7F6F",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    marginLeft: 10,
+  },
+  modalCloseButtonText: {
+    color: "#2F7F6F",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+});
 
 export default NumberOfChildren

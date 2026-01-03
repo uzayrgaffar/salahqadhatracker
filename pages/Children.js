@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { useNavigation } from "@react-navigation/native"
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Children = () => {
   const navigation = useNavigation()
   const [selectedOption, setSelectedOption] = useState(null)
+  const insets = useSafeAreaInsets();
   
   const handleOptionSelect = (option) => {
     setSelectedOption(option)
@@ -46,7 +48,7 @@ const Children = () => {
         </View>
       </View>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { bottom: (insets.bottom || 20) + 20 }]}>
         {selectedOption && (
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
             <Text style={styles.confirmButtonText}>Confirm</Text>
@@ -115,13 +117,12 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40,
     left: 20,
     right: 20,
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,

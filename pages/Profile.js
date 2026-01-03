@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   qadhaButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",

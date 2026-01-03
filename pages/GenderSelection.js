@@ -1,14 +1,17 @@
-import React, { useContext, useState } from "react"
-import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native"
+import { useContext, useState } from "react"
+import { View, TouchableOpacity, StyleSheet, Text } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
+import Ionicons from "react-native-vector-icons/Ionicons"
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const GenderSelection = () => {
   const navigation = useNavigation()
   const { setGender } = useContext(AppContext)
   const [selectedGender, setSelectedGender] = useState(null)
+  const insets = useSafeAreaInsets();
 
   const selectGender = (gender) => {
     setSelectedGender(gender)
@@ -69,7 +72,7 @@ const GenderSelection = () => {
             onPress={() => selectGender("Male")}
             style={[styles.genderButton, selectedGender === "Male" && styles.selectedButton]}
           >
-            <Image source={require("../assets/Male.jpg")} style={styles.genderImage} />
+            <Ionicons name="man" size={80} color={selectedGender === "Male" ? "#FFFFFF" : "#777777"} />
             <Text style={[styles.genderText, selectedGender === "Male" && styles.selectedGenderText]}>Male</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -77,13 +80,13 @@ const GenderSelection = () => {
             onPress={() => selectGender("Female")}
             style={[styles.genderButton, selectedGender === "Female" && styles.selectedButton]}
           >
-            <Image source={require("../assets/Female.jpg")} style={styles.genderImage} />
+            <Ionicons name="woman" size={80} color={selectedGender === "Female" ? "#FFFFFF" : "#777777"} />
             <Text style={[styles.genderText, selectedGender === "Female" && styles.selectedGenderText]}>Female</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { bottom: (insets.bottom || 20) + 20 }]}>
         {selectedGender && (
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
             <Text style={styles.confirmButtonText}>Confirm</Text>
@@ -144,29 +147,23 @@ const styles = StyleSheet.create({
   selectedButton: {
     backgroundColor: "#4BD4A2",
   },
-  genderImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 10,
-  },
   genderText: {
     fontSize: 16,
     color: "#777777",
     fontWeight: "500",
+    marginTop: 10,
   },
   selectedGenderText: {
     color: "#FFFFFF",
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40,
     left: 20,
     right: 20,
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,

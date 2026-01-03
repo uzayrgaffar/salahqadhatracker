@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     color: "#333333",
   },
   adjustButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,

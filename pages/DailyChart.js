@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   closeButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   prayQadhaButton: {
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     padding: 20,
     borderRadius: 12,
     marginTop: 8,

@@ -1,10 +1,11 @@
-import React, { useContext, useState } from "react"
+import { useContext, useState } from "react"
 import { View, TouchableOpacity, StyleSheet, Text, Platform, Modal } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
 import DateTimePicker from "@react-native-community/datetimepicker"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SetDOB = () => {
   const navigation = useNavigation()
@@ -14,6 +15,7 @@ const SetDOB = () => {
   const [showDOBPicker, setShowDOBPicker] = useState(false)
   const [showAgePicker, setShowAgePicker] = useState(false)
   const [selectedAge, setSelectedAge] = useState(null)
+  const insets = useSafeAreaInsets();
 
   const today = new Date()
   const minimumDOB = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate())
@@ -193,7 +195,7 @@ const SetDOB = () => {
         </View>
       </Modal>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { bottom: (insets.bottom || 20) + 20 }]}>
         {selectedDOB && selectedDOP && (
           <TouchableOpacity
             activeOpacity={0.8}
@@ -281,7 +283,6 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40,
     width: "100%",
     alignItems: "center",
     alignSelf: "center",
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   activeConfirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     borderRadius: 12,
   },
   confirmButtonText: {
@@ -346,13 +347,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   modalCloseButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#2F7F6F",
   },
   modalCloseButtonText: {
-    color: "#FFFFFF",
+    color: "#2F7F6F",
     fontSize: 16,
     fontWeight: "500",
   },

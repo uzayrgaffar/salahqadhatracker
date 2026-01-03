@@ -1,29 +1,24 @@
-import { useContext, useState, useCallback, useMemo } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Alert } from "react-native"
+import { useContext, useState, useMemo, useCallback } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const YearsMissed = () => {
   const navigation = useNavigation()
   const { dop, setYearsMissed, setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr } = useContext(AppContext)
-  
-  const [showYearsPicker, setShowYearsPicker] = useState(false)
-  const [selectedYears, setSelectedYears] = useState(null)
 
-  // Calculate years options only when dop changes
-  const yearsOptions = useMemo(() => {
+  const [showPicker, setShowPicker] = useState(false)
+  const [yearsPrayed, setYearsPrayed] = useState("")
+  const insets = useSafeAreaInsets()
+
+  const totalYearsSincePuberty = useMemo(() => {
     const currentYear = new Date().getFullYear()
     const dopYear = new Date(dop).getFullYear()
-    const maxYearsMissed = currentYear - dopYear
-    return Array.from({ length: maxYearsMissed + 1 }, (_, i) => i)
+    return Math.max(currentYear - dopYear, 0)
   }, [dop])
-
-  const handleYearSelection = useCallback((years) => {
-    setSelectedYears(years)
-    setShowYearsPicker(false)
-  }, [])
 
   const resetAllPrayers = useCallback(() => {
     setFajr(0)
@@ -32,103 +27,146 @@ const YearsMissed = () => {
     setMaghrib(0)
     setIsha(0)
     setWitr(0)
-  }, [setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr])
+  }, [])
 
-  const saveToFirestore = useCallback(async (userId, selectedYears) => {
+  const saveToFirestore = useCallback(async (userId, yearsMissed) => {
     const userDocRef = firestore().collection("users").doc(userId)
     const userDoc = await userDocRef.get()
 
     if (userDoc.exists) {
-      await userDocRef.update({
-        yearsMissed: selectedYears,
-      })
+      await userDocRef.update({ yearsMissed })
     } else {
-      await userDocRef.set({
-        yearsMissed: selectedYears,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    )
+      await userDocRef.set(
+        {
+          yearsMissed,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      )
     }
   }, [])
 
   const handleConfirm = useCallback(async () => {
-    if (selectedYears === null) return
+    if (yearsPrayed === "") {
+      Alert.alert("Invalid input", "Please enter a number.")
+      return
+    }
+
+    const prayedYears = Number(yearsPrayed)
+
+    if (isNaN(prayedYears) || prayedYears < 0) {
+      Alert.alert("Invalid input", "Please enter a valid number.")
+      return
+    }
+
+    if (prayedYears > totalYearsSincePuberty) {
+      Alert.alert(
+        "Invalid input",
+        `You cannot enter more than ${totalYearsSincePuberty} years.`
+      )
+      return
+    }
+
+    const yearsMissed = totalYearsSincePuberty - prayedYears
 
     try {
       const user = auth().currentUser
 
       if (!user) {
-        console.error("No authenticated user found!")
         Alert.alert("Error", "You need to be logged in to save your data.")
         return
       }
 
-      await saveToFirestore(user.uid, selectedYears)
-      console.log("Years missed data saved successfully!")
-      
-      // Store locally in context
-      setYearsMissed(selectedYears)
-      
-      if (selectedYears === 0) {
+      await saveToFirestore(user.uid, yearsMissed)
+      setYearsMissed(yearsMissed)
+
+      if (yearsMissed === 0) {
         resetAllPrayers()
       }
 
       navigation.navigate("MadhabSelection")
     } catch (error) {
-      console.error("Error saving years missed data:", error)
+      console.error("Error saving years missed:", error)
       Alert.alert("Error", "Failed to save data. Please try again.")
     }
-  }, [selectedYears, saveToFirestore, setYearsMissed, resetAllPrayers, navigation])
-
-  const toggleYearsPicker = useCallback(() => {
-    setShowYearsPicker(prev => !prev)
-  }, [])
+  }, [
+    yearsPrayed,
+    totalYearsSincePuberty,
+    saveToFirestore,
+    setYearsMissed,
+    resetAllPrayers,
+    navigation,
+  ])
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Years Missed</Text>
+        <Text style={styles.headerTitle}>Years of Salah</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Please select the number of years of salah you have missed:</Text>
+        <Text style={styles.cardTitle}>
+          How many years have you prayed salah regularly?
+        </Text>
+
         <TouchableOpacity
-          style={[styles.selectButton, selectedYears !== null && styles.selectedButton]}
-          onPress={toggleYearsPicker}
+          style={[styles.selectButton, yearsPrayed !== "" && styles.selectedButton]}
+          onPress={() => setShowPicker(true)}
         >
-          <Text style={[styles.selectButtonText, selectedYears !== null && styles.selectedButtonText]}>
-            {selectedYears !== null ? `${selectedYears} Years` : "Select Years"}
+          <Text
+            style={[
+              styles.selectButtonText,
+              yearsPrayed !== "" && styles.selectedButtonText,
+            ]}
+          >
+            {yearsPrayed !== ""
+              ? `${yearsPrayed} ${Number(yearsPrayed) === 1 ? "Year" : "Years"}`
+              : "Enter Years"}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <Modal visible={showYearsPicker} transparent={true} animationType="slide">
+      <Modal visible={showPicker} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Years Missed</Text>
-            <ScrollView style={styles.yearsScrollView}>
-              <View style={styles.yearsButtonsContainer}>
-                {yearsOptions.map((year) => (
-                  <TouchableOpacity 
-                    key={year} 
-                    style={styles.yearButton} 
-                    onPress={() => handleYearSelection(year)}
-                  >
-                    <Text style={styles.yearButtonText}>{year}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={toggleYearsPicker}>
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Enter Years Prayed Regularly</Text>
+
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder={`0 – ${totalYearsSincePuberty}`}
+              value={yearsPrayed}
+              onChangeText={(text) =>
+                setYearsPrayed(text.replace(/[^0-9]/g, ""))
+              }
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={() => setShowPicker(false)}
+              >
+                <Text style={styles.modalConfirmButtonText}>Confirm</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowPicker(false)}
+              >
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
 
-      <View style={styles.bottomContainer}>
-        {selectedYears !== null && (
+      <View
+        style={[
+          styles.bottomContainer,
+          { bottom: (insets.bottom || 20) + 20 },
+        ]}
+      >
+        {yearsPrayed !== "" && (
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
             <Text style={styles.confirmButtonText}>Confirm</Text>
           </TouchableOpacity>
@@ -153,16 +191,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "600",
     color: "#FFFFFF",
-    textAlign: "center",
   },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
     elevation: 5,
   },
   cardTitle: {
@@ -191,22 +225,15 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40,
     left: 20,
     right: 20,
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
   },
   confirmButtonText: {
     color: "#FFFFFF",
@@ -225,51 +252,48 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     alignItems: "center",
-    maxHeight: "80%",
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#777777",
     marginBottom: 24,
+    textAlign: "center",
   },
-  yearsScrollView: {
-    width: "100%",
-    maxHeight: 400,
-  },
-  yearsButtonsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 12,
+  input: {
+    width: "80%",
+    borderWidth: 1,
+    borderColor: "#777777",
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 18,
+    textAlign: "center",
     marginBottom: 24,
   },
-  yearButton: {
-    backgroundColor: "#4BD4A2",
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
+  modalButtons: {
+    flexDirection: "row",
+    width: "100%",
   },
-  yearButtonText: {
+  modalConfirmButton: {
+    flex: 1,
+    backgroundColor: "#4BD4A2",
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginRight: 10,
+    alignItems: "center",
+  },
+  modalConfirmButtonText: {
     color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "500",
   },
   modalCloseButton: {
-    backgroundColor: "#FBC742",
+    flex: 1,
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
-    paddingHorizontal: 24,
     borderRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
+    marginLeft: 10,
+    alignItems: "center",
   },
   modalCloseButtonText: {
     color: "#FFFFFF",

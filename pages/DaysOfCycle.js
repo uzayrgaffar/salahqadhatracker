@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-na
 import { useNavigation } from "@react-navigation/native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DaysOfCycle = () => {
   const navigation = useNavigation()
   const [showCyclePicker, setShowCyclePicker] = useState(false)
   const [selectedDays, setSelectedDays] = useState(null)
   const [loading, setLoading] = useState(false)
+  const insets = useSafeAreaInsets();
 
   const handleCycleSelection = (days) => {
     setSelectedDays(days)
@@ -95,7 +97,7 @@ const DaysOfCycle = () => {
         </View>
       </Modal>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { bottom: (insets.bottom || 20) + 20 }]}>
         {selectedDays && (
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
             <Text style={styles.confirmButtonText}>Confirm</Text>
@@ -159,13 +161,12 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40,
     left: 20,
     right: 20,
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,
@@ -225,13 +226,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   modalCloseButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#2F7F6F",
   },
   modalCloseButtonText: {
-    color: "#FFFFFF",
+    color: "#2F7F6F",
     fontSize: 16,
     fontWeight: "500",
   },

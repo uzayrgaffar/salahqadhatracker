@@ -47,7 +47,7 @@ const MainPages = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#FBC742',
+        tabBarActiveTintColor: '#2F7F6F',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: {
           paddingBottom: insets.bottom || 10,
