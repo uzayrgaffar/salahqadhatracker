@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react"
-import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, SafeAreaView, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
 import auth from '@react-native-firebase/auth'
@@ -14,8 +14,9 @@ const Progress = () => {
   const [dailyPrayerCounts, setDailyPrayerCounts] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const {madhab} = useContext(AppContext)
-  
+  const { madhab } = useContext(AppContext)
+  const [selectedRange, setSelectedRange] = useState(14)
+
   useEffect(() => {
     const userId = auth().currentUser?.uid;
     if (!userId) {
@@ -92,7 +93,7 @@ const Progress = () => {
 
   const generateDates = () => {
     const dates = []
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < selectedRange; i++) {
       dates.push(moment().subtract(i, "days").format("YYYY-MM-DD"))
     }
     return dates.reverse()
@@ -109,7 +110,7 @@ const Progress = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Progress</Text>
@@ -119,13 +120,13 @@ const Progress = () => {
             <Text style={styles.loadingText}>Loading data...</Text>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     )
   }
 
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Progress</Text>
@@ -135,13 +136,13 @@ const Progress = () => {
             <Text style={styles.errorSubtext}>Please try again later</Text>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     )
   }
 
   if (!userData) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Progress</Text>
@@ -151,14 +152,14 @@ const Progress = () => {
             <Text style={styles.errorSubtext}>Please complete your profile setup</Text>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     )
   }
 
   const prayerCounts = getPrayerCounts()
   const totalQadhaPrayed = prayerCounts.reduce((sum, count) => sum + count, 0)
-  const averageQadhaPerDay = totalQadhaPrayed > 0 ? (totalQadhaPrayed / 14).toFixed(2) : "0.00"
-  
+  const averageQadhaPerDay = totalQadhaPrayed > 0 ? (totalQadhaPrayed / selectedRange).toFixed(2) : "0.00"
+
   const fajrCount = userData.fajr || 0
   const dhuhrCount = userData.dhuhr || 0
   const asrCount = userData.asr || 0
@@ -186,24 +187,63 @@ const Progress = () => {
   const screenWidth = Dimensions.get("window").width
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Progress</Text>
         </View>
         <ScrollView style={styles.content}>
+          <View style={styles.rangeSelector}>
+            <TouchableOpacity
+              style={[styles.rangeButton, selectedRange === 7 && styles.rangeButtonActive]}
+              onPress={() => setSelectedRange(7)}
+            >
+              <Text style={[styles.rangeButtonText, selectedRange === 7 && styles.rangeButtonTextActive]}>7d</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.rangeButton, selectedRange === 14 && styles.rangeButtonActive]}
+              onPress={() => setSelectedRange(14)}
+            >
+              <Text style={[styles.rangeButtonText, selectedRange === 14 && styles.rangeButtonTextActive]}>14d</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.rangeButton, selectedRange === 30 && styles.rangeButtonActive]}
+              onPress={() => setSelectedRange(30)}
+            >
+              <Text style={[styles.rangeButtonText, selectedRange === 30 && styles.rangeButtonTextActive]}>30d</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.rangeButton, selectedRange === 60 && styles.rangeButtonActive]}
+              onPress={() => setSelectedRange(60)}
+            >
+              <Text style={[styles.rangeButtonText, selectedRange === 60 && styles.rangeButtonTextActive]}>60d</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.rangeButton, selectedRange === 90 && styles.rangeButtonActive]}
+              onPress={() => setSelectedRange(90)}
+            >
+              <Text style={[styles.rangeButtonText, selectedRange === 90 && styles.rangeButtonTextActive]}>90d</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.chartContainer}>
-            <Text style={styles.chartTitle}>Qadha Prayers (Last 14 Days)</Text>
+            <Text style={styles.chartTitle}>Qadha Prayers (Last {selectedRange} Days)</Text>
             <LineChart
               data={{
-                labels: dates.map((date) => moment(date).format("DD")),
-                datasets: [
-                  {
-                    data: prayerCounts.length > 0 ? prayerCounts : [0],
-                    color: (opacity = 1) => `rgba(75, 212, 162, ${opacity})`,
-                    strokeWidth: 2,
-                  },
-                ],
+                labels: dates.map((date, index) => {
+                  const labelInterval = selectedRange <= 7 ? 1 : selectedRange <= 14 ? 2 : selectedRange <= 30 ? 5 : selectedRange <= 60 ? 10 : 15;
+                  if (index % labelInterval === 0) {
+                    const currentMonth = moment().month();
+                    const dateMonth = moment(date).month();
+                    return currentMonth !== dateMonth ? moment(date).format("DD MMM") : moment(date).format("DD");   
+                  }
+                  return "";
+                }),
+                datasets: [{
+                  data: prayerCounts.length > 0 ? prayerCounts : [0],
+                  color: (opacity = 1) => `rgba(75, 212, 162, ${opacity})`,
+                  strokeWidth: 2,
+                }],
               }}
               width={screenWidth - 40}
               height={220}
@@ -240,7 +280,7 @@ const Progress = () => {
           </View>
 
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Summary (Last 14 days)</Text>
+            <Text style={styles.summaryTitle}>Summary (Last {selectedRange} days)</Text>
 
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Total Qadha Prayed</Text>
@@ -311,7 +351,7 @@ const Progress = () => {
           </View>
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -345,23 +385,47 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: "#666666",
     marginTop: 16,
   },
   errorText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#FF6B6B',
+    fontWeight: "600",
+    color: "#FF6B6B",
     marginBottom: 8,
   },
   errorSubtext: {
     fontSize: 14,
-    color: '#666666',
+    color: "#666666",
+  },
+  rangeSelector: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    gap: 8,
+  },
+  rangeButton: {
+    flex: 1,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  rangeButtonActive: {
+    backgroundColor: "#4BD4A2",
+  },
+  rangeButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#777777",
+  },
+  rangeButtonTextActive: {
+    color: "#FFFFFF",
   },
   chartContainer: {
     backgroundColor: "#FFFFFF",
