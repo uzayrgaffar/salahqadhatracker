@@ -5,6 +5,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppProvider, AppContext } from './AppContext';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Pages 
 import SelectLanguage from './pages/SelectLanguage';
 import Login from './pages/Login';
 import Forum from './pages/Forum';
@@ -28,6 +31,7 @@ const Tab = createBottomTabNavigator();
 
 const MainPages = () => {
   const { selectedLanguage } = useContext(AppContext);
+  const insets = useSafeAreaInsets();
 
   const getLabel = (routeName) => {
     const tabLabels = {
@@ -46,9 +50,9 @@ const MainPages = () => {
         tabBarActiveTintColor: '#FBC742',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: {
-          paddingBottom: 10,
+          paddingBottom: insets.bottom || 10,
           paddingTop: 5,
-          height: 70,
+          height: 70 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -103,26 +107,29 @@ const MainPages = () => {
 const App = () => {
   return (
     <AppProvider>
-      <NavigationContainer>
-        <StatusBar style="light" backgroundColor="#5CB390" />
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StatusBar style="light" backgroundColor="#5CB390" />
 
-        <Stack.Navigator>
-          <Stack.Screen name="SelectLanguage" component={SelectLanguage} options={{ headerShown: false }} />
-          <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
-          <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
-          <Stack.Screen name="MainPages" component={MainPages} options={{ headerShown: false }} />
-          <Stack.Screen name="SetQadhaSalah" component={SetQadhaSalah} options={{ headerShown: false }} />
-          <Stack.Screen name="SetDOB" component={SetDOB} options={{ headerShown: false }} />
-          <Stack.Screen name="GenderSelection" component={GenderSelection} options={{ headerShown: false }} />
-          <Stack.Screen name="MadhabSelection" component={MadhabSelection} options={{ headerShown: false }} />
-          <Stack.Screen name="DaysOfCycle" component={DaysOfCycle} options={{ headerShown: false }} />
-          <Stack.Screen name="Children" component={Children} options={{ headerShown: false }} />
-          <Stack.Screen name="NumberOfChildren" component={NumberOfChildren} options={{ headerShown: false }} />
-          <Stack.Screen name="PostNatal" component={PostNatal} options={{ headerShown: false }} />
-          <Stack.Screen name="YearsMissed" component={YearsMissed} options={{ headerShown: false }} />
-          <Stack.Screen name="Totals" component={Totals} options={{ headerShown: false }} />
-        </Stack.Navigator>
-      </NavigationContainer>
+          <Stack.Navigator>
+            <Stack.Screen name="SelectLanguage" component={SelectLanguage} options={{ headerShown: false }} />
+            <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
+            <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
+            <Stack.Screen name="MainPages" component={MainPages} options={{ headerShown: false }} />
+            <Stack.Screen name="SetQadhaSalah" component={SetQadhaSalah} options={{ headerShown: false }} />
+            <Stack.Screen name="SetDOB" component={SetDOB} options={{ headerShown: false }} />
+            <Stack.Screen name="GenderSelection" component={GenderSelection} options={{ headerShown: false }} />
+            <Stack.Screen name="MadhabSelection" component={MadhabSelection} options={{ headerShown: false }} />
+            <Stack.Screen name="DaysOfCycle" component={DaysOfCycle} options={{ headerShown: false }} />
+            <Stack.Screen name="Children" component={Children} options={{ headerShown: false }} />
+            <Stack.Screen name="NumberOfChildren" component={NumberOfChildren} options={{ headerShown: false }} />
+            <Stack.Screen name="PostNatal" component={PostNatal} options={{ headerShown: false }} />
+            <Stack.Screen name="YearsMissed" component={YearsMissed} options={{ headerShown: false }} />
+            <Stack.Screen name="Totals" component={Totals} options={{ headerShown: false }} />
+          </Stack.Navigator>
+
+        </NavigationContainer>
+      </SafeAreaProvider>
     </AppProvider>
   );
 };

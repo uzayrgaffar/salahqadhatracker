@@ -1,7 +1,6 @@
 import { useState, useEffect, useContext } from "react"
-import { View, TouchableOpacity, StyleSheet, Text, ScrollView, SafeAreaView, Alert } from "react-native"
+import { View, TouchableOpacity, StyleSheet, Text, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
-import { ChevronRight } from "lucide-react-native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
 import { AppContext } from "../AppContext"
@@ -110,7 +109,7 @@ const Profile = () => {
   };  
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <View style={styles.scrollView}>
         <View style={styles.container}>
           <View style={styles.header}>
@@ -128,7 +127,7 @@ const Profile = () => {
                     onPress={() => selectMadhab(mad)}
                   >
                     <Text style={[styles.optionText, madhab === mad && styles.selectedOptionText]}>{mad}</Text>
-                    {madhab === mad && <ChevronRight color="#FFFFFF" size={20} />}
+                    {madhab === mad}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -169,7 +168,7 @@ const Profile = () => {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   )
 }
 

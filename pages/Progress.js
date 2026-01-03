@@ -239,31 +239,76 @@ const Progress = () => {
             />
           </View>
 
-          <View style={styles.summaryContainer}>
+          <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>Summary (Last 14 days)</Text>
-            <Text style={styles.summaryText}>Total Qadha Prayed: {totalQadhaPrayed}</Text>
-            <Text style={styles.summaryText}>Average Qadha per Day: {averageQadhaPerDay}</Text>
-            <Text style={styles.summaryText}>
-              {totalRemainingPrayers === 0 ? "MashaAllah! You are all caught up with your Qadha salah! 🎉" : `Estimated Completion: ${daysToFinish} days ${yearsToFinish}`}
-            </Text>
 
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Total Qadha Prayed</Text>
+              <Text style={styles.summaryValue}>{totalQadhaPrayed}</Text>
+            </View>
+
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Average Qadha per Day</Text>
+              <Text style={styles.summaryValue}>{averageQadhaPerDay}</Text>
+            </View>
+
+            <View style={[styles.summaryItem, { borderBottomWidth: 0 }]}>
+              <Text style={styles.summaryLabel}>Estimated Completion</Text>
+              <Text style={styles.summaryValue}>
+                {totalRemainingPrayers === 0
+                  ? "All caught up!"
+                  : `${daysToFinish} days ${yearsToFinish}`}
+              </Text>
+            </View>
           </View>
-          
-          <View style={styles.summaryContainer}>
-            <Text style={styles.summaryTitle}>Breakdown</Text>
-            <Text style={styles.summaryText}>
-              Fajr: {fajrCount} | Dhuhr: {dhuhrCount} | Asr: {asrCount}
-            </Text>
-            <Text style={styles.summaryText}>
-              Maghrib: {maghribCount} | Isha: {ishaCount} {madhab === "Hanafi" ? `| Witr: ${witrCount}` : ""}
-            </Text>
-            <Text style={styles.summaryText}>Total Remaining Qadha: {totalRemainingPrayers}</Text>
+
+          <View style={styles.breakdownCard}>
+            <View style={styles.breakdownHeader}>
+              <Text style={styles.breakdownTitle}>Remaining Qadha</Text>
+              <TouchableOpacity
+                style={styles.adjustButton}
+                onPress={() => {
+                  navigation.navigate("Totals")
+                }}
+              >
+                <Text style={styles.adjustButtonText}>Adjust</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.prayerGrid}>
+              <View style={styles.prayerItem}>
+                <Text style={styles.prayerLabel}>Fajr</Text>
+                <Text style={styles.prayerCount}>{fajrCount}</Text>
+              </View>
+              <View style={styles.prayerItem}>
+                <Text style={styles.prayerLabel}>Dhuhr</Text>
+                <Text style={styles.prayerCount}>{dhuhrCount}</Text>
+              </View>
+              <View style={styles.prayerItem}>
+                <Text style={styles.prayerLabel}>Asr</Text>
+                <Text style={styles.prayerCount}>{asrCount}</Text>
+              </View>
+              <View style={styles.prayerItem}>
+                <Text style={styles.prayerLabel}>Maghrib</Text>
+                <Text style={styles.prayerCount}>{maghribCount}</Text>
+              </View>
+              <View style={styles.prayerItem}>
+                <Text style={styles.prayerLabel}>Isha</Text>
+                <Text style={styles.prayerCount}>{ishaCount}</Text>
+              </View>
+              {madhab === "Hanafi" && (
+                <View style={styles.prayerItem}>
+                  <Text style={styles.prayerLabel}>Witr</Text>
+                  <Text style={styles.prayerCount}>{witrCount}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalLabel}>Total Remaining</Text>
+              <Text style={styles.totalCount}>{totalRemainingPrayers}</Text>
+            </View>
           </View>
-
-          <TouchableOpacity style={styles.totalQadhaButton} onPress={() => {navigation.navigate('Totals')}} >
-            <Text style={styles.totalQadhaButtonText}>Adjust Total Qadha</Text>
-          </TouchableOpacity>
-
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -334,39 +379,127 @@ const styles = StyleSheet.create({
   chart: {
     marginVertical: 8,
   },
-  summaryContainer: {
-    backgroundColor: "#F5F5F5",
+  summaryCard: {
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
   summaryTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#333333",
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  summaryText: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 8,
-  },
-  totalQadhaButton: {
-    backgroundColor: "#FBC742",
-    borderRadius: 12,
-    padding: 16,
+  summaryItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 10,
-    marginBottom: 80,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
-  totalQadhaButtonText: {
-    color: "#FFFFFF",
+  summaryLabel: {
+    fontSize: 14,
+    color: "#777777",
+    fontWeight: "500",
+    flex: 1,
+  },
+  summaryValue: {
+    fontSize: 14,
+    color: "#5CB390",
+    fontWeight: "600",
+    textAlign: "center",
+    flex: 1,
+  },
+  breakdownCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  breakdownHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  breakdownTitle: {
     fontSize: 18,
     fontWeight: "600",
+    color: "#333333",
+  },
+  adjustButton: {
+    backgroundColor: "#FBC742",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  adjustButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  prayerGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 16,
+    gap: 12,
+  },
+  prayerItem: {
+    flex: 1,
+    minWidth: "30%",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
+  },
+  prayerLabel: {
+    fontSize: 12,
+    color: "#777777",
+    marginBottom: 4,
+    fontWeight: "500",
+  },
+  prayerCount: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#5CB390",
+  },
+  totalContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333333",
+  },
+  totalCount: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#5CB390",
   },
 })
 

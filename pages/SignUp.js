@@ -224,7 +224,7 @@ const SignUp = () => {
           onPress={signInAnonymouslyHandler} 
           disabled={loading}
         >
-          <Text style={styles.signInButtonText}>Continue Without Sign up</Text>
+          <Text style={styles.anonymousButtonText}>Continue Without Sign up</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -304,12 +304,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   anonymousButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#5CB390",
     marginVertical: 10,
     width: "100%",
     alignItems: "center",
+  },
+  anonymousButtonText: {
+    color: "#5CB390",
+    fontSize: 18,
+    fontWeight: "600",
   },
   switchButton: {
     marginTop: 15,

@@ -234,17 +234,17 @@ const adjustTotalQadha = async (prayer, amount) => {
         selectedCount === 0
           ? "#000000"
           : selectedCount === 1
-            ? "#D32F2F"
+            ? "#6B7280"
             : selectedCount === 2
-              ? "#F44336"
+              ? "#4B8B6F"
               : selectedCount === 3
-                ? "#FF9800"
+                ? "#34A853"
                 : selectedCount === 4
-                  ? "#8BC34A"
+                  ? "#1F9D55"
                   : selectedCount === 5
-                    ? "#4CAF50"
+                    ? "#0F7C3A"
                     : selectedCount === 6
-                      ? "#00897B"
+                      ? "#065F2B"
                       : "#000000"
 
       markedDates[date] = {
@@ -347,12 +347,12 @@ const adjustTotalQadha = async (prayer, amount) => {
               <View style={styles.colorKeyRow}>
                 {[
                   { color: "#000000", label: "0 prayers" },
-                  { color: "#D32F2F", label: "1 prayer" },
-                  { color: "#F44336", label: "2 prayers" },
-                  { color: "#FF9800", label: "3 prayers" },
-                  { color: "#8BC34A", label: "4 prayers" },
-                  { color: "#4CAF50", label: "5 prayers" },
-                  ...(madhab === "Hanafi" ? [{ color: "#00897B", label: "6 prayers" }] : []),
+                  { color: "#6B7280", label: "1 prayer" },
+                  { color: "#4B8B6F", label: "2 prayers" },
+                  { color: "#34A853", label: "3 prayers" },
+                  { color: "#1F9D55", label: "4 prayers" },
+                  { color: "#0F7C3A", label: "5 prayers" },
+                  ...(madhab === "Hanafi" ? [{ color: "#065F2B", label: "6 prayers" }] : []),
                 ].map((item) => (
                   <View key={item.color} style={styles.colorKeyItem}>
                     <View style={[styles.colorBox, { backgroundColor: item.color }]} />
