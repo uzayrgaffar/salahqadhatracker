@@ -11,7 +11,7 @@ import {
   UIManager,
 } from "react-native"
 import { AppContext } from "../AppContext"
-import { Search } from "lucide-react-native"
+import Icon from "react-native-vector-icons/Ionicons"
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental(true)
@@ -107,37 +107,70 @@ const Forum = () => {
 
       <View style={styles.content}>
         <View style={styles.searchContainer}>
-          <Search size={20} color="#777777" style={styles.searchIcon} />
+          <Icon name="search-outline" size={20} color="#9CA3AF" style={styles.searchIcon} />
           <TextInput
             style={styles.searchBar}
             placeholder="Search questions..."
-            placeholderTextColor="#777777"
+            placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")}>
+              <Icon name="close-circle" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+          )}
         </View>
 
-        <FlatList
-          data={filteredQuestionsResult}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => (
-            <View style={styles.questionWrapper}>
-              <TouchableOpacity
-                onPress={() => handlePress(index)}
-                style={[styles.questionContainer, expandedIndex === index && styles.questionContainerExpanded]}
-              >
-                <Text style={[styles.questionText, expandedIndex === index && styles.questionTextExpanded]}>{item.question}</Text>
-              </TouchableOpacity>
-              {expandedIndex === index && (
-                <View style={styles.answerContainer}>
-                  <Text style={styles.answerText}>{item.answer}</Text>
-                </View>
-              )}
-            </View>
-          )}
-          contentContainerStyle={styles.flatListContent}
-          showsVerticalScrollIndicator={false}
-        />
+        {filteredQuestionsResult.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Icon name="help-circle-outline" size={64} color="#D1D5DB" />
+            <Text style={styles.emptyStateText}>No questions found</Text>
+            <Text style={styles.emptyStateSubtext}>Try a different search term</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredQuestionsResult}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item, index }) => (
+              <View style={styles.questionWrapper}>
+                <TouchableOpacity
+                  onPress={() => handlePress(index)}
+                  style={[
+                    styles.questionContainer,
+                    expandedIndex === index && styles.questionContainerExpanded
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.questionHeader}>
+                    <Text style={[
+                      styles.questionText,
+                      expandedIndex === index && styles.questionTextExpanded
+                    ]}>
+                      {item.question}
+                    </Text>
+                    <Icon
+                      name={expandedIndex === index ? "chevron-up" : "chevron-down"}
+                      size={20}
+                      color={expandedIndex === index ? "#FFFFFF" : "#6B7280"}
+                      style={styles.chevronIcon}
+                    />
+                  </View>
+                </TouchableOpacity>
+                {expandedIndex === index && (
+                  <View style={styles.answerContainer}>
+                    <View style={styles.answerIconContainer}>
+                      <Icon name="checkmark-circle" size={20} color="#5CB390" />
+                    </View>
+                    <Text style={styles.answerText}>{item.answer}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+            contentContainerStyle={styles.flatListContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
     </View>
   )
@@ -169,61 +202,98 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EEEEEE",
-    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 16,
     paddingHorizontal: 16,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   searchBar: {
     flex: 1,
-    height: 48,
+    height: 50,
     fontSize: 16,
-    color: "#333333",
+    color: "#1F2937",
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginTop: 16,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: "#9CA3AF",
+    marginTop: 4,
   },
   questionWrapper: {
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   questionContainer: {
-    padding: 16,
-    backgroundColor: "#EEEEEE",
-    borderRadius: 12,
+    padding: 18,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 16,
   },
   questionContainerExpanded: {
-    backgroundColor: "#4BD4A2",
+    backgroundColor: "#5CB390",
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },
+  questionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   questionText: {
+    flex: 1,
     fontSize: 16,
-    color: "#777777",
-    fontWeight: "500",
+    color: "#374151",
+    fontWeight: "600",
+    lineHeight: 22,
+    marginRight: 8,
   },
   questionTextExpanded: {
-    fontSize: 16,
     color: "#FFFFFF",
-    fontWeight: "500",
+  },
+  chevronIcon: {
+    marginLeft: 8,
   },
   answerContainer: {
-    padding: 16,
+    padding: 18,
     backgroundColor: "#FFFFFF",
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  answerIconContainer: {
+    marginRight: 12,
+    marginTop: 2,
   },
   answerText: {
-    fontSize: 14,
-    color: "#777777",
-    lineHeight: 20,
+    flex: 1,
+    fontSize: 15,
+    color: "#6B7280",
+    lineHeight: 22,
   },
   flatListContent: {
     paddingBottom: 20,

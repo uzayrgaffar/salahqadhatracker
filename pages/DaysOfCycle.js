@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, TextInput } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
@@ -9,10 +9,18 @@ const DaysOfCycle = () => {
   const navigation = useNavigation()
   const [showCyclePicker, setShowCyclePicker] = useState(false)
   const [selectedDays, setSelectedDays] = useState(null)
+  const [tempDays, setTempDays] = useState("")
   const [loading, setLoading] = useState(false)
   const insets = useSafeAreaInsets();
 
-  const handleCycleSelection = (days) => {
+  const applyCycleDays = () => {
+    const days = Number(tempDays)
+
+    if (days < 3 || days > 10) {
+      Alert.alert("Invalid Input", "Cycle length can only be between 3 and 10 days.")
+      return
+    }
+
     setSelectedDays(days)
     setShowCyclePicker(false)
   }
@@ -60,7 +68,6 @@ const DaysOfCycle = () => {
     }
   };  
 
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -68,13 +75,13 @@ const DaysOfCycle = () => {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Select the number of days in your cycle:</Text>
+        <Text style={styles.cardTitle}>Enter the number of days in your cycle:</Text>
         <TouchableOpacity
           style={[styles.selectButton, selectedDays && styles.selectedButton]}
           onPress={() => setShowCyclePicker(true)}
         >
           <Text style={[styles.selectButtonText, selectedDays && styles.selectedButtonText]}>
-            {selectedDays ? `${selectedDays} Days` : "Select Days"}
+            {selectedDays ? `${selectedDays} Days` : "Enter Days"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -82,17 +89,25 @@ const DaysOfCycle = () => {
       <Modal visible={showCyclePicker} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Days of Cycle</Text>
-            <View style={styles.daysButtonsContainer}>
-              {Array.from({ length: 8 }, (_, i) => i + 3).map((days) => (
-                <TouchableOpacity key={days} style={styles.daysButton} onPress={() => handleCycleSelection(days)}>
-                  <Text style={styles.daysButtonText}>{days}</Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={styles.modalTitle}>Enter Days of Cycle</Text>
+
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="3 - 10"
+              value={tempDays}
+              onChangeText={(text) => setTempDays(text.replace(/[^0-9]/g, ""))}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalConfirmButton} onPress={applyCycleDays}>
+                <Text style={styles.modalConfirmButtonText}>Confirm</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowCyclePicker(false)}>
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowCyclePicker(false)}>
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -130,9 +145,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
     elevation: 5,
   },
   cardTitle: {
@@ -170,8 +182,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
@@ -201,35 +211,36 @@ const styles = StyleSheet.create({
     color: "#777777",
     marginBottom: 24,
   },
-  daysButtonsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 12,
+  input: {
+    width: "80%",
+    borderWidth: 1,
+    borderColor: "#777777",
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 18,
+    textAlign: "center",
     marginBottom: 24,
   },
-  daysButton: {
-    backgroundColor: "#4BD4A2",
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
   },
-  daysButtonText: {
+  modalConfirmButton: {
+    backgroundColor: "#2F7F6F",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  modalConfirmButtonText: {
     color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "500",
   },
   modalCloseButton: {
     backgroundColor: "#FFFFFF",
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: "#2F7F6F",
   },

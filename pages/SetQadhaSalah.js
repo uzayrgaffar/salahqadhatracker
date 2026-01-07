@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native"
 import { AppContext } from "../AppContext"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const SetQadhaSalah = () => {
   const navigation = useNavigation()
@@ -28,6 +29,7 @@ export const SetQadhaSalah = () => {
     setPNB,
     setNumberOfChildren,
   } = useContext(AppContext)
+  const insets = useSafeAreaInsets();
 
   const [selectedSalah, setSelectedSalah] = useState({
     Fajr: false,
@@ -227,7 +229,7 @@ export const SetQadhaSalah = () => {
       </ScrollView>
 
       {isAnySelected && (
-        <View style={styles.bottomContainer}>
+        <View style={[styles.bottomContainer, { bottom: (insets.bottom || 20) + 20 }]}>
           <TouchableOpacity style={styles.confirmButton} onPress={confirmSelection}>
             <Text style={styles.confirmButtonText}>{getTranslation("confirm")}</Text>
           </TouchableOpacity>
@@ -299,13 +301,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   bottomContainer: {
-    paddingTop: 20,
-    paddingBottom: 40,
     backgroundColor: "#5CB390",
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,

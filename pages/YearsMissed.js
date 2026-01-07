@@ -134,7 +134,7 @@ const YearsMissed = () => {
             <TextInput
               style={styles.input}
               keyboardType="numeric"
-              placeholder={`0 – ${totalYearsSincePuberty}`}
+              placeholder={`0 - ${totalYearsSincePuberty}`}
               value={yearsPrayed}
               onChangeText={(text) =>
                 setYearsPrayed(text.replace(/[^0-9]/g, ""))
@@ -272,15 +272,13 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: "row",
-    width: "100%",
+    gap: 12,
   },
   modalConfirmButton: {
-    flex: 1,
-    backgroundColor: "#4BD4A2",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 12,
-    marginRight: 10,
-    alignItems: "center",
   },
   modalConfirmButtonText: {
     color: "#FFFFFF",
@@ -288,15 +286,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   modalCloseButton: {
-    flex: 1,
-    backgroundColor: "#2F7F6F",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 12,
-    marginLeft: 10,
-    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#2F7F6F",
   },
   modalCloseButtonText: {
-    color: "#FFFFFF",
+    color: "#2F7F6F",
     fontSize: 16,
     fontWeight: "500",
   },

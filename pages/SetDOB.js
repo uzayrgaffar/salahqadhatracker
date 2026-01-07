@@ -1,5 +1,5 @@
 import { useContext, useState } from "react"
-import { View, TouchableOpacity, StyleSheet, Text, Platform, Modal } from "react-native"
+import { View, TouchableOpacity, StyleSheet, Text, Platform, Modal, TextInput, Alert } from "react-native"
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
 import DateTimePicker from "@react-native-community/datetimepicker"
@@ -15,6 +15,7 @@ const SetDOB = () => {
   const [showDOBPicker, setShowDOBPicker] = useState(false)
   const [showAgePicker, setShowAgePicker] = useState(false)
   const [selectedAge, setSelectedAge] = useState(null)
+  const [tempAge, setTempAge] = useState("")
   const insets = useSafeAreaInsets();
 
   const today = new Date()
@@ -36,7 +37,7 @@ const SetDOB = () => {
   const islamicDefault = (date) => {
     if (date) {
       const newDate = new Date(date)
-      const newMonth = newDate.getMonth() + 7
+      const newMonth = newDate.getMonth() + 8
       newDate.setFullYear(newDate.getFullYear() + 14)
 
       if (newMonth > 11) {
@@ -59,18 +60,27 @@ const SetDOB = () => {
   }
 
   const handleExactAge = () => {
+    setTempAge(selectedAge !== null ? String(selectedAge) : "")
     setShowAgePicker(true)
   }
 
-  const handleAgeSelection = (age) => {
-    if (selectedDOB) {
-      const newDate = new Date(selectedDOB)
-      newDate.setFullYear(newDate.getFullYear() + age)
-      setSelectedDOP(newDate)
-      setSelectedAge(age)
+  const applyExactAge = () => {
+    const age = Number(tempAge)
+
+    if (!selectedDOB) return
+
+    if (age < 9 || age > 16) {
+      Alert.alert("Invalid Age", "Age of puberty can only be between 9 and 16.")
+      return
     }
+
+    const newDate = new Date(selectedDOB)
+    newDate.setFullYear(newDate.getFullYear() + age)
+    setSelectedDOP(newDate)
+    setSelectedAge(age)
     setShowAgePicker(false)
-  }
+}
+
 
   const handleConfirm = async () => {
     if (selectedDOB && selectedDOP) {
@@ -142,7 +152,7 @@ const SetDOB = () => {
 
       {selectedDOB && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Date of Puberty</Text>
+          <Text style={styles.cardTitle}>Age of Puberty</Text>
           <View style={styles.buttonGroup}>
             <TouchableOpacity
               style={[
@@ -161,7 +171,7 @@ const SetDOB = () => {
                     styles.selectedOptionText,
                 ]}
               >
-                Islamic Default (14)
+                Islamic Default (14 years and 8 months)
               </Text>
             </TouchableOpacity>
 
@@ -181,16 +191,24 @@ const SetDOB = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Your Age of Puberty</Text>
-            <View style={styles.ageButtonsContainer}>
-              {Array.from({ length: 7 }, (_, i) => i + 10).map((age) => (
-                <TouchableOpacity key={age} style={styles.ageButton} onPress={() => handleAgeSelection(age)}>
-                  <Text style={styles.ageButtonText}>{age}</Text>
-                </TouchableOpacity>
-              ))}
+
+            <TextInput
+              style={styles.ageInput}
+              keyboardType="numeric"
+              placeholder="9 - 16"
+              value={tempAge}
+              onChangeText={(text) => setTempAge(text.replace(/[^0-9]/g, ""))}
+            />
+
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity style={styles.modalConfirmButton} onPress={applyExactAge}>
+                <Text style={styles.modalConfirmButtonText}>Confirm</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowAgePicker(false)}>
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowAgePicker(false)}>
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -280,6 +298,7 @@ const styles = StyleSheet.create({
   },
   selectedOptionText: {
     color: "#FFFFFF",
+    textAlign: "center",
   },
   bottomContainer: {
     position: "absolute",
@@ -322,29 +341,30 @@ const styles = StyleSheet.create({
     color: "#777777",
     marginBottom: 24,
   },
-  ageButtonsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 12,
+  ageInput: {
+    width: "60%",
+    borderWidth: 1,
+    borderColor: "#777777",
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 18,
+    textAlign: "center",
     marginBottom: 24,
   },
-  ageButton: {
-    backgroundColor: "#4BD4A2",
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
+  modalButtonsRow: {
+    flexDirection: "row",
+    gap: 12,
   },
-  ageButtonText: {
+  modalConfirmButton: {
+    backgroundColor: "#2F7F6F",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  modalConfirmButtonText: {
     color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "500",
   },
   modalCloseButton: {
     backgroundColor: "#FFFFFF",

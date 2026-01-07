@@ -220,19 +220,13 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: 20,
+    gap: 12,
   },
   modalConfirmButton: {
     backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-    marginRight: 10,
   },
   modalConfirmButtonText: {
     color: "#FFFFFF",
@@ -246,10 +240,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#2F7F6F",
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-    marginLeft: 10,
   },
   modalCloseButtonText: {
     color: "#2F7F6F",

@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { AppContext } from "../AppContext";
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Totals = () => {
   const navigation = useNavigation();
@@ -17,6 +18,7 @@ const Totals = () => {
     Witr: madhab === "Hanafi" ? 0 : null, 
   });
   const [isLoading, setIsLoading] = useState(true);
+  const insets = useSafeAreaInsets();
 
   // Memoized fetch function to prevent unnecessary re-renders
   const fetchQadhaCounts = useCallback(async () => {
@@ -130,7 +132,7 @@ const Totals = () => {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { bottom: (insets.bottom || 20) + 20 }]}>
         <TouchableOpacity
           style={styles.confirmButton}
           onPress={confirmSelection}
@@ -213,13 +215,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingTop: 20,
-    paddingBottom: 40,
-    backgroundColor: "#5CB390",
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,

@@ -28,10 +28,10 @@ const SelectLanguage = () => {
             navigation.replace("SetDOB");
           }
         } else {
-          navigation.replace("Login");
+          navigation.replace("SignUp");
         }
       } catch (error) {
-        navigation.replace("Login");
+        navigation.replace("SignUp");
       } finally {
         if (isMounted.current) {
           setLoading(false);

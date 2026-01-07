@@ -4,11 +4,13 @@ import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const MadhabSelection = () => {
   const navigation = useNavigation()
   const { setMadhab } = useContext(AppContext)
   const [selectedMadhab, setSelectedMadhab] = useState(null)
+  const insets = useSafeAreaInsets();
 
   const selectMadhab = (madhab) => {
     setSelectedMadhab(madhab)
@@ -111,7 +113,7 @@ const MadhabSelection = () => {
         </View>
       </View>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { bottom: (insets.bottom || 20) + 20 }]}>
         {selectedMadhab && (
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
             <Text style={styles.confirmButtonText}>Confirm</Text>
@@ -180,13 +182,12 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40,
     left: 20,
     right: 20,
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#FBC742",
+    backgroundColor: "#2F7F6F",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 12,
