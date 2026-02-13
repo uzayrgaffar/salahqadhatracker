@@ -603,6 +603,19 @@ const DailyChart = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      {selectedDate !== today && (
+        <TouchableOpacity 
+          style={[styles.todayPill, { bottom: insets.bottom + 10 }]} 
+          onPress={() => {
+            setSelectedDate(today);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }}
+          activeOpacity={0.9}
+        >
+          <Icon name="arrow-back-circle" size={20} color="#FFFFFF" />
+          <Text style={styles.todayPillText}>Back to Today</Text>
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
@@ -919,19 +932,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#2F7F6F',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 25,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 30,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+    zIndex: 999,
   },
   todayPillText: {
-    color: '#FFF',
-    fontWeight: '600',
-    marginLeft: 6,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+    marginLeft: 8,
   },
 })
 
