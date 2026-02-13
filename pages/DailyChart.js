@@ -144,13 +144,44 @@ const DailyChart = () => {
       if (!coords) {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
-          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
           coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
           locationRef.current = coords;
         }
       }
 
       if (coords) {
+        const [address] = await Location.reverseGeocodeAsync(coords);
+        const countryCode = address?.isoCountryCode;
+
+        let autoMethod = 3; // Default: Muslim World League
+        
+        const methodMapping = {
+          'PK': 1, 'IN': 1, 'BD': 1, 'AF': 1, // Karachi
+          'US': 2, 'CA': 2,                   // ISNA
+          'SA': 4,                            // Umm Al-Qura
+          'EG': 5, 'SD': 5, 'LY': 5,          // Egypt
+          'IR': 7,                            // Tehran
+          'KW': 9,                            // Kuwait
+          'QA': 10,                           // Qatar
+          'SG': 11,                           // Singapore
+          'FR': 12,                           // France
+          'TR': 13,                           // Turkey
+          'RU': 14,                           // Russia
+          'AE': 16,                           // Dubai
+          'MY': 17,                           // Malaysia
+          'TN': 18,                           // Tunisia
+          'DZ': 19,                           // Algeria
+          'ID': 20,                           // Indonesia
+          'MA': 21,                           // Morocco
+          'PT': 22,                           // Portugal
+          'JO': 23,                           // Jordan
+        };
+
+        if (countryCode && methodMapping[countryCode]) {
+          autoMethod = methodMapping[countryCode];
+        }
+
         const year = moment(dateToFetch).format("YYYY");
         const month = moment(dateToFetch).format("MM");
         const school = madhab === "Hanafi" ? 1 : 0;
@@ -161,8 +192,8 @@ const DailyChart = () => {
             params: {
               latitude: coords.latitude,
               longitude: coords.longitude,
-              method: 3,
-              school,
+              method: autoMethod, 
+              school: school,
             },
           }
         );
@@ -176,7 +207,7 @@ const DailyChart = () => {
         setPrayerTimes(monthData[dayKey]);
       }
     } catch (e) {
-      console.error("Error fetching month calendar:", e);
+      console.error("Error fetching prayer times:", e);
     } finally {
       setIsLoadingTimes(false);
     }
@@ -943,7 +974,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     backgroundColor: "#FFFFFF",
     width: 50,
-    textAlign: 'center',
   },
   sectionHeader: {
     flexDirection: 'row',
