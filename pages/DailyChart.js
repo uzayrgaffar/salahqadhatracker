@@ -29,6 +29,7 @@ const DailyChart = () => {
   const [isLoadingTimes, setIsLoadingTimes] = useState(false);
   const locationRef = useRef(null);
   const [monthCache, setMonthCache] = useState({});
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -130,7 +131,6 @@ const DailyChart = () => {
     const monthKey = moment(dateToFetch).format("YYYY-MM");
     const dayKey = moment(dateToFetch).format("DD-MM-YYYY");
 
-    // 1. Check if we already have this month's data in state
     if (monthCache[monthKey] && monthCache[monthKey][dayKey]) {
       setPrayerTimes(monthCache[monthKey][dayKey]);
       return;
@@ -165,13 +165,11 @@ const DailyChart = () => {
           }
         );
 
-        // 2. Process the month array into a searchable object (Map)
         const monthData = {};
         res.data.data.forEach((day) => {
           monthData[day.date.gregorian.date] = day.timings;
         });
 
-        // 3. Save the whole month to cache and update current day
         setMonthCache((prev) => ({ ...prev, [monthKey]: monthData }));
         setPrayerTimes(monthData[dayKey]);
       }
@@ -372,6 +370,12 @@ const DailyChart = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Daily Chart</Text>
+        <TouchableOpacity 
+          onPress={() => setShowHelp(true)}
+          style={{ position: 'absolute', right: 20, top: 65 }}
+        >
+          <Icon name="help-circle-outline" size={24} color="#FFF" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.card} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom - 30 }]}>
@@ -603,6 +607,53 @@ const DailyChart = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <Modal
+        visible={showHelp}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowHelp(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>How tracking works</Text>
+              <TouchableOpacity onPress={() => setShowHelp(false)}>
+                <Icon name="close-circle" size={28} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.helpItem}>
+              <Icon name="checkmark-done-circle" size={30} color="#5CB390" />
+              <View style={styles.helpTextContainer}>
+                <Text style={styles.helpLabel}>Daily Prayers</Text>
+                <Text style={styles.helpDescription}>
+                  Ticking a prayer means you prayed today. This **lowers** your total Qadha debt.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.helpItem}>
+              <Icon name="trending-down-outline" size={30} color="#2F7F6F" />
+              <View style={styles.helpTextContainer}>
+                <Text style={styles.helpLabel}>Why did my Qadha go down?</Text>
+                <Text style={styles.helpDescription}>
+                  Since you performed today's prayer, you don't owe it anymore! The app handles the math for you.
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.prayQadhaButton} 
+              onPress={() => setShowHelp(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.prayQadhaButtonText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {selectedDate !== today && (
         <TouchableOpacity 
           style={[styles.todayPill, { bottom: insets.bottom + 10 }]} 
@@ -902,30 +953,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
-  prayerButtonRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quickAddButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  quickAddText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  quickAddButtonUnselected: {
-    backgroundColor: '#E8F8F3',
-    borderColor: '#5CB390',
-  },
-  quickAddTextUnselected: {
-    color: '#5CB390',
-  },
   todayPill: {
     position: 'absolute',
     right: 20,
@@ -947,6 +974,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
     marginLeft: 8,
+  },
+  helpItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    backgroundColor: '#F9FAFB',
+    padding: 15,
+    borderRadius: 12,
+  },
+  helpTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  helpLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  helpDescription: {
+    fontSize: 14,
+    color: '#4B5563',
+    lineHeight: 20,
   },
 })
 
