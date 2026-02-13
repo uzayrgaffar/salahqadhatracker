@@ -1,5 +1,5 @@
-import { useContext, useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, TextInput, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from "react-native"
+import { useContext, useState, useEffect, useCallback, useRef } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from "react-native"
 import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
 import moment from "moment"
@@ -7,18 +7,13 @@ import Icon from "react-native-vector-icons/Ionicons"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import * as Location from "expo-location"
+import axios from "axios"
+import { useFocusEffect } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 
 const DailyChart = () => {
-  const {
-    setFajr,
-    setDhuhr,
-    setAsr,
-    setMaghrib,
-    setIsha,
-    setWitr,
-    madhab,
-    setMadhab,
-  } = useContext(AppContext)
+  const { setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr, madhab, setMadhab } = useContext(AppContext)
   
   const insets = useSafeAreaInsets()
   const user = auth().currentUser
@@ -30,6 +25,10 @@ const DailyChart = () => {
   const [ldailyPrayerCounts, lsetDailyPrayerCounts] = useState({})
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isQadhaModalVisible, setIsQadhaModalVisible] = useState(false)
+  const [prayerTimes, setPrayerTimes] = useState(null)
+  const [isLoadingTimes, setIsLoadingTimes] = useState(false);
+  const locationRef = useRef(null);
+  const [monthCache, setMonthCache] = useState({});
 
   useEffect(() => {
     if (userId) {
@@ -104,23 +103,95 @@ const DailyChart = () => {
   }, [userId])
 
   useEffect(() => {
-    if (userId) {
-      const fetchAllPrayerData = async () => {
-        const querySnapshot = await firestore().collection("users").doc(userId).collection("dailyPrayers").get()
-        const allPrayerStates = {}
+    if (!userId) return;
+
+    const unsubscribe = firestore()
+      .collection("users")
+      .doc(userId)
+      .collection("dailyPrayers")
+      .onSnapshot((querySnapshot) => {
+        const allStates = {};
+        const allCounts = {};
+        
         querySnapshot.forEach((doc) => {
-          const date = doc.id
-          allPrayerStates[date] = doc.data().prayers
-        })
-        setPrayerStates(allPrayerStates)
-      }
-      fetchAllPrayerData()
+          const data = doc.data();
+          allStates[doc.id] = data.prayers;
+          allCounts[doc.id] = data.counts;
+        });
+
+        setPrayerStates(allStates);
+        lsetDailyPrayerCounts(allCounts);
+      }, (error) => console.error("Firestore Listen Error:", error));
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  const fetchPrayerTimes = async (dateToFetch) => {
+    const monthKey = moment(dateToFetch).format("YYYY-MM");
+    const dayKey = moment(dateToFetch).format("DD-MM-YYYY");
+
+    // 1. Check if we already have this month's data in state
+    if (monthCache[monthKey] && monthCache[monthKey][dayKey]) {
+      setPrayerTimes(monthCache[monthKey][dayKey]);
+      return;
     }
-  }, [userId])
+
+    setIsLoadingTimes(true);
+    try {
+      let coords = locationRef.current;
+      if (!coords) {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+          coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+          locationRef.current = coords;
+        }
+      }
+
+      if (coords) {
+        const year = moment(dateToFetch).format("YYYY");
+        const month = moment(dateToFetch).format("MM");
+        const school = madhab === "Hanafi" ? 1 : 0;
+
+        const res = await axios.get(
+          `https://api.aladhan.com/v1/calendar/${year}/${month}`,
+          {
+            params: {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+              method: 3,
+              school,
+            },
+          }
+        );
+
+        // 2. Process the month array into a searchable object (Map)
+        const monthData = {};
+        res.data.data.forEach((day) => {
+          monthData[day.date.gregorian.date] = day.timings;
+        });
+
+        // 3. Save the whole month to cache and update current day
+        setMonthCache((prev) => ({ ...prev, [monthKey]: monthData }));
+        setPrayerTimes(monthData[dayKey]);
+      }
+    } catch (e) {
+      console.error("Error fetching month calendar:", e);
+    } finally {
+      setIsLoadingTimes(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPrayerTimes(selectedDate);
+    }, [selectedDate, madhab])
+  );
   
   const handleDateSelect = (date) => {
     if (moment(date).isSameOrBefore(today)) {
       setSelectedDate(date)
+      setIsModalVisible(false)
       if (!prayerStates[date]) {
         setPrayerStates((prevStates) => ({
           ...prevStates,
@@ -151,6 +222,8 @@ const DailyChart = () => {
   }
   
   const handlePrayerSelect = async (prayer) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     const wasSelected = prayerStates[selectedDate]?.[prayer] || false
     const updatedStates = {
       ...prayerStates,
@@ -175,53 +248,33 @@ const DailyChart = () => {
 
   const adjustTotalQadha = async (prayer, amount) => {
     const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary")
-    const totalQadhaSnap = await totalQadhaRef.get()
 
-    if (totalQadhaSnap.exists) {
-      const totalData = totalQadhaSnap.data()
-      const totalQadhaLeft = totalData[prayer] || 0
-      const updatedTotal = totalQadhaLeft + amount
-
-      await totalQadhaRef.update({
-        [prayer]: updatedTotal < 0 ? 0 : updatedTotal,
-      })
-    }
-  }
+    await totalQadhaRef.update({
+      [prayer]: firestore.FieldValue.increment(amount),
+    });
+  };
   
   const adjustCount = async (prayer, amount) => {
-    const currentCount = ldailyPrayerCounts[selectedDate]?.[prayer] || 0
-    const newCount = currentCount + amount
-  
-    if (newCount < 0) return
-  
-    lsetDailyPrayerCounts((prevCounts) => ({
-      ...prevCounts,
-      [selectedDate]: {
-        ...prevCounts[selectedDate],
-        [prayer]: newCount,
-      },
-    }))
-  
-    const dailyPrayerRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate)
-    await dailyPrayerRef.update({
-      [`counts.${prayer}`]: newCount,
-    })
-  
-    const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary")
-    const totalQadhaSnap = await totalQadhaRef.get()
-  
-    if (totalQadhaSnap.exists) {
-      const totalData = totalQadhaSnap.data()
-      const totalQadhaLeft = totalData[prayer] || 0
-      const updatedTotal = totalQadhaLeft - amount
-  
-      if (amount === -1 && totalQadhaLeft === 0) return
-  
-      await totalQadhaRef.update({
-        [prayer]: updatedTotal < 0 ? 0 : updatedTotal,
-      })
-    }
-  }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    const currentCount = ldailyPrayerCounts[selectedDate]?.[prayer] || 0;
+    const newCount = currentCount + amount;
+    if (newCount < 0) return;
+
+    lsetDailyPrayerCounts(prev => ({
+      ...prev,
+      [selectedDate]: { ...prev[selectedDate], [prayer]: newCount }
+    }));
+
+    const batch = firestore().batch();
+    const dailyRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate);
+    const summaryRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
+
+    batch.update(dailyRef, { [`counts.${prayer}`]: newCount });
+    batch.update(summaryRef, { [prayer]: firestore.FieldValue.increment(-amount) });
+
+    await batch.commit();
+  };
 
   const getMarkedDates = () => {
     const markedDates = {}
@@ -272,13 +325,58 @@ const DailyChart = () => {
     return icons[prayer] || "checkmark-circle-outline"
   }
 
+  const formatTime = (t) => {
+    if (!t) return ""
+    return moment(t, "HH:mm").format("HH:mm")
+  }
+
+  const handleMarkAll = async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    const prayersToMark = ["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])];
+    const currentDayState = prayerStates[selectedDate] || {};
+    
+    const unticked = prayersToMark.filter(p => !currentDayState[p]);
+    if (unticked.length === 0) return;
+
+    const updatedDayPrayers = { ...currentDayState };
+    unticked.forEach(p => { updatedDayPrayers[p] = true; });
+
+    setPrayerStates(prev => ({
+      ...prev,
+      [selectedDate]: updatedDayPrayers
+    }));
+
+    try {
+      const batch = firestore().batch();
+      const dailyRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate);
+      const summaryRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
+
+      batch.update(dailyRef, { prayers: updatedDayPrayers });
+
+      unticked.forEach(prayer => {
+        batch.update(summaryRef, { [prayer]: firestore.FieldValue.increment(-1) });
+      });
+
+      await batch.commit();
+    } catch (error) {
+      console.error("Mark All Error:", error);
+    }
+  };
+
+    // Determine which prayers should be tracked based on madhab
+  const prayersToTrack = ["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])];
+
+  // Check if every prayer for the selected date is already marked 'true'
+  const isAllCompleted = prayersToTrack.every(prayer => prayerStates[selectedDate]?.[prayer] === true);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Daily Chart</Text>
       </View>
 
-      <ScrollView style={styles.card} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
+      <ScrollView style={styles.card} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom - 30 }]}>
         <TouchableOpacity style={styles.dateButton} onPress={() => setIsModalVisible(true)} activeOpacity={0.7}>
           <View style={styles.dateButtonContent}>
             <Icon name="calendar-outline" size={24} color="#5CB390" />
@@ -290,14 +388,16 @@ const DailyChart = () => {
           <Icon name="chevron-forward" size={20} color="#9CA3AF" />
         </TouchableOpacity>
 
-        {/* <View style={styles.infoCard}>
-          <Icon name="information-circle-outline" size={20} color="#5CB390" style={styles.infoIcon} />
-          <Text style={styles.description}>
-            Tap on a prayer to mark it as completed. Log your Qadha prayers using the button below.
-          </Text>
-        </View> */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Daily Prayers</Text>
+          
+          {!isAllCompleted && (
+            <TouchableOpacity onPress={handleMarkAll} activeOpacity={0.7}>
+              <Text style={styles.markAllText}>Mark All Salah Completed</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-        <Text style={styles.sectionTitle}>Daily Prayers</Text>
         <View style={styles.prayersContainer}>
           {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
             <TouchableOpacity
@@ -314,14 +414,37 @@ const DailyChart = () => {
                     color={prayerStates[selectedDate]?.[prayer] ? "#FFFFFF" : "#6B7280"} 
                   />
                 </View>
-                <Text
-                  style={[
-                    styles.prayerButtonText,
-                    prayerStates[selectedDate]?.[prayer] && styles.selectedPrayerButtonText,
-                  ]}
-                >
-                  {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
-                </Text>
+                <View>
+                  <Text
+                    style={[
+                      styles.prayerButtonText,
+                      prayerStates[selectedDate]?.[prayer] && styles.selectedPrayerButtonText,
+                    ]}
+                  >
+                    {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
+                  </Text>
+
+                  {/* prayer time line */}
+                  {prayer !== "witr" && (
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        marginTop: 2,
+                        color: prayerStates[selectedDate]?.[prayer] ? "#E8FFF6" : "#6B7280",
+                      }}
+                    >
+                      {isLoadingTimes ? (
+                        "Salah Times Loading..." 
+                      ) : prayerTimes ? (
+                        prayer === "fajr"
+                          ? `${formatTime(prayerTimes.Fajr)} • Sunrise ${formatTime(prayerTimes.Sunrise)}`
+                          : formatTime(prayerTimes[prayer.charAt(0).toUpperCase() + prayer.slice(1)])
+                      ) : (
+                        "--:--"
+                      )}
+                    </Text>
+                  )}
+                </View>
               </View>
               {prayerStates[selectedDate]?.[prayer] && (
                 <Icon name="checkmark-circle" size={24} color="#FFFFFF" />
@@ -756,6 +879,61 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
     backgroundColor: "#FFFFFF",
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  markAllText: {
+    color: "#5CB390",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  prayerButtonRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quickAddButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  quickAddText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  quickAddButtonUnselected: {
+    backgroundColor: '#E8F8F3',
+    borderColor: '#5CB390',
+  },
+  quickAddTextUnselected: {
+    color: '#5CB390',
+  },
+  todayPill: {
+    position: 'absolute',
+    right: 20,
+    backgroundColor: '#2F7F6F',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  todayPillText: {
+    color: '#FFF',
+    fontWeight: '600',
+    marginLeft: 6,
   },
 })
 
