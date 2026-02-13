@@ -256,7 +256,7 @@ const DailyChart = () => {
   
   const adjustCount = async (prayer, amount) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     const currentCount = ldailyPrayerCounts[selectedDate]?.[prayer] || 0;
     const newCount = currentCount + amount;
     if (newCount < 0) return;
@@ -364,10 +364,8 @@ const DailyChart = () => {
     }
   };
 
-    // Determine which prayers should be tracked based on madhab
   const prayersToTrack = ["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])];
 
-  // Check if every prayer for the selected date is already marked 'true'
   const isAllCompleted = prayersToTrack.every(prayer => prayerStates[selectedDate]?.[prayer] === true);
 
   return (
