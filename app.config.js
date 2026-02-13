@@ -59,6 +59,12 @@ export default {
             shrinkResources: false
           }
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow location access to calculate prayer times."
+        }
       ]
     ],
     assetBundlePatterns: [
