@@ -564,7 +564,7 @@ const DailyChart = () => {
                 Enter the number of Qadha prayers you completed today
               </Text>
         
-              <ScrollView style={styles.qadhaScrollView}>
+              <View style={styles.qadhaView}>
                 <View style={styles.qadhaCountersContainer}>
                   {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
                     <View key={prayer} style={styles.qadhaCounterWrapper}>
@@ -602,7 +602,7 @@ const DailyChart = () => {
                     </View>
                   ))}
                 </View>
-              </ScrollView>
+              </View>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    maxHeight: "90%",
+    minHeight: 100,
   },
   modalHeader: {
     flexDirection: "row",
@@ -885,8 +885,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  qadhaScrollView: {
-    maxHeight: 400,
+  qadhaView: {
+    flexGrow: 0,
   },
   qadhaCountersContainer: {
     gap: 12,
