@@ -130,9 +130,11 @@ const DailyChart = () => {
   const fetchPrayerTimes = async (dateToFetch) => {
     const monthKey = moment(dateToFetch).format("YYYY-MM");
     const dayKey = moment(dateToFetch).format("DD-MM-YYYY");
+    
+    const cacheKey = `${madhab}-${monthKey}`;
 
-    if (monthCache[monthKey] && monthCache[monthKey][dayKey]) {
-      setPrayerTimes(monthCache[monthKey][dayKey]);
+    if (monthCache[cacheKey] && monthCache[cacheKey][dayKey]) {
+      setPrayerTimes(monthCache[cacheKey][dayKey]);
       return;
     }
 
@@ -170,7 +172,7 @@ const DailyChart = () => {
           monthData[day.date.gregorian.date] = day.timings;
         });
 
-        setMonthCache((prev) => ({ ...prev, [monthKey]: monthData }));
+        setMonthCache((prev) => ({ ...prev, [cacheKey]: monthData }));
         setPrayerTimes(monthData[dayKey]);
       }
     } catch (e) {
@@ -426,7 +428,6 @@ const DailyChart = () => {
                     {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
                   </Text>
 
-                  {/* prayer time line */}
                   {prayer !== "witr" && (
                     <Text
                       style={{
@@ -549,7 +550,7 @@ const DailyChart = () => {
           style={{ flex: 1 }}
         >
           <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={[styles.modalContent, { paddingBottom: insets.bottom + 10 }]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Qadha Salah</Text>
                 <TouchableOpacity onPress={() => {
@@ -941,6 +942,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
     backgroundColor: "#FFFFFF",
+    width: 50,
+    textAlign: 'center',
   },
   sectionHeader: {
     flexDirection: 'row',
