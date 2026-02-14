@@ -1,11 +1,13 @@
 import { useState, useEffect, useContext } from "react"
-import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity, Modal } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
 import auth from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore'
 import { AppContext } from "../AppContext"
 import { useNavigation } from "@react-navigation/native"
+import Icon from "react-native-vector-icons/Ionicons"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const Progress = () => {
   const navigation = useNavigation()
@@ -16,6 +18,8 @@ const Progress = () => {
   const [error, setError] = useState(null)
   const { madhab } = useContext(AppContext)
   const [selectedRange, setSelectedRange] = useState(14)
+  const [showHelp, setShowHelp] = useState(false)
+  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     const userId = auth().currentUser?.uid;
@@ -191,6 +195,12 @@ const Progress = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Progress</Text>
+          <TouchableOpacity 
+            onPress={() => setShowHelp(true)}
+            style={{ position: 'absolute', right: 20, top: 65 }}
+          >
+            <Icon name="help-circle" size={24} color="#FFF" />
+          </TouchableOpacity>
         </View>
         <ScrollView style={styles.content}>
           <View style={styles.rangeSelector}>
@@ -351,6 +361,72 @@ const Progress = () => {
           </View>
         </ScrollView>
       </View>
+      <Modal
+        visible={showHelp}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowHelp(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Understanding Progress</Text>
+                <Text style={styles.modalSubtitle}>How your stats are calculated</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowHelp(false)}>
+                <Icon name="close-circle" size={28} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.helpItem}>
+                <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
+                  <Icon name="stats-chart" size={24} color="#5CB390" />
+                </View>
+                <View style={styles.helpTextContainer}>
+                  <Text style={styles.helpLabel}>Progress Chart</Text>
+                  <Text style={styles.helpDescription}>
+                    This shows how many Qadha prayers you completed on each day.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.helpItem}>
+                <View style={[styles.helpIconCircle, { backgroundColor: '#FFFBEB' }]}>
+                  <Icon name="time" size={24} color="#D97706" />
+                </View>
+                <View style={styles.helpTextContainer}>
+                  <Text style={styles.helpLabel}>Completion Estimate</Text>
+                  <Text style={styles.helpDescription}>
+                    Based on your average performance over the selected range (7d, 14d, etc.), this tells you roughly how long it will take to clear all your qadha.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.helpItem}>
+                <View style={[styles.helpIconCircle, { backgroundColor: '#F3F4F6' }]}>
+                  <Icon name="list" size={24} color="#6B7280" />
+                </View>
+                <View style={styles.helpTextContainer}>
+                  <Text style={styles.helpLabel}>Remaining Qadha</Text>
+                  <Text style={styles.helpDescription}>
+                    A real-time breakdown of what qadha you have left. If you find these numbers are incorrect, use the Adjust button to fix them.
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity 
+              style={styles.gotItButton} 
+              onPress={() => setShowHelp(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.gotItButtonText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -564,6 +640,82 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     color: "#5CB390",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    minHeight: 100,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1F2937",
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  helpItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    backgroundColor: '#F9FAFB',
+    padding: 15,
+    borderRadius: 12,
+  },
+  helpIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  helpTextContainer: {
+    flex: 1,
+  },
+  helpLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  helpDescription: {
+    fontSize: 14,
+    color: '#4B5563',
+    lineHeight: 20,
+  },
+  gotItButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#2F7F6F",
+    padding: 18,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  gotItButtonText: {
+    fontSize: 17,
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
 })
 
