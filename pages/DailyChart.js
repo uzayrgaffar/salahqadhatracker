@@ -399,6 +399,44 @@ const DailyChart = () => {
 
   const isAllCompleted = prayersToTrack.every(prayer => prayerStates[selectedDate]?.[prayer] === true);
 
+  const getCurrentPrayer = () => {
+    if (!prayerTimes) return null;
+
+    const now = moment();
+    const todayString = moment().format("YYYY-MM-DD");
+
+    // Only highlight if viewing today
+    if (selectedDate !== todayString) return null;
+
+    const times = {
+      fajr: moment(prayerTimes.Fajr, "HH:mm"),
+      sunrise: moment(prayerTimes.Sunrise, "HH:mm"),
+      dhuhr: moment(prayerTimes.Dhuhr, "HH:mm"),
+      asr: moment(prayerTimes.Asr, "HH:mm"),
+      maghrib: moment(prayerTimes.Maghrib, "HH:mm"),
+      isha: moment(prayerTimes.Isha, "HH:mm"),
+    };
+
+    if (now.isBetween(times.fajr, times.sunrise)) return "fajr";
+    if (now.isBetween(times.dhuhr, times.asr)) return "dhuhr";
+    if (now.isBetween(times.asr, times.maghrib)) return "asr";
+    if (now.isBetween(times.maghrib, times.isha)) return "maghrib";
+    if (now.isAfter(times.isha) || now.isBefore(times.fajr)) return "isha";
+
+    return null;
+  };
+
+  const currentPrayer = getCurrentPrayer();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // force rerender every minute
+      setSelectedDate(prev => prev);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -437,7 +475,14 @@ const DailyChart = () => {
           {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
             <TouchableOpacity
               key={prayer}
-              style={[styles.prayerButton, prayerStates[selectedDate]?.[prayer] && styles.selectedPrayerButton]}
+              style={[
+                styles.prayerButton, 
+                prayerStates[selectedDate]?.[prayer] && styles.selectedPrayerButton, 
+                (
+                  currentPrayer === prayer ||
+                  (currentPrayer === "isha" && prayer === "witr")
+                ) && styles.currentPrayerGlow
+              ]}
               onPress={() => handlePrayerSelect(prayer)}
               activeOpacity={0.7}
             >
@@ -667,7 +712,7 @@ const DailyChart = () => {
                 <View style={styles.helpTextContainer}>
                   <Text style={styles.helpLabel}>Daily Tracking</Text>
                   <Text style={styles.helpDescription}>
-                    Tap a salah after you perform it. The app adds today's salah to your total qadha count automatically at the start of the day.
+                    Tap a salah after you perform it. The app adds today's salah to your total qadha count automatically at the start of the day. Current salah is highlighted in green.
                   </Text>
                 </View>
               </View>
@@ -1066,6 +1111,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 2,
+  },
+  currentPrayerGlow: {
+    shadowColor: "#5CB390",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 8,
+    borderColor: "#5CB390",
   },
 })
 
