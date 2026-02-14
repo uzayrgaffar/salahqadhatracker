@@ -407,7 +407,7 @@ const DailyChart = () => {
           onPress={() => setShowHelp(true)}
           style={{ position: 'absolute', right: 20, top: 65 }}
         >
-          <Icon name="help-circle-outline" size={24} color="#FFF" />
+          <Icon name="help-circle" size={24} color="#FFF" />
         </TouchableOpacity>
       </View>
 
@@ -649,38 +649,62 @@ const DailyChart = () => {
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>How tracking works</Text>
+              <View>
+                <Text style={styles.modalTitle}>How to use Daily Chart</Text>
+                <Text style={styles.modalSubtitle}>Manage your daily salah and qadha</Text>
+              </View>
               <TouchableOpacity onPress={() => setShowHelp(false)}>
                 <Icon name="close-circle" size={28} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.helpItem}>
-              <Icon name="checkmark-done-circle" size={30} color="#5CB390" />
-              <View style={styles.helpTextContainer}>
-                <Text style={styles.helpLabel}>Daily Prayers</Text>
-                <Text style={styles.helpDescription}>
-                  Ticking a prayer means you prayed today. This **lowers** your total Qadha debt.
-                </Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Section 1: Daily Tracking */}
+              <View style={styles.helpItem}>
+                <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
+                  <Icon name="checkbox" size={24} color="#5CB390" />
+                </View>
+                <View style={styles.helpTextContainer}>
+                  <Text style={styles.helpLabel}>Daily Tracking</Text>
+                  <Text style={styles.helpDescription}>
+                    Tap a salah after you perform it. The app adds today's salah to your total qadha count automatically at the start of the day.
+                  </Text>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.helpItem}>
-              <Icon name="trending-down-outline" size={30} color="#2F7F6F" />
-              <View style={styles.helpTextContainer}>
-                <Text style={styles.helpLabel}>Why did my Qadha go down?</Text>
-                <Text style={styles.helpDescription}>
-                  Since you performed today's prayer, you don't owe it anymore! The app handles the math for you.
-                </Text>
+              {/* Section 2: Calendar */}
+              <View style={styles.helpItem}>
+                <View style={[styles.helpIconCircle, { backgroundColor: '#F3F4F6' }]}>
+                  <Icon name="calendar" size={24} color="#6B7280" />
+                </View>
+                <View style={styles.helpTextContainer}>
+                  <Text style={styles.helpLabel}>Calendar & History</Text>
+                  <Text style={styles.helpDescription}>
+                    Tap the date to look back. Darker green dates mean more prayers were completed. You can log missed prayers for any past date!
+                  </Text>
+                </View>
               </View>
-            </View>
+
+              {/* Section 3: Extra Qadha */}
+              <View style={styles.helpItem}>
+                <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
+                  <Icon name="add-circle" size={24} color="#4F46E5" />
+                </View>
+                <View style={styles.helpTextContainer}>
+                  <Text style={styles.helpLabel}>Praying Extra Qadha</Text>
+                  <Text style={styles.helpDescription}>
+                    If you pray any qadha prayers today, use the "Pray Qadha" button to log them.
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
 
             <TouchableOpacity 
-              style={styles.prayQadhaButton} 
+              style={[styles.prayQadhaButton, { marginTop: 20 }]} 
               onPress={() => setShowHelp(false)}
               activeOpacity={0.8}
             >
-              <Text style={styles.prayQadhaButtonText}>Got it!</Text>
+              <Text style={styles.prayQadhaButtonText}>Got it, thanks!</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1017,19 +1041,31 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   helpTextContainer: {
-    marginLeft: 12,
     flex: 1,
-  },
-  helpLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 4,
   },
   helpDescription: {
     fontSize: 14,
     color: '#4B5563',
     lineHeight: 20,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  helpIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  helpLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
   },
 })
 
