@@ -25,6 +25,7 @@ import NumberOfChildren from './pages/NumberOfChildren';
 import PostNatal from './pages/PostNatal';
 import SignUp from './pages/SignUp';
 import Totals from './pages/Totals';
+import QadhaFasts from './pages/QadhaFasts';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -38,7 +39,8 @@ const MainPages = () => {
       'Daily Chart': { English: 'Daily Chart', Arabic: 'الرسم البياني اليومي', Urdu: 'یومیہ چارٹ', Hindi: 'दैनिक चार्ट' },
       'FAQ': { English: 'FAQ', Arabic: 'المنتديات', Urdu: 'فورم', Hindi: 'مंचों' },
       'Profile': { English: 'Settings', Arabic: 'الإعدادات', Urdu: 'ترتیبات', Hindi: 'सेटिंग्स' },
-      'Progress': { English: 'Progress', Arabic: 'التقدم', Urdu: 'ترقی', Hindi: 'برکت' }
+      'Progress': { English: 'Progress', Arabic: 'التقدم', Urdu: 'ترقی', Hindi: 'برکت' },
+      'Fasts': { English: 'Fasts', Arabic: 'الصيام', Urdu: 'روزے', Hindi: 'उपवास' },
     };
     return tabLabels[routeName]?.[selectedLanguage] || routeName;
   };
@@ -77,6 +79,16 @@ const MainPages = () => {
           tabBarLabel: getLabel('Progress'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="trending-up" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Tab.Screen 
+        name="Fasts" 
+        component={QadhaFasts} 
+        options={{
+          tabBarLabel: getLabel('Fasts'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="moon" size={size} color={color} />
           ),
         }} 
       />

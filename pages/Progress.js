@@ -387,7 +387,7 @@ const Progress = () => {
                 <View style={styles.helpTextContainer}>
                   <Text style={styles.helpLabel}>Progress Chart</Text>
                   <Text style={styles.helpDescription}>
-                    This shows how many Qadha prayers you completed on each day.
+                    This shows how many Qadha prayers you completed on each day. (From the Pray Qadha button on Daily Chart)
                   </Text>
                 </View>
               </View>
