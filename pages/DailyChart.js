@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect, useCallback, useRef } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Keyboard, Alert, Linking } from "react-native"
 import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
 import moment from "moment"
@@ -32,6 +32,7 @@ const DailyChart = () => {
   const locationRef = useRef(null);
   const [monthCache, setMonthCache] = useState({});
   const [showHelp, setShowHelp] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
     const configureAndroidChannel = async () => {
@@ -202,6 +203,9 @@ const DailyChart = () => {
           const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
           coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
           locationRef.current = coords;
+          setLocationDenied(false);
+        } else {
+          setLocationDenied(true);
         }
       }
 
@@ -471,6 +475,40 @@ const DailyChart = () => {
     }
   };
 
+  const handleEnableLocation = async () => {
+    const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
+    
+    if (status === "denied" && !canAskAgain) {
+      // Permission permanently denied - open settings
+      Alert.alert(
+        "Location Permission Required",
+        "Please enable location access in Settings to see prayer times.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Open Settings", 
+            onPress: () => {
+              if (Platform.OS === 'ios') {
+                Linking.openURL('app-settings:');
+              } else {
+                Linking.openSettings();
+              }
+            }
+          }
+        ]
+      );
+    } else {
+      // Try requesting permission
+      const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+      if (newStatus === "granted") {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        locationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+        setLocationDenied(false);
+        fetchPrayerTimes(selectedDate);
+      }
+    }
+  };
+
   const prayersToTrack = ["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])];
 
   const isAllCompleted = prayersToTrack.every(prayer => prayerStates[selectedDate]?.[prayer] === true);
@@ -536,6 +574,21 @@ const DailyChart = () => {
           <Icon name="chevron-forward" size={20} color="#9CA3AF" />
         </TouchableOpacity>
 
+        {locationDenied && (
+          <TouchableOpacity 
+            style={styles.locationAlert} 
+            onPress={handleEnableLocation}
+            activeOpacity={0.8}
+          >
+            <Icon name="location-outline" size={20} color="#DC2626" style={styles.alertIcon} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.locationAlertTitle}>Location access needed</Text>
+              <Text style={styles.locationAlertText}>Enable location to see prayer times</Text>
+            </View>
+            <Icon name="chevron-forward" size={18} color="#DC2626" />
+          </TouchableOpacity>
+        )}
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Daily Prayers</Text>
           
@@ -579,7 +632,7 @@ const DailyChart = () => {
                     {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
                   </Text>
 
-                  {prayer !== "witr" && (
+                  {prayer !== "witr" && prayerTimes && (
                     <Text
                       style={{
                         fontSize: 12,
@@ -588,13 +641,11 @@ const DailyChart = () => {
                       }}
                     >
                       {isLoadingTimes ? (
-                        "Salah Times Loading..." 
-                      ) : prayerTimes ? (
+                        "Loading times..." 
+                      ) : (
                         prayer === "fajr"
                           ? `${formatTime(prayerTimes.Fajr)} • Sunrise ${formatTime(prayerTimes.Sunrise)}`
                           : formatTime(prayerTimes[prayer.charAt(0).toUpperCase() + prayer.slice(1)])
-                      ) : (
-                        "--:--"
                       )}
                     </Text>
                   )}
@@ -906,6 +957,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#1F2937",
+  },
+  locationAlert: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+  },
+  alertIcon: {
+    marginRight: 12,
+  },
+  locationAlertTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#991B1B",
+    marginBottom: 2,
+  },
+  locationAlertText: {
+    fontSize: 12,
+    color: "#DC2626",
   },
   infoCard: {
     flexDirection: "row",
