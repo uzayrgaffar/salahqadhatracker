@@ -16,7 +16,8 @@ export default {
       bundleIdentifier: "com.uzayrgaffar.iqadha",
       buildNumber: "11",
       infoPlist: {
-        ITSAppUsesNonExemptEncryption: false
+        ITSAppUsesNonExemptEncryption: false,
+        UIBackgroundModes: ["remote-notification"]
       },
       googleServicesFile: "./GoogleService-Info.plist"
     },
@@ -28,7 +29,7 @@ export default {
       config: {
         keepConsistentProguardFile: true
       },
-      permissions: []
+      permissions: ["RECEIVE_BOOT_COMPLETED", "POST_NOTIFICATIONS"]
     },
     splash: {
       image: "./assets/splash.png",
@@ -45,7 +46,18 @@ export default {
       "expo-font",
       "@react-native-community/datetimepicker",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#5CB390"
+        }
+      ],
+      [
         "@react-native-firebase/app",
+        {}
+      ],
+      [
+        "@react-native-firebase/messaging",
         {}
       ],
       [

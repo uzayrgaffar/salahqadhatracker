@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -6,6 +6,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppProvider, AppContext } from './AppContext';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
 
 // Pages 
 import SelectLanguage from './pages/SelectLanguage';
@@ -117,6 +119,33 @@ const MainPages = () => {
 };
 
 const App = () => {
+
+  useEffect(() => {
+    // Listen for foreground messages
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      // You can customize this to show a modal or a simple Alert
+      Alert.alert(
+        remoteMessage.notification?.title || "iQadha",
+        remoteMessage.notification?.body || "It is time for Salah."
+      );
+    });
+
+    const requestUserPermission = async () => {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+      if (enabled) {
+        console.log('Authorization status:', authStatus);
+      }
+    };
+
+    requestUserPermission();
+
+    return unsubscribe;
+  }, []);
+
   return (
     <AppProvider>
       <SafeAreaProvider>

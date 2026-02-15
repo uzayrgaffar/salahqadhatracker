@@ -11,6 +11,8 @@ import * as Location from "expo-location"
 import axios from "axios"
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import messaging from '@react-native-firebase/messaging';
+import * as Notifications from 'expo-notifications';
 
 const DailyChart = () => {
   const { setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr, madhab, setMadhab } = useContext(AppContext)
@@ -30,6 +32,22 @@ const DailyChart = () => {
   const locationRef = useRef(null);
   const [monthCache, setMonthCache] = useState({});
   const [showHelp, setShowHelp] = useState(false);
+
+  useEffect(() => {
+    const configureAndroidChannel = async () => {
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('prayer_times', {
+          name: 'Prayer Times',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#5CB390',
+          sound: 'default', // You can change this to a custom file later
+        });
+      }
+    };
+
+    configureAndroidChannel();
+  }, []);
 
   useEffect(() => {
     if (userId) {
@@ -130,7 +148,6 @@ const DailyChart = () => {
   const fetchPrayerTimes = async (dateToFetch) => {
     const monthKey = moment(dateToFetch).format("YYYY-MM");
     const dayKey = moment(dateToFetch).format("DD-MM-YYYY");
-    
     const cacheKey = `${madhab}-${monthKey}`;
 
     if (monthCache[cacheKey] && monthCache[cacheKey][dayKey]) {
@@ -151,37 +168,6 @@ const DailyChart = () => {
       }
 
       if (coords) {
-        const [address] = await Location.reverseGeocodeAsync(coords);
-        const countryCode = address?.isoCountryCode;
-
-        let autoMethod = 3; // Default: Muslim World League
-        
-        const methodMapping = {
-          'PK': 1, 'IN': 1, 'BD': 1, 'AF': 1, // Karachi
-          'US': 2, 'CA': 2,                   // ISNA
-          'SA': 4,                            // Umm Al-Qura
-          'EG': 5, 'SD': 5, 'LY': 5,          // Egypt
-          'IR': 7,                            // Tehran
-          'KW': 9,                            // Kuwait
-          'QA': 10,                           // Qatar
-          'SG': 11,                           // Singapore
-          'FR': 12,                           // France
-          'TR': 13,                           // Turkey
-          'RU': 14,                           // Russia
-          'AE': 16,                           // Dubai
-          'MY': 17,                           // Malaysia
-          'TN': 18,                           // Tunisia
-          'DZ': 19,                           // Algeria
-          'ID': 20,                           // Indonesia
-          'MA': 21,                           // Morocco
-          'PT': 22,                           // Portugal
-          'JO': 23,                           // Jordan
-        };
-
-        if (countryCode && methodMapping[countryCode]) {
-          autoMethod = methodMapping[countryCode];
-        }
-
         const year = moment(dateToFetch).format("YYYY");
         const month = moment(dateToFetch).format("MM");
         const school = madhab === "Hanafi" ? 1 : 0;
@@ -192,7 +178,6 @@ const DailyChart = () => {
             params: {
               latitude: coords.latitude,
               longitude: coords.longitude,
-              method: autoMethod, 
               school: school,
             },
           }
@@ -218,6 +203,55 @@ const DailyChart = () => {
       fetchPrayerTimes(selectedDate);
     }, [selectedDate, madhab])
   );
+
+  useEffect(() => {
+    const setupNotifications = async () => {
+      try {
+        // 1. Request Permission (Required for iOS)
+        const authStatus = await messaging().requestPermission();
+        const enabled = 
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+        if (enabled) {
+          // 2. Get the Token
+          const token = await messaging().getToken();
+          
+          // 3. Get current location
+          // If locationRef isn't ready yet, we wait for it
+          const coords = locationRef.current; 
+
+          if (userId && coords) {
+            await firestore().collection("users").doc(userId).set({
+              fcmToken: token,
+              madhab: madhab,
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              lastActive: firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            
+            console.log("Notification profile updated for:", userId);
+          }
+        }
+      } catch (error) {
+        console.error("Notification Setup Error:", error);
+      }
+    };
+
+    if (userId) {
+      setupNotifications();
+    }
+  }, [userId, madhab]); // Re-runs if user logs in or changes Madhab
+
+  useEffect(() => {
+    const unsubscribe = messaging().onTokenRefresh(token => {
+      if (userId) {
+        firestore().collection("users").doc(userId).update({ fcmToken: token });
+      }
+    });
+    return unsubscribe;
+  }, [userId]);
   
   const handleDateSelect = (date) => {
     if (moment(date).isSameOrBefore(today)) {
@@ -405,7 +439,6 @@ const DailyChart = () => {
     const now = moment();
     const todayString = moment().format("YYYY-MM-DD");
 
-    // Only highlight if viewing today
     if (selectedDate !== todayString) return null;
 
     const times = {
