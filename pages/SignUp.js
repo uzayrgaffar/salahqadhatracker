@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator,
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
+import Icon from "react-native-vector-icons/Ionicons";
 
 const SignUp = () => {
   const navigation = useNavigation();
@@ -14,13 +15,14 @@ const SignUp = () => {
   const [loading, setLoading] = useState(false);
 
   const validateInputs = () => {
-    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
-      Alert.alert("Input Error", "Email, password, and confirm password cannot be empty");
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password.trim() || !confirmPassword.trim()) {
+      Alert.alert("Input Error", "All fields are required");
       return false;
     }
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(trimmedEmail)) {
       Alert.alert("Input Error", "Please enter a valid email address");
       return false;
     }
@@ -39,6 +41,7 @@ const SignUp = () => {
   };
 
   const handleAuthError = (error) => {
+    console.log("Signup Error Code:", error.code);
     let message = "Something went wrong. Please try again.";
     
     switch (error.code) {
@@ -46,10 +49,16 @@ const SignUp = () => {
         message = "This email is already registered. Please sign in instead.";
         break;
       case 'auth/weak-password':
-        message = "Password is too weak. It should be at least 6 characters.";
+        message = "Password is too weak. Please use at least 6 characters.";
+        break;
+      case 'auth/invalid-email':
+        message = "The email address is badly formatted.";
+        break;
+      case 'auth/network-request-failed':
+        message = "Network error. Please check your connection.";
         break;
       default:
-        message = `Authentication error (${error.code}). Please try again.`;
+        message = error.message;
         break;
     }
     
@@ -61,37 +70,32 @@ const SignUp = () => {
 
     Alert.alert(
       "Data Usage Consent",
-      "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties. You can review our Privacy Policy for more details.",
+      "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties.",
       [
         {
           text: "Privacy Policy",
           onPress: () => Linking.openURL("https://www.termsfeed.com/live/60b07c67-c303-41bc-9f7c-e39397a3fc1e"),
         },
-        {
-          text: "Decline",
-          style: "cancel",
-          onPress: () => console.log("User declined consent"),
-        },
+        { text: "Decline", style: "cancel" },
         {
           text: "Accept",
           onPress: async () => {
             setLoading(true);
             try {
-              const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+              const userCredential = await auth().createUserWithEmailAndPassword(email.trim(), password);
               const user = userCredential.user;
               
-              const userDocRef = firestore().collection("users").doc(user.uid);
-              await userDocRef.set({
+              await firestore().collection("users").doc(user.uid).set({
                 isAnonymous: false,
                 email: user.email,
                 createdAt: firestore.FieldValue.serverTimestamp()
               });
                 
-              setLoading(false);
               navigation.replace("SetDOB");
             } catch (error) {
-              setLoading(false);
               handleAuthError(error);
+            } finally {
+              setLoading(false);
             }
           },
         },
@@ -102,48 +106,36 @@ const SignUp = () => {
   const signInAnonymouslyHandler = async () => {
     Alert.alert(
       "Data Usage Consent",
-      "To provide and improve app functionality, we collect and store certain data. Your information will never be sold or shared with third parties. You can review our Privacy Policy for more details.",
+      "To provide app functionality, we collect certain data. Review our Privacy Policy for details.",
       [
         {
           text: "Privacy Policy",
           onPress: () => Linking.openURL("https://www.termsfeed.com/live/60b07c67-c303-41bc-9f7c-e39397a3fc1e"),
         },
-        {
-          text: "Decline",
-          style: "cancel",
-          onPress: () => console.log("User declined consent"),
-        },
+        { text: "Decline", style: "cancel" },
         {
           text: "Accept",
           onPress: () => {
             Alert.alert(
-              "Anonymous Account Limitations",
-              "With an anonymous account, you cannot have multiple accounts on this device. Would you like to continue?",
+              "Anonymous Account",
+              "With an anonymous account, your data is linked to this device only. Continue?",
               [
-                {
-                  text: "Cancel",
-                  style: "cancel",
-                  onPress: () => console.log("User canceled anonymous sign-in"),
-                },
+                { text: "Cancel", style: "cancel" },
                 {
                   text: "Continue",
                   onPress: async () => {
                     setLoading(true);
                     try {
                       const userCredential = await auth().signInAnonymously();
-                      const user = userCredential.user;
-  
-                      const userDocRef = firestore().collection("users").doc(user.uid);
-                      await userDocRef.set({
+                      await firestore().collection("users").doc(userCredential.user.uid).set({
                         isAnonymous: true,
                         createdAt: firestore.FieldValue.serverTimestamp()
                       });
-  
-                      setLoading(false);
                       navigation.replace("SetDOB");
                     } catch (error) {
+                      Alert.alert("Error", "Failed to sign in anonymously.");
+                    } finally {
                       setLoading(false);
-                      Alert.alert("Authentication Error", "Failed to sign in anonymously. Please try again.");
                     }
                   }
                 }
@@ -167,6 +159,8 @@ const SignUp = () => {
           style={styles.input}
           autoCapitalize="none"
           keyboardType="email-address"
+          autoCorrect={false}
+          placeholderTextColor="#9CA3AF"
         />
         
         <View style={styles.passwordContainer}>
@@ -177,14 +171,19 @@ const SignUp = () => {
             secureTextEntry={!showPassword}
             style={styles.passwordInput}
             autoCapitalize="none"
+            autoCorrect={false}
+            placeholderTextColor="#9CA3AF"
           />
           <TouchableOpacity 
             style={styles.toggleButton} 
             onPress={() => setShowPassword(!showPassword)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.toggleButtonText}>
-              {showPassword ? 'Hide' : 'Show'}
-            </Text>
+            <Icon 
+              name={showPassword ? "eye-off-outline" : "eye-outline"} 
+              size={22} 
+              color="#5CB390" 
+            />
           </TouchableOpacity>
         </View>
 
@@ -196,44 +195,44 @@ const SignUp = () => {
             secureTextEntry={!showConfirmPassword}
             style={styles.passwordInput}
             autoCapitalize="none"
+            autoCorrect={false}
+            placeholderTextColor="#9CA3AF"
           />
           <TouchableOpacity 
             style={styles.toggleButton} 
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.toggleButtonText}>
-              {showConfirmPassword ? 'Hide' : 'Show'}
-            </Text>
+            <Icon 
+              name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
+              size={22} 
+              color="#5CB390" 
+            />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity 
-          style={styles.signInButton} 
+          style={[styles.primaryButton, loading && styles.disabledButton]} 
           onPress={signUp} 
           disabled={loading}
         >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.signInButtonText}>Create Account</Text>
-          )}
+          {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Create Account</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={styles.anonymousButton} 
+          style={styles.secondaryButton} 
           onPress={signInAnonymouslyHandler} 
           disabled={loading}
         >
-          <Text style={styles.anonymousButtonText}>Continue Without Sign up</Text>
+          <Text style={styles.secondaryButtonText}>Continue Without Sign up</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
           style={styles.switchButton} 
           onPress={() => navigation.navigate('Login')}
         >
-          <Text style={styles.switchButtonText}>Already have an account? Sign In</Text>
+          <Text style={styles.switchButtonText}>Already have an account? <Text style={{fontWeight: '700'}}>Sign In</Text></Text>
         </TouchableOpacity>
-
       </View>
     </View>
   );
@@ -248,83 +247,87 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 24,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 32,
   },
   input: {
     width: "100%",
-    height: 50,
-    borderColor: "#5CB390",
-    borderWidth: 1,
-    marginVertical: 10,
-    padding: 15,
-    borderRadius: 4,
+    height: 56,
+    borderColor: "#E5E7EB",
+    borderWidth: 1.5,
+    marginVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    fontSize: 16,
+    color: "#000",
   },
   passwordContainer: {
     flexDirection: 'row',
     width: '100%',
-    height: 50,
-    borderColor: "#5CB390",
-    borderWidth: 1,
-    marginVertical: 10,
-    borderRadius: 4,
+    height: 56,
+    borderColor: "#E5E7EB",
+    borderWidth: 1.5,
+    marginVertical: 8,
+    borderRadius: 12,
     alignItems: 'center',
   },
   passwordInput: {
     flex: 1,
     height: '100%',
-    padding: 15,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#000",
   },
   toggleButton: {
-    paddingHorizontal: 15,
-    height: '100%',
+    paddingHorizontal: 16,
     justifyContent: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: "#5CB390",
   },
-  toggleButtonText: {
-    color: "#5CB390",
-    fontWeight: "600",
-  },
-  signInButton: {
+  primaryButton: {
     backgroundColor: "#5CB390",
-    padding: 15,
-    borderRadius: 4,
-    marginVertical: 10,
+    height: 56,
+    borderRadius: 12,
+    marginTop: 24,
     width: "100%",
     alignItems: "center",
+    justifyContent: "center",
+    elevation: 2,
   },
-  signInButtonText: {
+  primaryButtonText: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
   },
-  anonymousButton: {
+  secondaryButton: {
     backgroundColor: "#FFFFFF",
-    padding: 15,
-    borderRadius: 4,
-    borderWidth: 1,
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 1.5,
     borderColor: "#5CB390",
-    marginVertical: 10,
+    marginTop: 12,
     width: "100%",
     alignItems: "center",
+    justifyContent: "center",
   },
-  anonymousButtonText: {
+  secondaryButtonText: {
     color: "#5CB390",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
   },
+  disabledButton: {
+    backgroundColor: "#A7D7C3",
+  },
   switchButton: {
-    marginTop: 15,
+    marginTop: 20,
     padding: 10,
   },
   switchButtonText: {
     color: "#5CB390",
-    fontSize: 16,
+    fontSize: 15,
   }
 });
 

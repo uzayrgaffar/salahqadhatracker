@@ -73,9 +73,31 @@ const DailyChart = () => {
         const docSnap = await dailyPrayerRef.get()
 
         if (docSnap.exists) {
-          const data = docSnap.data()
-          setPrayerStates((prevStates) => ({ ...prevStates, [selectedDate]: data.prayers }))
-          lsetDailyPrayerCounts((prevCounts) => ({ ...prevCounts, [selectedDate]: data.counts }))
+          const data = docSnap.data() || {}
+
+          setPrayerStates(prev => ({
+            ...prev,
+            [selectedDate]: data.prayers || {
+              fajr: false,
+              dhuhr: false,
+              asr: false,
+              maghrib: false,
+              isha: false,
+              witr: false,
+            }
+          }))
+
+          lsetDailyPrayerCounts(prev => ({
+            ...prev,
+            [selectedDate]: data.counts || {
+              fajr: 0,
+              dhuhr: 0,
+              asr: 0,
+              maghrib: 0,
+              isha: 0,
+              witr: 0,
+            }
+          }))
         } else {
           await dailyPrayerRef.set({
             prayers: {
@@ -133,9 +155,25 @@ const DailyChart = () => {
         const allCounts = {};
         
         querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          allStates[doc.id] = data.prayers;
-          allCounts[doc.id] = data.counts;
+          const data = doc.data() || {};
+
+          allStates[doc.id] = data.prayers || {
+            fajr: false,
+            dhuhr: false,
+            asr: false,
+            maghrib: false,
+            isha: false,
+            witr: false,
+          };
+
+          allCounts[doc.id] = data.counts || {
+            fajr: 0,
+            dhuhr: 0,
+            asr: 0,
+            maghrib: 0,
+            isha: 0,
+            witr: 0,
+          };
         });
 
         setPrayerStates(allStates);
@@ -300,9 +338,9 @@ const DailyChart = () => {
     setPrayerStates(updatedStates)
 
     const dailyPrayerRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate)
-    await dailyPrayerRef.update({
+    await dailyPrayerRef.set({
       prayers: updatedStates[selectedDate],
-    })
+    }, { merge: true });
 
     if (wasSelected) {
       await adjustTotalQadha(prayer, 1)
@@ -314,9 +352,9 @@ const DailyChart = () => {
   const adjustTotalQadha = async (prayer, amount) => {
     const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary")
 
-    await totalQadhaRef.update({
+    await totalQadhaRef.set({
       [prayer]: firestore.FieldValue.increment(amount),
-    });
+    }, { merge: true });
   };
   
   const adjustCount = async (prayer, amount) => {
@@ -336,7 +374,9 @@ const DailyChart = () => {
     const summaryRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
 
     batch.update(dailyRef, { [`counts.${prayer}`]: newCount });
-    batch.update(summaryRef, { [prayer]: firestore.FieldValue.increment(-amount) });
+    batch.set(summaryRef, {
+      [prayer]: firestore.FieldValue.increment(-amount),
+    }, { merge: true });
 
     await batch.commit();
   };
@@ -420,7 +460,9 @@ const DailyChart = () => {
       batch.update(dailyRef, { prayers: updatedDayPrayers });
 
       unticked.forEach(prayer => {
-        batch.update(summaryRef, { [prayer]: firestore.FieldValue.increment(-1) });
+        batch.set(summaryRef, {
+          [prayer]: firestore.FieldValue.increment(-1),
+        }, { merge: true });
       });
 
       await batch.commit();
@@ -790,7 +832,7 @@ const DailyChart = () => {
 
       {selectedDate !== today && (
         <TouchableOpacity 
-          style={[styles.todayPill, { bottom: insets.bottom + 10 }]} 
+          style={[styles.todayPill, { bottom: insets.bottom }]} 
           onPress={() => {
             setSelectedDate(today);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

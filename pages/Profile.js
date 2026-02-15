@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react"
-import { View, TouchableOpacity, StyleSheet, Text, Alert, ScrollView } from "react-native"
+import { View, TouchableOpacity, StyleSheet, Text, Alert, ScrollView, Modal, TextInput } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
@@ -8,10 +8,14 @@ import Icon from "react-native-vector-icons/Ionicons"
 
 const Profile = () => {
   const navigation = useNavigation()
-  const {madhab, setMadhab} = useContext(AppContext)
+  const { madhab, setMadhab } = useContext(AppContext)
   const [gender, setGender] = useState("")
   const [userDocRef, setUserDocRef] = useState(null)
   const [email, setEmail] = useState("")
+  const [isReAuthVisible, setIsReAuthVisible] = useState(false);
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = auth().onAuthStateChanged((user) => {
@@ -66,57 +70,132 @@ const Profile = () => {
   }
 
   const handleDeleteAccount = async () => {
-    Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your account and all associated data? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          onPress: async () => {
-            try {
-              const user = auth().currentUser
-              if (!user) throw new Error("No authenticated user found")
-  
-              const userId = user.uid
-              const userDocRef = firestore().collection("users").doc(userId)
-              const dailyPrayersRef = firestore().collection("users").doc(userId).collection("dailyPrayers")
-              const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary")
-  
-              const deleteCollection = async (collectionRef) => {
-                const querySnapshot = await collectionRef.get()
-                const batch = firestore().batch()
-                querySnapshot.forEach((doc) => batch.delete(doc.ref))
-                await batch.commit()
-              }
-  
-              await deleteCollection(dailyPrayersRef)
-              await totalQadhaRef.delete()
-              await userDocRef.delete()
-              await user.delete()
-  
-              Alert.alert("Account Deleted", "Your account and all data have been successfully deleted.")
-              navigation.replace("SelectLanguage")
-            } catch (error) {
-              console.error("Error deleting account:", error)
-              Alert.alert("Error", "Failed to delete account. Please try again.")
-            }
-          },
-          style: "destructive"
-        }
-      ]
-    )
-  }
+    const user = auth().currentUser;
+    if (!user) return;
+
+    if (user.isAnonymous) {
+      Alert.alert(
+        "Delete Account",
+        "Are you sure? All your data will be permanently lost and cannot be recovered.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Delete", 
+            style: "destructive", 
+            onPress: () => executeDeletion() 
+          }
+        ]
+      );
+      return;
+    } 
+
+    setIsReAuthVisible(true);
+  };
+
+  const executeDeletion = async () => {
+    if (!auth().currentUser?.isAnonymous && !password.trim()) {
+      Alert.alert("Error", "Please enter your password to continue.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const user = auth().currentUser;
+      if (!user) {
+        Alert.alert("Error", "No active session found. Please log in again.");
+        return;
+      }
+
+      if (!user.isAnonymous) {
+        const credential = auth.EmailAuthProvider.credential(user.email, password);
+        await user.reauthenticateWithCredential(credential);
+      }
+
+      const userId = user.uid;
+      const userDocRef = firestore().collection("users").doc(userId);
+      const dailyPrayersRef = firestore().collection("users").doc(userId).collection("dailyPrayers");
+      const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
+
+      const querySnapshot = await dailyPrayersRef.get();
+      const batch = firestore().batch();
+      querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      
+      await batch.commit();
+      await totalQadhaRef.delete();
+      await userDocRef.delete();
+
+      setUserDocRef(null);
+      setIsReAuthVisible(false);
+      setPassword("");
+
+      await user.delete();
+
+      Alert.alert(
+        "Success", 
+        "Your account and all data have been permanently deleted.",
+        [{
+          text: "OK",
+          onPress: () => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "SelectLanguage" }],
+            });
+          }
+        }]
+      );
+
+    } catch (error) {
+      console.error("Deletion Error:", error.code, error.message);
+
+      let errorTitle = "Deletion Failed";
+      let errorMessage = "An unexpected error occurred. Please try again.";
+
+      switch (error.code) {
+        case 'auth/invalid-credential':
+        case 'auth/wrong-password':
+          errorTitle = "Invalid Password";
+          errorMessage = "The password you entered is incorrect. Please try again.";
+          break;
+          
+        case 'auth/network-request-failed':
+          errorTitle = "Network Error";
+          errorMessage = "Please check your internet connection and try again.";
+          break;
+
+        case 'auth/too-many-requests':
+          errorTitle = "Too Many Attempts";
+          errorMessage = "This account has been temporarily disabled due to many failed attempts. Try again later.";
+          break;
+
+        case 'auth/requires-recent-login':
+          errorTitle = "Security Timeout";
+          errorMessage = "For security, please sign out and sign back in before deleting your account.";
+          break;
+
+        default:
+          errorMessage = error.message;
+      }
+
+      Alert.alert(errorTitle, errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.safeArea}>
-      <View style={styles.scrollView}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Profile</Text>
-          </View>
-          <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Account Info Card */}
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Profile</Text>
+        </View>
+
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.card}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
@@ -128,7 +207,6 @@ const Profile = () => {
             <Text style={styles.emailText}>{email || "Anonymous Account"}</Text>
           </View>
 
-          {/* Madhab Selection */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Madh'hab Selection</Text>
             <Text style={styles.sectionDescription}>Choose your school of thought</Text>
@@ -152,7 +230,6 @@ const Profile = () => {
             </View>
           </View>
 
-          {/* Actions Section */}
           <View style={styles.actionsSection}>
             <TouchableOpacity
               style={[styles.actionButton, styles.primaryButton, !madhab && styles.disabledButton]}
@@ -194,19 +271,70 @@ const Profile = () => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-        </View>
       </View>
+
+      <Modal visible={isReAuthVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirm Password</Text>
+            <Text style={styles.modalSub}>Please enter your password to delete your account.</Text>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Password"
+                secureTextEntry={!isPasswordVisible}
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={password}
+                onChangeText={setPassword}
+                placeholderTextColor="#9CA3AF"
+              />
+              <TouchableOpacity 
+                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon 
+                  name={isPasswordVisible ? "eye-off-outline" : "eye-outline"} 
+                  size={22} 
+                  color="#6B7280" 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.cancelBtn]} 
+                onPress={() => {
+                  setIsReAuthVisible(false);
+                  setPassword("");
+                  setIsPasswordVisible(false);
+                }}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.deleteBtn]} 
+                onPress={executeDeletion}
+                disabled={loading || !password}
+              >
+                <Text style={styles.deleteBtnText}>
+                  {loading ? "Deleting..." : "Confirm Delete"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#5CB390",
-  },
-  scrollView: {
-    flex: 1,
   },
   container: {
     flex: 1,
@@ -244,9 +372,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  avatarContainer: {
-    marginBottom: 16,
-  },
   avatar: {
     width: 72,
     height: 72,
@@ -254,10 +379,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#5CB390",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#5CB390",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
     elevation: 4,
   },
   avatarText: {
@@ -270,17 +391,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#1F2937",
     marginBottom: 8,
-  },
-  badge: {
-    backgroundColor: "#E8F8F3",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#5CB390",
   },
   section: {
     marginBottom: 28,
@@ -307,11 +417,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#E5E7EB",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
   selectedOptionCard: {
     backgroundColor: "#E8F8F3",
@@ -355,10 +460,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
     elevation: 3,
   },
   buttonIcon: {
@@ -375,14 +476,74 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: "#D1D5DB",
-    shadowOpacity: 0,
-    elevation: 0,
   },
   actionButtonText: {
     color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "600",
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  modalSub: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 20,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    marginBottom: 20,
+    paddingRight: 15,
+  },
+  modalInput: {
+    flex: 1,
+    padding: 12,
+    color: '#000',
+    fontSize: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalBtn: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelBtn: {
+    backgroundColor: '#F3F4F6',
+  },
+  deleteBtn: {
+    backgroundColor: '#DC143C',
+  },
+  cancelBtnText: {
+    color: '#4B5563',
+    fontWeight: '600',
+  },
+  deleteBtnText: {
+    color: '#FFF',
+    fontWeight: '600',
+  }
 })
 
 export default Profile
