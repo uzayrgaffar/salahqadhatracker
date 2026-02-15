@@ -13,11 +13,12 @@
       }
     },
     "preview": {
+      "distribution": "internal",
       "android": {
         "buildType": "apk"
       },
       "ios": {
-        "simulator": true
+        "simulator": false
       }
     },
     "development": {
@@ -25,6 +26,9 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
       }
     }
   },

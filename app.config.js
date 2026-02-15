@@ -52,23 +52,17 @@ export default {
           "color": "#5CB390"
         }
       ],
-      [
-        "@react-native-firebase/app",
-        {}
-      ],
-      [
-        "@react-native-firebase/messaging",
-        {}
-      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       [
         "expo-build-properties",
         {
-          ios: {
-            useFrameworks: "static"
+          "ios": {
+            "useFrameworks": "static"
           },
-          android: {
-            enableMinifyInReleaseBuilds: false, 
-            shrinkResources: false
+          "android": {
+            "enableMinifyInReleaseBuilds": false,
+            "shrinkResources": false
           }
         }
       ],
