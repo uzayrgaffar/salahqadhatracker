@@ -421,7 +421,7 @@ const DailyChart = () => {
     if (now.isBetween(times.dhuhr, times.asr)) return "dhuhr";
     if (now.isBetween(times.asr, times.maghrib)) return "asr";
     if (now.isBetween(times.maghrib, times.isha)) return "maghrib";
-    if (now.isAfter(times.isha) || now.isBefore(times.fajr)) return "isha";
+    if (now.isAfter(times.isha)) return "isha";
 
     return null;
   };
