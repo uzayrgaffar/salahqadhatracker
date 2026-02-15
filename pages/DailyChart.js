@@ -13,6 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import messaging from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DailyChart = () => {
   const { setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr, madhab, setMadhab } = useContext(AppContext)
@@ -32,6 +33,7 @@ const DailyChart = () => {
   const locationRef = useRef(null);
   const [monthCache, setMonthCache] = useState({});
   const [showHelp, setShowHelp] = useState(false);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(true);
   const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
@@ -204,6 +206,16 @@ const DailyChart = () => {
           coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
           locationRef.current = coords;
           setLocationDenied(false);
+          
+          // Update Firestore with location for notifications
+          if (userId) {
+            await firestore().collection("users").doc(userId).set({
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+              lastActive: firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            console.log("Location updated in Firestore for notifications");
+          }
         } else {
           setLocationDenied(true);
         }
@@ -247,44 +259,34 @@ const DailyChart = () => {
   );
 
   useEffect(() => {
-    const setupNotifications = async () => {
+    const checkNotificationStatus = async () => {
+      if (!userId) return;
+      
       try {
-        // 1. Request Permission (Required for iOS)
         const authStatus = await messaging().requestPermission();
-        const enabled = 
+        const notificationEnabled = 
           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
           authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-        if (enabled) {
-          // 2. Get the Token
-          const token = await messaging().getToken();
-          
-          // 3. Get current location
-          // If locationRef isn't ready yet, we wait for it
-          const coords = locationRef.current; 
-
-          if (userId && coords) {
-            await firestore().collection("users").doc(userId).set({
-              fcmToken: token,
-              madhab: madhab,
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              lastActive: firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            
-            console.log("Notification profile updated for:", userId);
+        // Check if user doc exists and has notification setup
+        const userDoc = await firestore().collection("users").doc(userId).get();
+        const userData = userDoc.data();
+        
+        // Show prompt if notifications not enabled OR if they don't have location saved
+        if (!notificationEnabled || !userData?.fcmToken || !userData?.latitude) {
+          const hasSeenPrompt = await AsyncStorage.getItem('hasSeenNotificationPrompt');
+          if (!hasSeenPrompt) {
+            setShowNotificationPrompt(true);
+            await AsyncStorage.setItem('hasSeenNotificationPrompt', 'true');
           }
         }
       } catch (error) {
-        console.error("Notification Setup Error:", error);
+        console.error("Error checking notification status:", error);
       }
     };
 
-    if (userId) {
-      setupNotifications();
-    }
-  }, [userId, madhab]); // Re-runs if user logs in or changes Madhab
+    checkNotificationStatus();
+  }, [userId]);
 
   useEffect(() => {
     const unsubscribe = messaging().onTokenRefresh(token => {
@@ -509,6 +511,81 @@ const DailyChart = () => {
     }
   };
 
+  const setupNotifications = async () => {
+    try {
+      // 1. Request notification permission
+      const authStatus = await messaging().requestPermission();
+      const notificationEnabled = 
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+      if (!notificationEnabled) {
+        Alert.alert(
+          "Notification Permission Denied",
+          "You can enable notifications later in your device settings.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // 2. Get FCM token
+      const token = await messaging().getToken();
+
+      // 3. Request location permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== "granted") {
+        // Save partial data without location
+        await firestore().collection("users").doc(userId).set({
+          fcmToken: token,
+          madhab: madhab,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          lastActive: firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        Alert.alert(
+          "Location Needed for Prayer Times",
+          "Notifications are enabled, but we need your location to calculate accurate prayer times. You can enable location later.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // 4. Get location
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      locationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+      setLocationDenied(false);
+
+      // 5. Save everything to Firestore
+      await firestore().collection("users").doc(userId).set({
+        fcmToken: token,
+        madhab: madhab,
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        lastActive: firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      // 6. Fetch prayer times
+      fetchPrayerTimes(selectedDate);
+
+      Alert.alert(
+        "Notifications Enabled! 🎉",
+        "You'll receive notifications for each prayer time based on your location.",
+        [{ text: "Great!" }]
+      );
+
+      console.log("Notification profile fully set up for:", userId);
+    } catch (error) {
+      console.error("Notification Setup Error:", error);
+      Alert.alert(
+        "Setup Error",
+        "Something went wrong setting up notifications. Please try again later.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
   const prayersToTrack = ["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])];
 
   const isAllCompleted = prayersToTrack.every(prayer => prayerStates[selectedDate]?.[prayer] === true);
@@ -583,7 +660,7 @@ const DailyChart = () => {
             <Icon name="location-outline" size={20} color="#DC2626" style={styles.alertIcon} />
             <View style={{ flex: 1 }}>
               <Text style={styles.locationAlertTitle}>Location access needed</Text>
-              <Text style={styles.locationAlertText}>Enable location to see prayer times</Text>
+              <Text style={styles.locationAlertText}>Enable location to see prayer times and receive notifications</Text>
             </View>
             <Icon name="chevron-forward" size={18} color="#DC2626" />
           </TouchableOpacity>
@@ -894,6 +971,84 @@ const DailyChart = () => {
           <Text style={styles.todayPillText}>Back to Today</Text>
         </TouchableOpacity>
       )}
+
+      <Modal
+        visible={showNotificationPrompt}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowNotificationPrompt(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.notificationPromptHeader}>
+              <View style={styles.bellIconContainer}>
+                <Icon name="notifications" size={32} color="#5CB390" />
+              </View>
+              <Text style={styles.notificationPromptTitle}>Enable Salah Notifications?</Text>
+              <Text style={styles.notificationPromptSubtitle}>
+                Never miss a prayer time
+              </Text>
+            </View>
+
+            <View style={styles.notificationFeatures}>
+              <View style={styles.featureItem}>
+                <View style={styles.featureIconCircle}>
+                  <Icon name="time-outline" size={20} color="#5CB390" />
+                </View>
+                <View style={styles.featureTextContainer}>
+                  <Text style={styles.featureTitle}>Automatic Reminders</Text>
+                  <Text style={styles.featureDescription}>
+                    Get notified when it's time for each of the 5 daily prayers
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.featureItem}>
+                <View style={styles.featureIconCircle}>
+                  <Icon name="location-outline" size={20} color="#5CB390" />
+                </View>
+                <View style={styles.featureTextContainer}>
+                  <Text style={styles.featureTitle}>Location-Based Times</Text>
+                  <Text style={styles.featureDescription}>
+                    We need your location to calculate accurate prayer times for your area
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.featureItem}>
+                <View style={styles.featureIconCircle}>
+                  <Icon name="shield-checkmark-outline" size={20} color="#5CB390" />
+                </View>
+                <View style={styles.featureTextContainer}>
+                  <Text style={styles.featureTitle}>Your Privacy Matters</Text>
+                  <Text style={styles.featureDescription}>
+                    Your location is only used to calculate prayer times, never shared
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.enableNotificationsButton} 
+              onPress={() => {
+                setShowNotificationPrompt(false);
+                setupNotifications();
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.enableNotificationsButtonText}>Enable Notifications</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.skipButton} 
+              onPress={() => setShowNotificationPrompt(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.skipButtonText}>Maybe Later</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -1268,6 +1423,89 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     borderColor: "#5CB390",
+  },
+  notificationPromptHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  bellIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E8FFF6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  notificationPromptTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  notificationPromptSubtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  notificationFeatures: {
+    marginBottom: 24,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  featureIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8FFF6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  featureTextContainer: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+  enableNotificationsButton: {
+    backgroundColor: '#5CB390',
+    padding: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  enableNotificationsButtonText: {
+    fontSize: 17,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  skipButton: {
+    padding: 12,
+    alignItems: 'center',
+  },
+  skipButtonText: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 })
 
