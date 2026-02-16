@@ -98,7 +98,11 @@ exports.sendPrayerNotifications = onSchedule("0,15,30,45 * * * *", async (event)
                 },
                 android: {
                   priority: "high",
-                  notification: {channelId: "prayer_times", sound: "default"},
+                  notification: {
+                    channelId: "prayer_times",
+                    sound: "default",
+                    icon: "ic_notification",
+                  },
                 },
                 apns: {payload: {aps: {sound: "default"}}},
               });
