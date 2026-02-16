@@ -33,7 +33,7 @@ const DailyChart = () => {
   const locationRef = useRef(null);
   const [monthCache, setMonthCache] = useState({});
   const [showHelp, setShowHelp] = useState(false);
-  const [showNotificationPrompt, setShowNotificationPrompt] = useState(true);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
@@ -263,22 +263,22 @@ const DailyChart = () => {
       if (!userId) return;
       
       try {
-        const authStatus = await messaging().requestPermission();
-        const notificationEnabled = 
-          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        const { status } = await Notifications.getPermissionsAsync();
+        const systemNotificationsEnabled = status === 'granted';
 
-        // Check if user doc exists and has notification setup
+        // Check if location permission is granted
+        const { status: locationStatus } = await Location.getForegroundPermissionsAsync();
+        const systemLocationEnabled = locationStatus === 'granted';
+
+        // Check Firestore data
         const userDoc = await firestore().collection("users").doc(userId).get();
         const userData = userDoc.data();
-        
-        // Show prompt if notifications not enabled OR if they don't have location saved
-        if (!notificationEnabled || !userData?.fcmToken || !userData?.latitude) {
-          const hasSeenPrompt = await AsyncStorage.getItem('hasSeenNotificationPrompt');
-          if (!hasSeenPrompt) {
-            setShowNotificationPrompt(true);
-            await AsyncStorage.setItem('hasSeenNotificationPrompt', 'true');
-          }
+        const hasLocationData = !!(userData?.latitude && userData?.longitude);
+        const hasFCMToken = !!userData?.fcmToken;
+
+        // Show prompt if EITHER system permissions are off OR data is missing
+        if (!systemNotificationsEnabled || !systemLocationEnabled || !hasLocationData || !hasFCMToken) {
+          setShowNotificationPrompt(true);
         }
       } catch (error) {
         console.error("Error checking notification status:", error);
@@ -513,13 +513,16 @@ const DailyChart = () => {
 
   const setupNotifications = async () => {
     try {
-      // 1. Request notification permission
-      const authStatus = await messaging().requestPermission();
-      const notificationEnabled = 
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      // 1. Request notification permission using Expo (this shows the system dialog!)
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
 
-      if (!notificationEnabled) {
+      if (finalStatus !== 'granted') {
         Alert.alert(
           "Notification Permission Denied",
           "You can enable notifications later in your device settings.",
@@ -570,10 +573,12 @@ const DailyChart = () => {
       fetchPrayerTimes(selectedDate);
 
       Alert.alert(
-        "Notifications Enabled! 🎉",
+        "Notifications Enabled! ",
         "You'll receive notifications for each prayer time based on your location.",
         [{ text: "Great!" }]
       );
+
+      await AsyncStorage.setItem('hasSeenNotificationPrompt', 'true');
 
       console.log("Notification profile fully set up for:", userId);
     } catch (error) {
