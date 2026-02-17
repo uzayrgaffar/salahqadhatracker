@@ -24,7 +24,7 @@ export default {
     android: {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.iqadha",
-      versionCode: 5,
+      versionCode: 6,
       googleServicesFile: "./google-services.json",
       config: {
         keepConsistentProguardFile: true
