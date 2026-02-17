@@ -197,10 +197,13 @@ const DailyChart = () => {
     }
 
     setIsLoadingTimes(true);
+
     try {
       let coords = locationRef.current;
+      
       if (!coords) {
-        const { status } = await Location.requestForegroundPermissionsAsync();
+        const { status } = await Location.getForegroundPermissionsAsync();
+        
         if (status === "granted") {
           const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
           coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
@@ -525,7 +528,7 @@ const DailyChart = () => {
       if (finalStatus !== 'granted') {
         Alert.alert(
           "Notification Permission Denied",
-          "You can enable notifications later in your device settings.",
+          "You can enable notifications later in the profile page.",
           [{ text: "OK" }]
         );
         return;

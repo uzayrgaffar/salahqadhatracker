@@ -1,10 +1,12 @@
 import { useState, useEffect, useContext } from "react"
-import { View, TouchableOpacity, StyleSheet, Text, Alert, ScrollView, Modal, TextInput } from "react-native"
+import { View, TouchableOpacity, StyleSheet, Text, Alert, ScrollView, Modal, TextInput, Linking, Platform } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
 import { AppContext } from "../AppContext"
 import Icon from "react-native-vector-icons/Ionicons"
+import * as Location from "expo-location"
+import * as Notifications from "expo-notifications"
 
 const Profile = () => {
   const navigation = useNavigation()
@@ -16,6 +18,9 @@ const Profile = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [checkingPermissions, setCheckingPermissions] = useState(true);
 
   useEffect(() => {
     const unsubscribeAuth = auth().onAuthStateChanged((user) => {
@@ -37,6 +42,131 @@ const Profile = () => {
 
     return () => unsubscribeAuth()
   }, [])
+
+  // Check current permission states on mount and when screen focuses
+  useEffect(() => {
+    checkCurrentPermissions();
+  }, []);
+
+  const checkCurrentPermissions = async () => {
+    setCheckingPermissions(true);
+    try {
+      const { status: locStatus } = await Location.getForegroundPermissionsAsync();
+      const locGranted = locStatus === "granted";
+      setLocationEnabled(locGranted);
+
+      if (locGranted) {
+        const { status: notifStatus } = await Notifications.getPermissionsAsync();
+        setNotificationsEnabled(notifStatus === "granted");
+      } else {
+        setNotificationsEnabled(false);
+      }
+    } catch (e) {
+      console.error("Permission check error:", e);
+    } finally {
+      setCheckingPermissions(false);
+    }
+  };
+
+  const handleLocationToggle = async () => {
+    if (locationEnabled) {
+      // Can't revoke programmatically — direct to settings
+      Alert.alert(
+        "Disable Location",
+        "To turn off location access, please go to your device Settings. You will lose access to salah times and notifications if you disable location.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open Settings",
+            onPress: () => {
+              if (Platform.OS === "ios") {
+                Linking.openURL("app-settings:");
+              } else {
+                Linking.openSettings();
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
+
+      if (status === "denied" && !canAskAgain) {
+        Alert.alert(
+          "Location Permission Required",
+          "Please enable location access in Settings to see prayer times and receive notifications.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => {
+                if (Platform.OS === "ios") {
+                  Linking.openURL("app-settings:");
+                } else {
+                  Linking.openSettings();
+                }
+              },
+            },
+          ]
+        );
+      } else {
+        const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+        const granted = newStatus === "granted";
+        setLocationEnabled(granted);
+        if (!granted) {
+          setNotificationsEnabled(false);
+        }
+      }
+    }
+  };
+
+  const handleNotificationToggle = async () => {
+    if (notificationsEnabled) {
+      // Can't revoke programmatically — direct to settings
+      Alert.alert(
+        "Disable Notifications",
+        "To turn off notifications, please go to your device Settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open Settings",
+            onPress: () => {
+              if (Platform.OS === "ios") {
+                Linking.openURL("app-settings:");
+              } else {
+                Linking.openSettings();
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+
+      if (existingStatus === "denied") {
+        Alert.alert(
+          "Notification Permission Required",
+          "Please enable notifications in Settings to receive prayer time reminders.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => {
+                if (Platform.OS === "ios") {
+                  Linking.openURL("app-settings:");
+                } else {
+                  Linking.openSettings();
+                }
+              },
+            },
+          ]
+        );
+      } else {
+        const { status } = await Notifications.requestPermissionsAsync();
+        setNotificationsEnabled(status === "granted");
+      }
+    }
+  };
 
   const selectGender = async (newGender) => {
     if (!userDocRef) return
@@ -79,15 +209,15 @@ const Profile = () => {
         "Are you sure? All your data will be permanently lost and cannot be recovered.",
         [
           { text: "Cancel", style: "cancel" },
-          { 
-            text: "Delete", 
-            style: "destructive", 
-            onPress: () => executeDeletion() 
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => executeDeletion()
           }
         ]
       );
       return;
-    } 
+    }
 
     setIsReAuthVisible(true);
   };
@@ -121,7 +251,7 @@ const Profile = () => {
       querySnapshot.forEach((doc) => {
         batch.delete(doc.ref);
       });
-      
+
       await batch.commit();
       await totalQadhaRef.delete();
       await userDocRef.delete();
@@ -133,7 +263,7 @@ const Profile = () => {
       await user.delete();
 
       Alert.alert(
-        "Success", 
+        "Success",
         "Your account and all data have been permanently deleted.",
         [{
           text: "OK",
@@ -158,7 +288,7 @@ const Profile = () => {
           errorTitle = "Invalid Password";
           errorMessage = "The password you entered is incorrect. Please try again.";
           break;
-          
+
         case 'auth/network-request-failed':
           errorTitle = "Network Error";
           errorMessage = "Please check your internet connection and try again.";
@@ -184,6 +314,28 @@ const Profile = () => {
     }
   };
 
+  // Reusable toggle row component
+  const PermissionRow = ({ icon, label, description, enabled, onToggle, disabled }) => (
+    <View style={[styles.permissionRow, disabled && styles.permissionRowDisabled]}>
+      <View style={styles.permissionRowLeft}>
+        <View style={[styles.permissionIcon, enabled && styles.permissionIconActive, disabled && styles.permissionIconDisabled]}>
+          <Icon name={icon} size={18} color={disabled ? "#D1D5DB" : enabled ? "#5CB390" : "#9CA3AF"} />
+        </View>
+        <View style={styles.permissionTextBlock}>
+          <Text style={[styles.permissionLabel, disabled && styles.permissionLabelDisabled]}>{label}</Text>
+          <Text style={[styles.permissionDescription, disabled && styles.permissionDescriptionDisabled]}>{description}</Text>
+        </View>
+      </View>
+      <TouchableOpacity
+        onPress={disabled ? undefined : onToggle}
+        activeOpacity={disabled ? 1 : 0.7}
+        style={[styles.toggleTrack, enabled && !disabled ? styles.toggleTrackOn : styles.toggleTrackOff, disabled && styles.toggleTrackDisabled]}
+      >
+        <View style={[styles.toggleThumb, enabled && !disabled ? styles.toggleThumbOn : styles.toggleThumbOff]} />
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={styles.safeArea}>
       <View style={styles.container}>
@@ -191,9 +343,9 @@ const Profile = () => {
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
 
-        <ScrollView 
-          style={styles.content} 
-          contentContainerStyle={styles.scrollContent} 
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.card}>
@@ -207,10 +359,38 @@ const Profile = () => {
             <Text style={styles.emailText}>{email || "Anonymous Account"}</Text>
           </View>
 
+          {/* Permissions Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Permissions</Text>
+            <Text style={styles.sectionDescription}>Manage location and notification access</Text>
+
+            <View style={styles.permissionsCard}>
+              <PermissionRow
+                icon="location-outline"
+                label="Location"
+                description="Required for accurate prayer times"
+                enabled={locationEnabled}
+                onToggle={handleLocationToggle}
+                disabled={checkingPermissions}
+              />
+
+              <View style={styles.permissionDivider} />
+
+              <PermissionRow
+                icon="notifications-outline"
+                label="Notifications"
+                description={locationEnabled ? "Get reminded at each prayer time" : "Enable location first"}
+                enabled={notificationsEnabled}
+                onToggle={handleNotificationToggle}
+                disabled={checkingPermissions || !locationEnabled}
+              />
+            </View>
+          </View>
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Madh'hab Selection</Text>
             <Text style={styles.sectionDescription}>Choose your school of thought</Text>
-            
+
             <View style={styles.optionsGrid}>
               {["Hanafi", "Maliki", "Shafi'i", "Hanbali"].map((mad) => (
                 <TouchableOpacity
@@ -278,7 +458,7 @@ const Profile = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Confirm Password</Text>
             <Text style={styles.modalSub}>Please enter your password to delete your account.</Text>
-            
+
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.modalInput}
@@ -290,21 +470,21 @@ const Profile = () => {
                 onChangeText={setPassword}
                 placeholderTextColor="#9CA3AF"
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setIsPasswordVisible(!isPasswordVisible)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Icon 
-                  name={isPasswordVisible ? "eye-off-outline" : "eye-outline"} 
-                  size={22} 
-                  color="#6B7280" 
+                <Icon
+                  name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
+                  size={22}
+                  color="#6B7280"
                 />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalBtn, styles.cancelBtn]} 
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.cancelBtn]}
                 onPress={() => {
                   setIsReAuthVisible(false);
                   setPassword("");
@@ -313,9 +493,9 @@ const Profile = () => {
               >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalBtn, styles.deleteBtn]} 
+
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.deleteBtn]}
                 onPress={executeDeletion}
                 disabled={loading || !password}
               >
@@ -406,6 +586,105 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginBottom: 16,
   },
+
+  // Permissions card
+  permissionsCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+  },
+  permissionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 18,
+  },
+  permissionRowDisabled: {
+    opacity: 0.5,
+  },
+  permissionRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginRight: 12,
+  },
+  permissionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  permissionIconActive: {
+    backgroundColor: "#E8F8F3",
+  },
+  permissionIconDisabled: {
+    backgroundColor: "#F3F4F6",
+  },
+  permissionTextBlock: {
+    flex: 1,
+  },
+  permissionLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 2,
+  },
+  permissionLabelDisabled: {
+    color: "#9CA3AF",
+  },
+  permissionDescription: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  permissionDescriptionDisabled: {
+    color: "#D1D5DB",
+  },
+  permissionDivider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginHorizontal: 18,
+  },
+
+  // Toggle switch
+  toggleTrack: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    padding: 3,
+  },
+  toggleTrackOn: {
+    backgroundColor: "#5CB390",
+  },
+  toggleTrackOff: {
+    backgroundColor: "#E5E7EB",
+  },
+  toggleTrackDisabled: {
+    backgroundColor: "#E5E7EB",
+  },
+  toggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleThumbOn: {
+    alignSelf: "flex-end",
+  },
+  toggleThumbOff: {
+    alignSelf: "flex-start",
+  },
+
   optionsGrid: {
     gap: 12,
   },
