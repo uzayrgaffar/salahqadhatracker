@@ -500,7 +500,7 @@ const Profile = () => {
                 disabled={loading || !password}
               >
                 <Text style={styles.deleteBtnText}>
-                  {loading ? "Deleting..." : "Confirm Delete"}
+                  {loading ? "Deleting..." : "Delete"}
                 </Text>
               </TouchableOpacity>
             </View>
