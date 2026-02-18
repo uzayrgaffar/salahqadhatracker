@@ -37,6 +37,10 @@ const DailyChart = () => {
   const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
+    handleDateSelect(today);
+  }, []);
+
+  useEffect(() => {
     const configureAndroidChannel = async () => {
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('prayer_times', {
