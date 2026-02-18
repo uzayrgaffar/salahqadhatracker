@@ -53,6 +53,31 @@ const DailyChart = () => {
   }, []);
 
   useEffect(() => {
+    const syncToken = async () => {
+      if (userId) {
+        try {
+          // 1. Always get the current token on startup
+          const token = await messaging().getToken();
+          
+          // 2. Silently update Firestore so it's NEVER stale
+          await firestore().collection("users").doc(userId).set({
+            fcmToken: token,
+            // Also good to sync timezone in case they traveled
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            lastActive: firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          
+          console.log("FCM Token synced successfully");
+        } catch (e) {
+          console.error("Failed to sync FCM token:", e);
+        }
+      }
+    };
+
+    syncToken();
+  }, [userId]);
+
+  useEffect(() => {
     if (userId) {
       const fetchMadhab = async () => {
         const userSnap = await firestore().collection("users").doc(userId).get()
