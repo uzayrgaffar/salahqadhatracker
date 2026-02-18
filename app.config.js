@@ -12,7 +12,7 @@ export default {
     userInterfaceStyle: "light",
     ios: {
       jsEngine: "hermes",
-      supportsTablet: false,
+      supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.iqadha",
       buildNumber: "1",
       infoPlist: {
