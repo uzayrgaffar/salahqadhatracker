@@ -8,13 +8,13 @@ export default {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#5CB390"
     },
-    version: "1.0.3",
+    version: "1.1.0",
     userInterfaceStyle: "light",
     ios: {
       jsEngine: "hermes",
       supportsTablet: false,
       bundleIdentifier: "com.uzayrgaffar.iqadha",
-      buildNumber: "11",
+      buildNumber: "1",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         UIBackgroundModes: ["remote-notification"]
