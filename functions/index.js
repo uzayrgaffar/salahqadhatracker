@@ -101,7 +101,6 @@ exports.sendPrayerNotifications = onSchedule("0,15,30,45 * * * *", async (event)
                   notification: {
                     channelId: "prayer_times",
                     sound: "default",
-                    icon: "ic_notification",
                   },
                 },
                 apns: {payload: {aps: {sound: "default"}}},
