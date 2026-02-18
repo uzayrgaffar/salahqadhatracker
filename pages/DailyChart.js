@@ -857,11 +857,12 @@ const DailyChart = () => {
         animationType="slide"
         onRequestClose={() => setIsQadhaModalVisible(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
-        >
-          <View style={styles.modalContainer}>
+        <View style={styles.modalContainer}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={50}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
             <View style={[styles.modalContent, { paddingBottom: insets.bottom + 10 }]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Qadha Salah</Text>
@@ -917,8 +918,8 @@ const DailyChart = () => {
                 </View>
               </View>
             </View>
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       <Modal
