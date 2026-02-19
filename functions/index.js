@@ -41,100 +41,145 @@ exports.incrementPrayerCounts = onSchedule("0 0 * * *", async (event) => {
 
 
 // --- 2. 15-MINUTE ADHAN NOTIFIER (V2) ---
-exports.sendPrayerNotifications = onSchedule("0,15,30,45 * * * *", async (event) => {
-  const db = admin.firestore();
-  const usersSnap = await db.collection("users")
-      .where("fcmToken", "!=", null)
-      .get();
+exports.sendPrayerNotifications = onSchedule(
+    {
+      schedule: "0,15,30,45 * * * *",
+      maxInstances: 1, // Keeps it from running twice at the same time
+      timeoutSeconds: 540, // Max 9 minutes
+    },
+    async () => {
+      const db = admin.firestore();
+      const now = moment();
 
-  const notificationPromises = usersSnap.docs.map(async (doc) => {
-    const user = doc.data();
-    if (!user.latitude || !user.longitude) {
-      console.log(`Skipping user ${doc.id}: Missing location`);
-      return null;
-    }
+      // 1. FIX ISSUE 2: Create an In-Memory Cache
+      // This stores prayer times for a city during THIS run.
+      // If 1,000 users are in London, we only fetch London's calendar ONCE.
+      const calendarCache = new Map();
 
-    const userTime = moment().tz(user.timezone || "UTC");
-    const dateStr = userTime.format("DD-MM-YYYY");
+      // 2. FETCH USERS: Ideally, you'd use a cursor to batch these if you have >5k users
+      const usersSnap = await db.collection("users")
+          .where("fcmToken", "!=", null)
+          .get();
 
-    try {
-      const response = await axios.get("https://api.aladhan.com/v1/timings", {
-        params: {
-          latitude: user.latitude,
-          longitude: user.longitude,
-          school: user.madhab === "Hanafi" ? 1 : 0,
-          date: dateStr,
-        },
-        timeout: 10000,
-      });
+      console.log(`Processing ${usersSnap.size} users...`);
 
-      const {timings} = response.data.data;
-      const prayerNames = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
-
-      for (const prayer of prayerNames) {
-        const prayerTime = moment.tz(
-            `${userTime.format("YYYY-MM-DD")} ${timings[prayer]}`,
-            "YYYY-MM-DD HH:mm",
-            user.timezone || "UTC",
+      // We use a regular for-of loop to avoid overwhelming the system
+      // Helper to chunk an array into groups of N
+      const chunk = (arr, size) =>
+        Array.from({length: Math.ceil(arr.length / size)}, (_, i) =>
+          arr.slice(i * size, i * size + size),
         );
 
-        // Check if current time is within ±7 minutes of prayer time
-        const diff = Math.abs(userTime.diff(prayerTime, "minutes"));
+      const processUser = async (doc) => {
+        const user = doc.data();
+        if (!user.latitude || !user.longitude) return;
 
-        if (diff <= 7) {
-          // Check if we already sent notification for this prayer today
-          const notificationLogRef = db.collection("users").doc(doc.id)
-              .collection("notificationLogs").doc(`${dateStr}-${prayer}`);
+        const timezone = user.timezone || "UTC";
+        const userTime = now.clone().tz(timezone);
+        const day = parseInt(userTime.format("DD"));
+        const month = userTime.month() + 1;
+        const year = userTime.year();
 
-          const notificationLog = await notificationLogRef.get();
+        const roundedLat = Number(user.latitude).toFixed(2);
+        const roundedLng = Number(user.longitude).toFixed(2);
+        const madhab = user.madhab === "Hanafi" ? 1 : 0;
+        const calendarId = `${roundedLat}_${roundedLng}_${month}_${year}_${madhab}`;
 
-          if (!notificationLog.exists) {
+        let monthData;
+
+        if (calendarCache.has(calendarId)) {
+          monthData = calendarCache.get(calendarId);
+        } else {
+          const calendarRef = db.collection("prayerCalendars").doc(calendarId);
+          const calendarDoc = await calendarRef.get();
+
+          if (calendarDoc.exists) {
+            monthData = calendarDoc.data().days;
+            calendarCache.set(calendarId, monthData);
+          } else {
             try {
-              await admin.messaging().send({
-                token: user.fcmToken,
-                notification: {
-                  title: "iQadha",
-                  body: `It is time for ${prayer} (${timings[prayer]})`,
-                },
-                android: {
-                  priority: "high",
+              console.log(`Fetching API for ${calendarId}`);
+              const response = await axios.get("https://api.aladhan.com/v1/calendar", {
+                params: {latitude: roundedLat, longitude: roundedLng, school: madhab, month, year},
+                timeout: 5000,
+              });
+              monthData = response.data.data;
+              const calendarDeleteAt = moment().add(3, "months").toDate();
+              await calendarRef.set({
+                latitude: roundedLat,
+                longitude: roundedLng,
+                month,
+                year,
+                madhab,
+                days: monthData,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                deleteAt: calendarDeleteAt,
+              });
+              calendarCache.set(calendarId, monthData);
+            } catch (err) {
+              console.error(`API Error for ${calendarId}:`, err.message);
+              return; // Skip user
+            }
+          }
+        }
+
+        const todayTimings = monthData[day - 1].timings;
+        const prayerNames = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+        for (const prayer of prayerNames) {
+          const cleanTime = todayTimings[prayer].split(" ")[0];
+          const prayerTime = moment.tz(
+              `${userTime.format("YYYY-MM-DD")} ${cleanTime}`,
+              "YYYY-MM-DD HH:mm",
+              timezone,
+          );
+
+          const diff = Math.abs(userTime.diff(prayerTime, "minutes"));
+          if (diff <= 10) {
+            const dateStr = userTime.format("DD-MM-YYYY");
+            const logId = `${dateStr}-${prayer}`;
+            const logRef = db.collection("users").doc(doc.id)
+                .collection("notificationLogs").doc(logId);
+            const logSnap = await logRef.get();
+
+            if (!logSnap.exists) {
+              try {
+                await admin.messaging().send({
+                  token: user.fcmToken,
                   notification: {
-                    channelId: "prayer_times",
-                    sound: "default",
+                    title: "iQadha",
+                    body: `It is time for ${prayer} (${cleanTime})`,
                   },
-                },
-                apns: {payload: {aps: {sound: "default"}}},
-              });
-
-              // Mark notification as sent
-              await notificationLogRef.set({
-                sentAt: admin.firestore.FieldValue.serverTimestamp(),
-                prayerTime: timings[prayer],
-              });
-
-              console.log(`Sent ${prayer} notification to user ${doc.id} at ${timings[prayer]}`);
-            } catch (sendError) {
-              // Handle invalid/expired tokens
-              if (sendError.code === "messaging/invalid-registration-token" ||
-                  sendError.code === "messaging/registration-token-not-registered") {
-                console.log(`Invalid token for user ${doc.id}, removing...`);
-                await db.collection("users").doc(doc.id).update({
-                  fcmToken: admin.firestore.FieldValue.delete(),
+                  android: {
+                    priority: "high",
+                    notification: {channelId: "prayer_times", sound: "default"},
+                  },
+                  apns: {payload: {aps: {sound: "default"}}},
                 });
-              } else {
-                console.error(`Error sending to user ${doc.id}:`, sendError.message);
+                const logDeleteAt = moment().add(2, "weeks").toDate();
+                await logRef.set({
+                  sentAt: admin.firestore.FieldValue.serverTimestamp(),
+                  prayerTime: cleanTime,
+                  deleteAt: logDeleteAt,
+                });
+              } catch (err) {
+                if (err.code === "messaging/registration-token-not-registered") {
+                  await db.collection("users").doc(doc.id).update({fcmToken: null});
+                  console.log(`Cleared stale token for user ${doc.id}`);
+                } else {
+                  console.error(`FCM error for user ${doc.id}:`, err.message);
+                }
               }
             }
           }
         }
+      };
+
+      // Process users in batches of 50 concurrently
+      const batches = chunk(usersSnap.docs, 50);
+      for (const batch of batches) {
+        await Promise.all(batch.map(processUser));
       }
       return null;
-    } catch (err) {
-      console.error(`API Error for user ${doc.id}:`, err.message);
-      return null;
-    }
-  });
-
-  await Promise.all(notificationPromises);
-  return null;
-});
+    },
+);
