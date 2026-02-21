@@ -134,8 +134,8 @@ exports.scheduleDailyPrayerTasks = onSchedule(
         const timezone = user.timezone || "UTC";
         const userNow = moment().tz(timezone);
 
-        // Only schedule users whose local time is currently midnight
-        if (userNow.hour() !== 0) return;
+        // Only schedule users whose local time is between 00:00 and 01:00
+        if (userNow.hour() > 0) return;
 
         const day = parseInt(userNow.format("DD"));
         const month = userNow.month() + 1;
