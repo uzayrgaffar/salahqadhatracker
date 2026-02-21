@@ -221,19 +221,7 @@ exports.sendPrayerNotification = onRequest(
         return;
       }
 
-      let payload = req.body;
-      try {
-        // If it’s Base64, decode
-        if (typeof payload === "string") {
-          payload = JSON.parse(Buffer.from(payload, "base64").toString("utf-8"));
-        }
-      } catch (err) {
-        console.error("Failed to parse task payload:", err.message);
-        res.status(400).send("Invalid JSON");
-        return;
-      }
-
-      const {userId, fcmToken, prayer, prayerTime, dateStr} = payload;
+      const {userId, fcmToken, prayer, prayerTime, dateStr} = req.body;
       if (!userId || !fcmToken || !prayer || !prayerTime) {
         res.status(400).send("Missing required fields");
         return;
