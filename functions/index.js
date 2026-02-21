@@ -221,8 +221,11 @@ exports.sendPrayerNotification = onRequest(
         return;
       }
 
-      const {userId, fcmToken, prayer, prayerTime, dateStr} = req.body;
-      if (!userId || !fcmToken || !prayer || !prayerTime) {
+      console.log("Request body:", JSON.stringify(req.body));
+      console.log("Content-Type:", req.headers["content-type"]);
+      const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+      const {userId, fcmToken, prayer, prayerTime, dateStr} = body;
+      if (!userId || !fcmToken || !prayer || !prayerTime || !dateStr) {
         res.status(400).send("Missing required fields");
         return;
       }
