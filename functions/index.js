@@ -105,8 +105,8 @@ const chunk = (arr, size) =>
 
 
 // --- 3. SCHEDULE DAILY PRAYER TASKS ---
-// Runs every hour. For each user whose local time is midnight, enqueues
-// one Cloud Task per prayer timed to fire at the exact prayer time.
+// Runs every hour. Checks all users and schedules any remaining future prayers for their current day.
+// Uses deterministic task names to prevent duplicate scheduling.
 exports.scheduleDailyPrayerTasks = onSchedule(
     {
       schedule: "0 * * * *",
@@ -125,7 +125,7 @@ exports.scheduleDailyPrayerTasks = onSchedule(
           .where("fcmToken", "!=", null)
           .get();
 
-      console.log(`Scheduling tasks for ${usersSnap.size} users...`);
+      console.log(`Checking prayer schedules for ${usersSnap.size} users...`);
 
       const processUser = async (doc) => {
         const user = doc.data();
@@ -133,9 +133,6 @@ exports.scheduleDailyPrayerTasks = onSchedule(
 
         const timezone = user.timezone || "UTC";
         const userNow = moment().tz(timezone);
-
-        // Only schedule users whose local time is between 00:00 and 01:00
-        if (userNow.hour() > 0) return;
 
         const day = parseInt(userNow.format("DD"));
         const month = userNow.month() + 1;
@@ -164,9 +161,15 @@ exports.scheduleDailyPrayerTasks = onSchedule(
               timezone,
           );
 
-          if (prayerMoment.isBefore(moment())) continue;
+          // Only schedule if the prayer time is in the future (with 1 min grace)
+          if (prayerMoment.isBefore(userNow.clone().add(1, "minutes"))) continue;
+
+          // Deterministic ID: "userid-date-prayer" ensures we don't schedule the same thing twice.
+          const taskId = `${doc.id}-${userNow.format("YYYYMMDD")}-${prayer}`;
+          const taskName = client.taskPath(PROJECT_ID, LOCATION, QUEUE, taskId);
 
           const task = {
+            name: taskName,
             httpRequest: {
               httpMethod: "POST",
               url: HANDLER_URL,
@@ -193,7 +196,10 @@ exports.scheduleDailyPrayerTasks = onSchedule(
           try {
             await client.createTask({parent, task});
           } catch (err) {
-            console.error(`Failed to create task for ${doc.id} ${prayer}:`, err.message);
+            // Error code 6 is "ALREADY_EXISTS" - we expect this on subsequent hourly runs.
+            if (err.code !== 6) {
+              console.error(`Failed to create task for ${doc.id} ${prayer}:`, err.message);
+            }
           }
         }
       };
