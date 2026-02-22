@@ -330,40 +330,46 @@ exports.sendPrayerNotification = onRequest(
       memory: "256MiB",
     },
     async (req, res) => {
-      if (req.method !== "POST") {
-        res.status(405).send("Method Not Allowed");
-        return;
-      }
-
-      console.log("Request body:", JSON.stringify(req.body));
-      console.log("Content-Type:", req.headers["content-type"]);
-      const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-      const {userId, fcmToken, prayer, prayerTime, dateStr} = body;
-      if (!userId || !fcmToken || !prayer || !prayerTime || !dateStr) {
-        res.status(400).send("Missing required fields");
-        return;
-      }
-
-      const db = admin.firestore();
-      const logId = `${dateStr}-${prayer}`;
-      const logRef = db.collection("users").doc(userId)
-          .collection("notificationLogs").doc(logId);
-
-      // Dedup check — Cloud Tasks retries on non-200, so this prevents duplicate sends
       try {
+        if (req.method !== "POST") {
+          return res.status(405).send("Method Not Allowed");
+        }
+
+        console.log("Request body:", JSON.stringify(req.body));
+        console.log("Content-Type:", req.headers["content-type"]);
+
+        const body =
+          typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
+        const {userId, fcmToken, prayer, prayerTime, dateStr} = body;
+
+        if (!userId || !fcmToken || !prayer || !prayerTime || !dateStr) {
+          return res.status(400).send("Missing required fields");
+        }
+
+        const db = admin.firestore();
+
+        const userRef = db.collection("users").doc(userId);
+        const userSnap = await userRef.get();
+
+        if (!userSnap.exists) {
+          console.log(`User ${userId} no longer exists. Skipping task.`);
+          return res.status(200).send("user deleted");
+        }
+
+        const logId = `${dateStr}-${prayer}`;
+        const logRef = userRef
+            .collection("notificationLogs")
+            .doc(logId);
+
         const existing = await logRef.get();
         if (existing.exists) {
-          console.log(`Already sent ${logId} for user ${userId}, skipping`);
-          res.status(200).send("already sent");
-          return;
+          console.log(
+              `Already sent ${logId} for user ${userId}, skipping`,
+          );
+          return res.status(200).send("already sent");
         }
-      } catch (err) {
-        console.error(`Failed to check log for ${userId}:`, err.message);
-        res.status(500).send("log check failed");
-        return;
-      }
 
-      try {
         await admin.messaging().send({
           token: fcmToken,
           notification: {
@@ -383,16 +389,33 @@ exports.sendPrayerNotification = onRequest(
           deleteAt: moment().add(1, "week").toDate(),
         });
 
-        console.log(`Sent ${prayer} notification to user ${userId}`);
-        res.status(200).send("ok");
+        console.log(
+            `Sent ${prayer} notification to user ${userId}`,
+        );
+
+        return res.status(200).send("ok");
       } catch (err) {
         if (err.code === "messaging/registration-token-not-registered") {
-          await db.collection("users").doc(userId).update({fcmToken: null});
-          res.status(200).send("invalid token cleared");
-        } else {
-          console.error(`FCM error for user ${userId}:`, err.message);
-          res.status(500).send(err.message);
+          try {
+            const db = admin.firestore();
+            await db.collection("users").doc(req.body.userId).update({
+              fcmToken: null,
+            });
+            console.log(
+                `Cleared invalid token for ${req.body.userId}`,
+            );
+          } catch (updateErr) {
+            // If user was deleted between check and here, ignore it
+            console.log(
+                `User missing while clearing token. Safe to ignore.`,
+            );
+          }
+
+          return res.status(200).send("invalid token handled");
         }
+
+        console.error("Unhandled error:", err);
+        return res.status(200).send("handled");
       }
     },
 );
