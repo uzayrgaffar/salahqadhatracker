@@ -115,10 +115,7 @@ const getMonthCalendar = async (db, roundedLat, roundedLng, month, year, madhab,
   return monthData;
 };
 
-const chunk = (arr, size) =>
-  Array.from({length: Math.ceil(arr.length / size)}, (_, i) =>
-    arr.slice(i * size, i * size + size),
-  );
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 
 // --- 3. SCHEDULE DAILY PRAYER TASKS ---
@@ -315,9 +312,9 @@ exports.scheduleDailyPrayerTasks = onSchedule(
         }
       };
 
-      const batches = chunk(usersSnap.docs, 50);
-      for (const batch of batches) {
-        await Promise.all(batch.map(processUser));
+      for (const doc of usersSnap.docs) {
+        await processUser(doc);
+        await sleep(150);
       }
 
       return null;
