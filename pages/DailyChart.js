@@ -215,70 +215,134 @@ const DailyChart = () => {
     return () => unsubscribe();
   }, [userId]);
 
+  const getMethodByCountry = (countryCode) => {
+    switch (countryCode) {
+      // 🇸🇦 Saudi Arabia
+      case "SA":
+        return 4; // Umm Al-Qura
+
+      // 🇵🇰 Pakistan / 🇮🇳 India / 🇧🇩 Bangladesh / 🇦🇫 Afghanistan
+      case "PK":
+      case "IN":
+      case "BD":
+      case "AF":
+        return 1; // Karachi
+
+      // 🇺🇸 USA / 🇨🇦 Canada
+      case "US":
+      case "CA":
+        return 2; // ISNA
+
+      // 🇬🇧 UK / 🇮🇪 Ireland
+      case "GB":
+      case "IE":
+        return 15; // Moonsighting Committee
+
+      // 🇪🇬 Egypt
+      case "EG":
+        return 5;
+
+      // 🇹🇷 Turkey
+      case "TR":
+        return 13;
+
+      // 🇲🇾 Malaysia
+      case "MY":
+        return 17;
+
+      // 🇮🇩 Indonesia
+      case "ID":
+        return 20;
+
+      // 🇲🇦 Morocco
+      case "MA":
+        return 21;
+
+      // 🇯🇴 Jordan
+      case "JO":
+        return 23;
+
+      // 🇫🇷 France
+      case "FR":
+        return 12;
+
+      // 🇷🇺 Russia
+      case "RU":
+        return 14;
+
+      default:
+        return 3; // Muslim World League (safe global default)
+    }
+  };
+
   const fetchPrayerTimes = async (dateToFetch) => {
-    const monthKey = moment(dateToFetch).format("YYYY-MM");
-    const dayKey = moment(dateToFetch).format("DD-MM-YYYY");
+    const mDate = moment(dateToFetch);
+    const dayKey = mDate.format("DD-MM-YYYY");
+    const monthKey = mDate.format("YYYY-MM");
     const cacheKey = `${madhab}-${monthKey}`;
 
-    if (monthCache[cacheKey] && monthCache[cacheKey][dayKey]) {
+    if (monthCache[cacheKey]?.[dayKey]) {
       setPrayerTimes(monthCache[cacheKey][dayKey]);
       return;
     }
 
     setIsLoadingTimes(true);
-
     try {
-      let coords = locationRef.current;
+      const userSnap = await firestore().collection("users").doc(userId).get();
+      const userData = userSnap.data();
       
-      if (!coords) {
-        const { status } = await Location.getForegroundPermissionsAsync();
-        
-        if (status === "granted") {
-          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-          locationRef.current = coords;
-          setLocationDenied(false);
-          
-          // Update Firestore with location for notifications
-          if (userId) {
-            await firestore().collection("users").doc(userId).set({
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              lastActive: firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            console.log("Location updated in Firestore for notifications");
-          }
-        } else {
-          setLocationDenied(true);
-        }
-      }
+      const method = userData?.method || 3; 
+      const coords = { 
+        lat: userData?.latitude, 
+        lng: userData?.longitude 
+      };
 
-      if (coords) {
-        const year = moment(dateToFetch).format("YYYY");
-        const month = moment(dateToFetch).format("MM");
+      if (coords.lat && coords.lng) {
+        const roundedLat = coords.lat.toFixed(1);
+        const roundedLng = coords.lng.toFixed(1);
+        const month = mDate.month() + 1;
+        const year = mDate.year();
         const school = madhab === "Hanafi" ? 1 : 0;
 
-        const res = await axios.get(
-          `https://api.aladhan.com/v1/calendar/${year}/${month}`,
-          {
-            params: {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              school: school,
-            },
+        const calendarId = `${roundedLat}_${roundedLng}_${month}_${year}_${school}_${method}`;
+        const calendarDoc = await firestore().collection("prayerCalendars").doc(calendarId).get();
+
+        if (calendarDoc.exists) {
+          const monthData = {};
+          calendarDoc.data().days.forEach((dayData, index) => {
+            const dString = moment(`${year}-${month}-${index + 1}`, "YYYY-M-D").format("DD-MM-YYYY");
+            monthData[dString] = dayData.timings;
+          });
+          setMonthCache(prev => ({ ...prev, [cacheKey]: monthData }));
+          setPrayerTimes(monthData[dayKey]);
+        } else {
+          console.log("Calendar not in Firestore, falling back to API...");
+          
+          const params = { 
+            latitude: coords.lat, 
+            longitude: coords.lng, 
+            school: school, 
+            method: method 
+          };
+
+          // Add the Shafaq logic to match your backend
+          if (method === 15) {
+            params.shafaq = "general";
           }
-        );
 
-        const monthData = {};
-        res.data.data.forEach((day) => {
-          monthData[day.date.gregorian.date] = day.timings;
-        });
-
-        setMonthCache((prev) => ({ ...prev, [cacheKey]: monthData }));
-        setPrayerTimes(monthData[dayKey]);
+          const res = await axios.get(`https://api.aladhan.com/v1/calendar/${year}/${month}`, { params });
+          
+          const monthData = {};
+          res.data.data.forEach(day => { 
+            monthData[day.date.gregorian.date] = day.timings; 
+          });
+          
+          setMonthCache(prev => ({ ...prev, [cacheKey]: monthData }));
+          setPrayerTimes(monthData[dayKey]);
+        }
       }
     } catch (e) {
-      console.error("Error fetching prayer times:", e);
+      console.error("Fetch Error:", e);
     } finally {
       setIsLoadingTimes(false);
     }
@@ -495,7 +559,7 @@ const DailyChart = () => {
       const dailyRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate);
       const summaryRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
 
-      batch.update(dailyRef, { prayers: updatedDayPrayers });
+      batch.set(dailyRef, { prayers: updatedDayPrayers }, { merge: true });
 
       unticked.forEach(prayer => {
         batch.set(summaryRef, {
@@ -506,6 +570,12 @@ const DailyChart = () => {
       await batch.commit();
     } catch (error) {
       console.error("Mark All Error:", error);
+      // Optional: Add an Alert here so the user knows if the save failed
+      Alert.alert(
+        "Save Failed",
+        "Please try again.",
+        [{ text: "OK" }]
+      );
     }
   };
 
@@ -545,7 +615,7 @@ const DailyChart = () => {
 
   const setupNotifications = async () => {
     try {
-      // 1. Request notification permission using Expo (this shows the system dialog!)
+      // 1. Request Permissions
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
       
@@ -566,37 +636,37 @@ const DailyChart = () => {
       // 2. Get FCM token
       const token = await messaging().getToken();
 
-      // 3. Request location permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      
-      if (status !== "granted") {
-        // Save partial data without location
-        await firestore().collection("users").doc(userId).set({
-          fcmToken: token,
-          madhab: madhab,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          lastActive: firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+      // 2. Get Location
+      const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+      if (locStatus !== "granted") return;
 
-        Alert.alert(
-          "Location Needed for Prayer Times",
-          "Notifications are enabled, but we need your location to calculate accurate prayer times. You can enable location later.",
-          [{ text: "OK" }]
-        );
-        return;
-      }
-
-      // 4. Get location
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      locationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-      setLocationDenied(false);
+      const rawLat = loc.coords.latitude;
+      const rawLng = loc.coords.longitude;
+
+      // 3. REVERSE GEOCODE (To get the Country Code)
+      const reverseResult = await Location.reverseGeocodeAsync({
+        latitude: rawLat,
+        longitude: rawLng
+      });
+
+      const countryCode = reverseResult[0]?.isoCountryCode || "DEFAULT";
+      const userMethod = getMethodByCountry(countryCode);
+
+      // 4. ROUND FOR PRIVACY
+      const roundedLat = parseFloat(rawLat.toFixed(1));
+      const roundedLng = parseFloat(rawLng.toFixed(1));
+
+      locationRef.current = { latitude: roundedLat, longitude: roundedLng };
 
       // 5. Save everything to Firestore
       await firestore().collection("users").doc(userId).set({
         fcmToken: token,
         madhab: madhab,
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
+        method: userMethod,       // Saved: Now the Backend knows exactly which logic to use
+        countryCode: countryCode, // Helpful for debugging
+        latitude: roundedLat,
+        longitude: roundedLng,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         lastActive: firestore.FieldValue.serverTimestamp()
       }, { merge: true });

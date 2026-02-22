@@ -6,6 +6,7 @@ const axios = require("axios");
 const moment = require("moment-timezone");
 const admin = require("firebase-admin");
 const {CloudTasksClient} = require("@google-cloud/tasks");
+// @ts-ignore
 const whichCountry = require("which-country");
 
 admin.initializeApp();
@@ -225,9 +226,10 @@ exports.scheduleDailyPrayerTasks = onSchedule(
         if (!countryCode) {
           const isoCode = whichCountry([user.longitude, user.latitude]); // Note: [lng, lat] order
           countryCode = isoCode || "DEFAULT";
+          const method = getMethodByCountry(countryCode);
 
           // Save it once
-          await db.collection("users").doc(doc.id).update({countryCode});
+          await db.collection("users").doc(doc.id).update({countryCode, method});
         }
 
         const method = getMethodByCountry(countryCode);
