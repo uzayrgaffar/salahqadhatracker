@@ -62,7 +62,6 @@ const Totals = () => {
       const numValue = parseInt(newValue, 10) || 0;
       const safeValue = Math.max(0, numValue);
       
-      // Optimistic UI update
       setQadhaCounts((prev) => ({ ...prev, [salah]: safeValue }));
 
       const user = auth().currentUser;
@@ -70,14 +69,13 @@ const Totals = () => {
         const userId = user.uid;
         const qadhaDocRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
         
-        await qadhaDocRef.update({ 
+        await qadhaDocRef.set({ 
           [salah.toLowerCase()]: safeValue 
-        });
+        }, { merge: true });
       }
     } catch (error) {
       console.error("Error updating Qadha count:", error);
       Alert.alert("Error", "Failed to update Qadha count. Please try again.");
-      
       setQadhaCounts((prev) => ({ ...prev, [salah]: qadhaCounts[salah] }));
     }
   };
@@ -121,6 +119,7 @@ const Totals = () => {
                   {salah.charAt(0).toUpperCase() + salah.slice(1)}:
                 </Text>
                 <TextInput
+                  selectTextOnFocus={true}
                   style={styles.counterInput}
                   keyboardType="numeric"
                   value={String(count)}

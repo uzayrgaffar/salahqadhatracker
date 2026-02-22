@@ -18,75 +18,45 @@ const MadhabSelection = () => {
 
   const handleConfirm = async () => {
     if (!selectedMadhab) return;
-  
+
     try {
       const user = auth().currentUser;
-  
-      if (!user) {
-        Alert.alert("Error", "You need to be logged in to save your data.");
-        return;
-      }
-  
+      if (!user) return;
       const userId = user.uid;
       const userDocRef = firestore().collection("users").doc(userId);
+      
       const userDoc = await userDocRef.get();
-  
-      let yearsMissed = 0;
-  
-      if (userDoc.exists) {
-        yearsMissed = userDoc.data()?.yearsMissed || 0;
-        await userDocRef.update({
-          madhab: selectedMadhab,
-        });
-      } else {
-        await userDocRef.set({
-          madhab: selectedMadhab,
-          createdAt: firestore.Timestamp.now(),
-        },
-        { merge: true }
-      );
-      }
-  
-      console.log("Madhab selection saved successfully!");
-  
+      const userData = userDoc.data();
+
+      const hasCalculationData = userData?.dob && userData?.dop;
+
+      await userDocRef.set({
+        madhab: selectedMadhab,
+        setupComplete: true,
+      }, { merge: true });
+
       setMadhab(selectedMadhab);
-  
-      if (yearsMissed === 0) {
+
+      if (!hasCalculationData) {
         const totalQadhaRef = firestore()
           .collection("users")
           .doc(userId)
           .collection("totalQadha")
           .doc("qadhaSummary");
-        try {
-          await totalQadhaRef.update({
-            fajr: 0,
-            dhuhr: 0,
-            asr: 0,
-            maghrib: 0,
-            isha: 0,
-            witr: 0,
-          });
-        } catch (error) {
-          await totalQadhaRef.set({
-            fajr: 0,
-            dhuhr: 0,
-            asr: 0,
-            maghrib: 0,
-            isha: 0,
-            witr: 0,
-          });
-        }
-  
-        console.log("All prayers set to 0 for user with no missed years.");
+
+        await totalQadhaRef.set({
+          fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0,
+        }, { merge: true });
+
         navigation.navigate("Totals");
       } else {
         navigation.navigate("SetQadhaSalah");
       }
     } catch (error) {
-      console.error("Error saving Madhab selection:", error);
-      Alert.alert("Error", "Failed to save data. Please try again.");
+      console.error("Madhab Confirm Error:", error);
+      Alert.alert("Error", "Could not save your selection. Please check your connection.");
     }
-  };  
+  };
 
   const madhabOptions = ["Hanafi", "Maliki", "Shafi'i", "Hanbali"]
 

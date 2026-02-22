@@ -8,7 +8,7 @@ export default {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#5CB390"
     },
-    version: "1.1.1",
+    version: "1.1.2",
     userInterfaceStyle: "light",
     ios: {
       jsEngine: "hermes",
@@ -24,7 +24,7 @@ export default {
     android: {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.iqadha",
-      versionCode: 7,
+      versionCode: 8,
       googleServicesFile: "./google-services.json",
       config: {
         keepConsistentProguardFile: true

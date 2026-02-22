@@ -95,6 +95,7 @@ const getMonthCalendar = async (db, roundedLat, roundedLng, month, year, madhab,
   const monthData = response.data.data.map((dayData) => ({
     timings: {
       Fajr: dayData.timings.Fajr,
+      Sunrise: dayData.timings.Sunrise,
       Dhuhr: dayData.timings.Dhuhr,
       Asr: dayData.timings.Asr,
       Maghrib: dayData.timings.Maghrib,
@@ -206,7 +207,9 @@ exports.scheduleDailyPrayerTasks = onSchedule(
 
       const processUser = async (doc) => {
         const user = doc.data();
-        if (!user.latitude || !user.longitude) return;
+
+        // 1. Basic Validation
+        if (!user.latitude || !user.longitude || !user.fcmToken) return;
 
         const timezone = user.timezone || "UTC";
         const userNow = moment().tz(timezone);
@@ -215,25 +218,34 @@ exports.scheduleDailyPrayerTasks = onSchedule(
         const month = userNow.month() + 1;
         const year = userNow.year();
 
+        // 2. Formatting for Calendar Lookup
         const roundedLat = user.latitude.toFixed(1);
         const roundedLng = user.longitude.toFixed(1);
-
         const madhab = user.madhab === "Hanafi" ? 1 : 0;
 
-        // Use stored country if available
+        // 3. Method Logic:
+        // We prioritize a stored 'method'. If it doesn't exist, we find it via countryCode.
+        // If countryCode doesn't exist, we use whichCountry to guess it.
+        let method = user.method;
         let countryCode = user.countryCode;
 
-        if (!countryCode) {
-          const isoCode = whichCountry([user.longitude, user.latitude]); // Note: [lng, lat] order
-          countryCode = isoCode || "DEFAULT";
-          const method = getMethodByCountry(countryCode);
+        if (!method) {
+          if (!countryCode) {
+            // which-country expects [lng, lat]
+            const isoCode = whichCountry([user.longitude, user.latitude]);
+            countryCode = isoCode || "DEFAULT";
+          }
+          method = getMethodByCountry(countryCode);
 
-          // Save it once
-          await db.collection("users").doc(doc.id).update({countryCode, method});
+          // Update the user doc so we don't have to guess next hour
+          await db.collection("users").doc(doc.id).update({
+            method: method,
+            countryCode: countryCode,
+          });
+          console.log(`Updated user ${doc.id} with guessed method ${method} for ${countryCode}`);
         }
 
-        const method = getMethodByCountry(countryCode);
-
+        // 4. Fetch/Cache Calendar
         let monthData;
         try {
           monthData = await getMonthCalendar(db, roundedLat, roundedLng, month, year, madhab, method);
@@ -242,21 +254,28 @@ exports.scheduleDailyPrayerTasks = onSchedule(
           return;
         }
 
-        const todayTimings = monthData[day - 1].timings;
+        // 5. Schedule Prayers
+        // monthData is 0-indexed, so we use day - 1
+        const dayTimings = monthData[day - 1].timings;
+        if (!dayTimings) {
+          console.error(`No timings found for day ${day} for user ${doc.id}`);
+          return;
+        }
+
         const prayers = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
         for (const prayer of prayers) {
-          const cleanTime = todayTimings[prayer].split(" ")[0];
+          const cleanTime = dayTimings[prayer].split(" ")[0]; // Remove extra text like "(BST)"
           const prayerMoment = moment.tz(
               `${userNow.format("YYYY-MM-DD")} ${cleanTime}`,
               "YYYY-MM-DD HH:mm",
               timezone,
           );
 
-          // Only schedule if the prayer time is in the future (with 1 min grace)
+          // Only schedule if the prayer time is in the future (plus 1 min grace)
           if (prayerMoment.isBefore(userNow.clone().add(1, "minutes"))) continue;
 
-          // Deterministic ID: "userid-date-prayer" ensures we don't schedule the same thing twice.
+          // 6. Create Task with Deterministic ID to prevent duplicates
           const taskId = `${doc.id}-${userNow.format("YYYYMMDD")}-${prayer}`;
           const taskName = client.taskPath(PROJECT_ID, LOCATION, QUEUE, taskId);
 

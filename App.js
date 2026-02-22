@@ -11,6 +11,7 @@ import messaging from '@react-native-firebase/messaging';
 
 // Pages 
 import SelectLanguage from './pages/SelectLanguage';
+import Setup from './pages/Setup';
 import Login from './pages/Login';
 import Forum from './pages/Forum';
 import Profile from './pages/Profile';
@@ -154,6 +155,7 @@ const App = () => {
 
           <Stack.Navigator>
             <Stack.Screen name="SelectLanguage" component={SelectLanguage} options={{ headerShown: false }} />
+            <Stack.Screen name="Setup" component={Setup} options={{ headerShown: false }} />
             <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
             <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
             <Stack.Screen name="MainPages" component={MainPages} options={{ headerShown: false }} />

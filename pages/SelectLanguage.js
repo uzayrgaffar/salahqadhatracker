@@ -167,16 +167,19 @@ const SelectLanguage = () => {
           const userDocRef = firestore().collection("users").doc(user.uid);
           const userDocSnapshot = await userDocRef.get();
 
-          if (userDocSnapshot.exists) {
+          if (userDocSnapshot.exists()) {
             const userData = userDocSnapshot.data();
-
-            if (userData.dob && userData.dop && userData.gender && userData.madhab && userData.yearsMissed !== undefined) {
+            if (userData.setupComplete) {
+              navigation.replace("MainPages");
+            } else if (userData.madhab) {
+              // Existing user from before setupComplete was introduced
+              await userDocRef.set({ setupComplete: true }, { merge: true });
               navigation.replace("MainPages");
             } else {
-              navigation.replace("SetDOB");
+              navigation.replace("Setup");
             }
           } else {
-            navigation.replace("SetDOB");
+            navigation.replace("Setup");
           }
         } else {
           navigation.replace("SignUp");

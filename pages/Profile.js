@@ -8,6 +8,82 @@ import Icon from "react-native-vector-icons/Ionicons"
 import * as Location from "expo-location"
 import * as Notifications from "expo-notifications"
 
+const getMethodByCountry = (countryCode) => {
+  switch (countryCode) {
+    // 🇸🇦 Saudi Arabia
+    case "SA":
+      return 4; // Umm Al-Qura
+
+    // 🇵🇰 Pakistan / 🇮🇳 India / 🇧🇩 Bangladesh / 🇦🇫 Afghanistan
+    case "PK":
+    case "IN":
+    case "BD":
+    case "AF":
+      return 1; // Karachi
+
+    // 🇺🇸 USA / 🇨🇦 Canada
+    case "US":
+    case "CA":
+      return 2; // ISNA
+
+    // 🇬🇧 UK / 🇮🇪 Ireland
+    case "GB":
+    case "IE":
+      return 15; // Moonsighting Committee
+
+    // 🇪🇬 Egypt
+    case "EG":
+      return 5;
+
+    // 🇹🇷 Turkey
+    case "TR":
+      return 13;
+
+    // 🇲🇾 Malaysia
+    case "MY":
+      return 17;
+
+    // 🇮🇩 Indonesia
+    case "ID":
+      return 20;
+
+    // 🇲🇦 Morocco
+    case "MA":
+      return 21;
+
+    // 🇯🇴 Jordan
+    case "JO":
+      return 23;
+
+    // 🇫🇷 France
+    case "FR":
+      return 12;
+
+    // 🇷🇺 Russia
+    case "RU":
+      return 14;
+
+    default:
+      return 3; // Muslim World League (safe global default)
+  }
+};
+
+const METHODS = [
+  { id: 1,  name: "University of Islamic Sciences, Karachi", region: "Pakistan, India, Bangladesh, Afghanistan" },
+  { id: 2,  name: "Islamic Society of North America (ISNA)", region: "USA, Canada" },
+  { id: 3,  name: "Muslim World League", region: "Global Default" },
+  { id: 4,  name: "Umm Al-Qura University, Makkah", region: "Saudi Arabia" },
+  { id: 5,  name: "Egyptian General Authority of Survey", region: "Egypt" },
+  { id: 12, name: "Union des Mosquées de France", region: "France" },
+  { id: 13, name: "Diyanet İşleri Başkanlığı", region: "Turkey" },
+  { id: 14, name: "Spiritual Administration of Muslims of Russia", region: "Russia" },
+  { id: 15, name: "Moonsighting Committee Worldwide", region: "UK, Ireland" },
+  { id: 17, name: "JAKIM", region: "Malaysia" },
+  { id: 20, name: "Kemenag", region: "Indonesia" },
+  { id: 21, name: "Moroccan Ministry of Habous and Islamic Affairs", region: "Morocco" },
+  { id: 23, name: "Jordan", region: "Jordan" },
+];
+
 const Profile = () => {
   const navigation = useNavigation()
   const { madhab, setMadhab } = useContext(AppContext)
@@ -21,6 +97,9 @@ const Profile = () => {
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [checkingPermissions, setCheckingPermissions] = useState(true);
+  const [method, setMethod] = useState(null);
+  const [methodDropdownOpen, setMethodDropdownOpen] = useState(false);
+  const [countryCode, setCountryCode] = useState(null);
 
   useEffect(() => {
     const unsubscribeAuth = auth().onAuthStateChanged((user) => {
@@ -29,10 +108,12 @@ const Profile = () => {
         const docRef = firestore().collection("users").doc(user.uid)
         setUserDocRef(docRef)
         docRef.get().then((docSnap) => {
-          if (docSnap.exists) {
+          if (docSnap.exists()) {
             const data = docSnap.data()
             setGender(data.gender || "")
             setMadhab(data.madhab || "")
+            setMethod(data.method || null)
+            setCountryCode(data.countryCode || null)
           }
         })
       } else {
@@ -43,7 +124,6 @@ const Profile = () => {
     return () => unsubscribeAuth()
   }, [])
 
-  // Check current permission states on mount and when screen focuses
   useEffect(() => {
     checkCurrentPermissions();
   }, []);
@@ -70,7 +150,6 @@ const Profile = () => {
 
   const handleLocationToggle = async () => {
     if (locationEnabled) {
-      // Can't revoke programmatically — direct to settings
       Alert.alert(
         "Disable Location",
         "To turn off location access, please go to your device Settings. You will lose access to salah times and notifications if you disable location.",
@@ -122,7 +201,6 @@ const Profile = () => {
 
   const handleNotificationToggle = async () => {
     if (notificationsEnabled) {
-      // Can't revoke programmatically — direct to settings
       Alert.alert(
         "Disable Notifications",
         "To turn off notifications, please go to your device Settings.",
@@ -185,6 +263,16 @@ const Profile = () => {
       setMadhab(newMadhab)
     } catch (error) {
       Alert.alert("Error", "Failed to update madhab")
+    }
+  }
+
+  const selectMethod = async (newMethod) => {
+    if (!userDocRef) return
+    try {
+      await userDocRef.update({ method: newMethod })
+      setMethod(newMethod)
+    } catch (error) {
+      Alert.alert("Error", "Failed to update calculation method")
     }
   }
 
@@ -288,22 +376,18 @@ const Profile = () => {
           errorTitle = "Invalid Password";
           errorMessage = "The password you entered is incorrect. Please try again.";
           break;
-
         case 'auth/network-request-failed':
           errorTitle = "Network Error";
           errorMessage = "Please check your internet connection and try again.";
           break;
-
         case 'auth/too-many-requests':
           errorTitle = "Too Many Attempts";
           errorMessage = "This account has been temporarily disabled due to many failed attempts. Try again later.";
           break;
-
         case 'auth/requires-recent-login':
           errorTitle = "Security Timeout";
           errorMessage = "For security, please sign out and sign back in before deleting your account.";
           break;
-
         default:
           errorMessage = error.message;
       }
@@ -314,7 +398,6 @@ const Profile = () => {
     }
   };
 
-  // Reusable toggle row component
   const PermissionRow = ({ icon, label, description, enabled, onToggle, disabled }) => (
     <View style={[styles.permissionRow, disabled && styles.permissionRowDisabled]}>
       <View style={styles.permissionRowLeft}>
@@ -387,6 +470,7 @@ const Profile = () => {
             </View>
           </View>
 
+          {/* Madhab Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Madh'hab Selection</Text>
             <Text style={styles.sectionDescription}>Choose your school of thought</Text>
@@ -408,6 +492,74 @@ const Profile = () => {
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
+
+          {/* Calculation Method Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Salah Time Method</Text>
+            <Text style={styles.sectionDescription}>
+              <Text style={{ fontWeight: "600", color: "#5CB390" }}>
+                {countryCode ? METHODS.find(m => m.id === getMethodByCountry(countryCode))?.name : "Not set"}
+              </Text>
+              {" "}is the default for your location - change it here if needed.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.dropdownButton, methodDropdownOpen && styles.dropdownButtonOpen]}
+              onPress={() => setMethodDropdownOpen(prev => !prev)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.dropdownButtonLeft}>
+                <Icon name="calculator-outline" size={18} color="#5CB390" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={styles.dropdownButtonText}>
+                    {method ? METHODS.find(m => m.id === method)?.name : "Select a method"}
+                  </Text>
+                  {method && (
+                    <Text style={styles.dropdownButtonRegion}>
+                      {METHODS.find(m => m.id === method)?.region}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <Icon
+                name={methodDropdownOpen ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#9CA3AF"
+              />
+            </TouchableOpacity>
+
+            {methodDropdownOpen && (
+              <View style={styles.dropdownList}>
+                {METHODS.map((m, index) => (
+                  <TouchableOpacity
+                    key={m.id}
+                    style={[
+                      styles.dropdownItem,
+                      method === m.id && styles.dropdownItemSelected,
+                      index < METHODS.length - 1 && styles.dropdownItemBorder,
+                    ]}
+                    onPress={() => {
+                      selectMethod(m.id);
+                      setMethodDropdownOpen(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.dropdownItemText}>
+                      <Text style={[styles.dropdownItemName, method === m.id && styles.dropdownItemNameSelected]}>
+                        {m.name}
+                      </Text>
+                      <Text style={[styles.dropdownItemRegion, method === m.id && styles.dropdownItemRegionSelected]}>
+                        {m.region}
+                      </Text>
+                    </View>
+                    {method === m.id && (
+                      <Icon name="checkmark" size={18} color="#5CB390" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           <View style={styles.actionsSection}>
@@ -586,8 +738,6 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginBottom: 16,
   },
-
-  // Permissions card
   permissionsCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
@@ -649,8 +799,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     marginHorizontal: 18,
   },
-
-  // Toggle switch
   toggleTrack: {
     width: 48,
     height: 28,
@@ -684,7 +832,6 @@ const styles = StyleSheet.create({
   toggleThumbOff: {
     alignSelf: "flex-start",
   },
-
   optionsGrid: {
     gap: 12,
   },
@@ -710,6 +857,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
+    marginTop: 1,
+    flexShrink: 0,
   },
   radioOuterSelected: {
     borderColor: "#5CB390",
@@ -822,7 +971,81 @@ const styles = StyleSheet.create({
   deleteBtnText: {
     color: '#FFF',
     fontWeight: '600',
-  }
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    padding: 16,
+  },
+  dropdownButtonOpen: {
+    borderColor: "#5CB390",
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  dropdownButtonLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginRight: 8,
+  },
+  dropdownButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+  dropdownButtonRegion: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+  dropdownList: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderTopWidth: 0,
+    borderColor: "#5CB390",
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    overflow: "hidden",
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+  },
+  dropdownItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  dropdownItemSelected: {
+    backgroundColor: "#E8F8F3",
+  },
+  dropdownItemText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  dropdownItemName: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#4B5563",
+  },
+  dropdownItemNameSelected: {
+    color: "#1F2937",
+    fontWeight: "600",
+  },
+  dropdownItemRegion: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+  dropdownItemRegionSelected: {
+    color: "#5CB390",
+  },
 })
 
 export default Profile

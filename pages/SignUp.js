@@ -91,7 +91,7 @@ const SignUp = () => {
                 createdAt: firestore.FieldValue.serverTimestamp()
               });
                 
-              navigation.replace("SetDOB");
+              navigation.replace("Setup");
             } catch (error) {
               handleAuthError(error);
             } finally {
@@ -131,7 +131,7 @@ const SignUp = () => {
                         isAnonymous: true,
                         createdAt: firestore.FieldValue.serverTimestamp()
                       });
-                      navigation.replace("SetDOB");
+                      navigation.replace("Setup");
                     } catch (error) {
                       Alert.alert("Error", "Failed to sign in anonymously.");
                     } finally {

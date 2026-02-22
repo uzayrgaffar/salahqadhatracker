@@ -35,6 +35,7 @@ const DailyChart = () => {
   const [showHelp, setShowHelp] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [madhabReady, setMadhabReady] = useState(false);
 
   useEffect(() => {
     handleDateSelect(today);
@@ -85,13 +86,13 @@ const DailyChart = () => {
     if (userId) {
       const fetchMadhab = async () => {
         const userSnap = await firestore().collection("users").doc(userId).get()
-  
-        if (userSnap.exists) {
+        if (userSnap.exists()) {
           const userData = userSnap.data()
           if (userData.madhab) {
             setMadhab(userData.madhab)
           }
         }
+        setMadhabReady(true)
       }
   
       fetchMadhab()
@@ -104,7 +105,7 @@ const DailyChart = () => {
         const dailyPrayerRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate)
         const docSnap = await dailyPrayerRef.get()
 
-        if (docSnap.exists) {
+        if (docSnap.exists()) {
           const data = docSnap.data() || {}
 
           setPrayerStates(prev => ({
@@ -160,7 +161,7 @@ const DailyChart = () => {
       if (userId) {
         const totalQadhaSnap = await firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary").get()
   
-        if (totalQadhaSnap.exists) {
+        if (totalQadhaSnap.exists()) {
           const data = totalQadhaSnap.data()
           setFajr(data.fajr || 0)
           setDhuhr(data.dhuhr || 0)
@@ -307,39 +308,44 @@ const DailyChart = () => {
         const calendarId = `${roundedLat}_${roundedLng}_${month}_${year}_${school}_${method}`;
         const calendarDoc = await firestore().collection("prayerCalendars").doc(calendarId).get();
 
-        if (calendarDoc.exists) {
-          const monthData = {};
-          calendarDoc.data().days.forEach((dayData, index) => {
-            const dString = moment(`${year}-${month}-${index + 1}`, "YYYY-M-D").format("DD-MM-YYYY");
-            monthData[dString] = dayData.timings;
-          });
-          setMonthCache(prev => ({ ...prev, [cacheKey]: monthData }));
-          setPrayerTimes(monthData[dayKey]);
-        } else {
-          console.log("Calendar not in Firestore, falling back to API...");
-          
-          const params = { 
-            latitude: coords.lat, 
-            longitude: coords.lng, 
-            school: school, 
-            method: method 
-          };
+        if (calendarDoc.exists()) {
+          const data = calendarDoc.data();
+          const days = data?.days;
 
-          // Add the Shafaq logic to match your backend
-          if (method === 15) {
-            params.shafaq = "general";
+          if (!days || !Array.isArray(days)) {
+            console.error("Malformed calendar doc — no days array:", calendarId);
+          } else {
+            const monthData = {};
+            days.forEach((dayData, index) => {
+              const dString = moment(`${year}-${month}-${index + 1}`, "YYYY-M-D").format("DD-MM-YYYY");
+              monthData[dString] = dayData.timings;
+            });
+            setMonthCache(prev => ({ ...prev, [cacheKey]: monthData }));
+            setPrayerTimes(monthData[dayKey]);
+            return;
           }
-
-          const res = await axios.get(`https://api.aladhan.com/v1/calendar/${year}/${month}`, { params });
-          
-          const monthData = {};
-          res.data.data.forEach(day => { 
-            monthData[day.date.gregorian.date] = day.timings; 
-          });
-          
-          setMonthCache(prev => ({ ...prev, [cacheKey]: monthData }));
-          setPrayerTimes(monthData[dayKey]);
         }
+        
+        const params = { 
+          latitude: coords.lat, 
+          longitude: coords.lng, 
+          school: school, 
+          method: method 
+        };
+
+        if (method === 15) {
+          params.shafaq = "general";
+        }
+
+        const res = await axios.get(`https://api.aladhan.com/v1/calendar/${year}/${month}`, { params });
+        
+        const monthData = {};
+        res.data.data.forEach(day => { 
+          monthData[day.date.gregorian.date] = day.timings; 
+        });
+        
+        setMonthCache(prev => ({ ...prev, [cacheKey]: monthData }));
+        setPrayerTimes(monthData[dayKey]);
       }
     } catch (e) {
       console.error("Fetch Error:", e);
@@ -350,8 +356,9 @@ const DailyChart = () => {
 
   useFocusEffect(
     useCallback(() => {
+      if (!madhabReady) return;
       fetchPrayerTimes(selectedDate);
-    }, [selectedDate, madhab])
+    }, [selectedDate, madhab, madhabReady])
   );
 
   useEffect(() => {
@@ -533,9 +540,10 @@ const DailyChart = () => {
   }
 
   const formatTime = (t) => {
-    if (!t) return ""
-    return moment(t, "HH:mm").format("HH:mm")
-  }
+    if (!t) return "";
+    const clean = t.replace(/\s*\(.*?\)/, "").trim();
+    return moment(clean, "HH:mm").format("HH:mm");
+  };
 
   const handleMarkAll = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -570,7 +578,6 @@ const DailyChart = () => {
       await batch.commit();
     } catch (error) {
       console.error("Mark All Error:", error);
-      // Optional: Add an Alert here so the user knows if the save failed
       Alert.alert(
         "Save Failed",
         "Please try again.",
@@ -705,13 +712,15 @@ const DailyChart = () => {
 
     if (selectedDate !== todayString) return null;
 
+    const clean = (t) => t?.replace(/\s*\(.*?\)/, "").trim();
+
     const times = {
-      fajr: moment(prayerTimes.Fajr, "HH:mm"),
-      sunrise: moment(prayerTimes.Sunrise, "HH:mm"),
-      dhuhr: moment(prayerTimes.Dhuhr, "HH:mm"),
-      asr: moment(prayerTimes.Asr, "HH:mm"),
-      maghrib: moment(prayerTimes.Maghrib, "HH:mm"),
-      isha: moment(prayerTimes.Isha, "HH:mm"),
+      fajr: moment(clean(prayerTimes.Fajr), "HH:mm"),
+      sunrise: moment(clean(prayerTimes.Sunrise), "HH:mm"),
+      dhuhr: moment(clean(prayerTimes.Dhuhr), "HH:mm"),
+      asr: moment(clean(prayerTimes.Asr), "HH:mm"),
+      maghrib: moment(clean(prayerTimes.Maghrib), "HH:mm"),
+      isha: moment(clean(prayerTimes.Isha), "HH:mm"),
     };
 
     if (now.isBetween(times.fajr, times.sunrise)) return "fajr";
