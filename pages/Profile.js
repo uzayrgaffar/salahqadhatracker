@@ -3,6 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Text, Alert, ScrollView, Modal, Tex
 import { useNavigation } from "@react-navigation/native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
+import messaging from "@react-native-firebase/messaging"
 import { AppContext } from "../AppContext"
 import Icon from "react-native-vector-icons/Ionicons"
 import * as Location from "expo-location"
@@ -10,61 +11,19 @@ import * as Notifications from "expo-notifications"
 
 const getMethodByCountry = (countryCode) => {
   switch (countryCode) {
-    // 🇸🇦 Saudi Arabia
-    case "SA":
-      return 4; // Umm Al-Qura
-
-    // 🇵🇰 Pakistan / 🇮🇳 India / 🇧🇩 Bangladesh / 🇦🇫 Afghanistan
-    case "PK":
-    case "IN":
-    case "BD":
-    case "AF":
-      return 1; // Karachi
-
-    // 🇺🇸 USA / 🇨🇦 Canada
-    case "US":
-    case "CA":
-      return 2; // ISNA
-
-    // 🇬🇧 UK / 🇮🇪 Ireland
-    case "GB":
-    case "IE":
-      return 15; // Moonsighting Committee
-
-    // 🇪🇬 Egypt
-    case "EG":
-      return 5;
-
-    // 🇹🇷 Turkey
-    case "TR":
-      return 13;
-
-    // 🇲🇾 Malaysia
-    case "MY":
-      return 17;
-
-    // 🇮🇩 Indonesia
-    case "ID":
-      return 20;
-
-    // 🇲🇦 Morocco
-    case "MA":
-      return 21;
-
-    // 🇯🇴 Jordan
-    case "JO":
-      return 23;
-
-    // 🇫🇷 France
-    case "FR":
-      return 12;
-
-    // 🇷🇺 Russia
-    case "RU":
-      return 14;
-
-    default:
-      return 3; // Muslim World League (safe global default)
+    case "SA": return 4;
+    case "PK": case "IN": case "BD": case "AF": return 1;
+    case "US": case "CA": return 2;
+    case "GB": case "IE": return 15;
+    case "EG": return 5;
+    case "TR": return 13;
+    case "MY": return 17;
+    case "ID": return 20;
+    case "MA": return 21;
+    case "JO": return 23;
+    case "FR": return 12;
+    case "RU": return 14;
+    default: return 3;
   }
 };
 
@@ -158,7 +117,6 @@ const Profile = () => {
           {
             text: "Open Settings",
             onPress: async () => {
-              // Clear location data from Firestore
               const user = auth().currentUser;
               if (user) {
                 await firestore().collection("users").doc(user.uid).update({
@@ -166,6 +124,7 @@ const Profile = () => {
                   longitude: firestore.FieldValue.delete(),
                   timezone: firestore.FieldValue.delete(),
                   countryCode: firestore.FieldValue.delete(),
+                  method: firestore.FieldValue.delete(),
                 });
                 setCountryCode(null);
               }
@@ -205,6 +164,34 @@ const Profile = () => {
         setLocationEnabled(granted);
         if (!granted) {
           setNotificationsEnabled(false);
+        } else {
+          try {
+            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const rawLat = loc.coords.latitude;
+            const rawLng = loc.coords.longitude;
+
+            const reverseResult = await Location.reverseGeocodeAsync({ latitude: rawLat, longitude: rawLng });
+            const newCountryCode = reverseResult[0]?.isoCountryCode || "DEFAULT";
+            const newMethod = getMethodByCountry(newCountryCode);
+            const roundedLat = parseFloat(rawLat.toFixed(1));
+            const roundedLng = parseFloat(rawLng.toFixed(1));
+
+            const user = auth().currentUser;
+            if (user) {
+              await firestore().collection("users").doc(user.uid).set({
+                latitude: roundedLat,
+                longitude: roundedLng,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                countryCode: newCountryCode,
+                method: newMethod,
+              }, { merge: true });
+
+              setCountryCode(newCountryCode);
+              setMethod(newMethod);
+            }
+          } catch (e) {
+            console.error("Failed to restore location data:", e);
+          }
         }
       }
     }
@@ -220,7 +207,6 @@ const Profile = () => {
           {
             text: "Open Settings",
             onPress: async () => {
-              // Clear FCM token from Firestore
               const user = auth().currentUser;
               if (user) {
                 await firestore().collection("users").doc(user.uid).update({
@@ -259,7 +245,19 @@ const Profile = () => {
         );
       } else {
         const { status } = await Notifications.requestPermissionsAsync();
-        setNotificationsEnabled(status === "granted");
+        const granted = status === "granted";
+        setNotificationsEnabled(granted);
+        if (granted) {
+          try {
+            const token = await messaging().getToken();
+            const user = auth().currentUser;
+            if (user) {
+              await firestore().collection("users").doc(user.uid).update({ fcmToken: token });
+            }
+          } catch (e) {
+            console.error("Failed to restore FCM token:", e);
+          }
+        }
       }
     }
   };
@@ -440,12 +438,10 @@ const Profile = () => {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.card}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {email ? email.charAt(0).toUpperCase() : "A"}
-                </Text>
-              </View>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {email ? email.charAt(0).toUpperCase() : "A"}
+              </Text>
             </View>
             <Text style={styles.emailText}>{email || "Anonymous Account"}</Text>
           </View>
@@ -507,12 +503,12 @@ const Profile = () => {
             <Text style={styles.sectionTitle}>Salah Time Method</Text>
             
             {locationEnabled && (
-            <Text style={styles.sectionDescription}>
-              <Text style={{ fontWeight: "600", color: "#5CB390" }}>
-                {countryCode ? METHODS.find(m => m.id === getMethodByCountry(countryCode))?.name : "Not set"}
+              <Text style={styles.sectionDescription}>
+                <Text style={{ fontWeight: "600", color: "#5CB390" }}>
+                  {countryCode ? METHODS.find(m => m.id === getMethodByCountry(countryCode))?.name : "Not set"}
+                </Text>
+                {" "}is the default for your location - change it here if needed.
               </Text>
-              {" "}is the default for your location - change it here if needed.
-            </Text>
             )}
             
             {!locationEnabled && (
@@ -525,7 +521,7 @@ const Profile = () => {
               <TouchableOpacity
                 style={[styles.dropdownButton, methodDropdownOpen && styles.dropdownButtonOpen]}
                 onPress={() => locationEnabled && setMethodDropdownOpen(prev => !prev)}
-                activeOpacity={0.7}
+                activeOpacity={locationEnabled ? 0.7 : 1}
               >
                 <View style={styles.dropdownButtonLeft}>
                   <Icon name="calculator-outline" size={18} color="#5CB390" style={{ marginRight: 10 }} />
@@ -731,6 +727,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     elevation: 4,
+    marginBottom: 12,
   },
   avatarText: {
     fontSize: 32,

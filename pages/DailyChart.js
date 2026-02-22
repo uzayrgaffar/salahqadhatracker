@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect, useCallback, useRef } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Keyboard, Alert, Linking } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Platform, Keyboard, Alert, Linking } from "react-native"
 import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
 import moment from "moment"
@@ -61,13 +61,18 @@ const DailyChart = () => {
     const syncToken = async () => {
       if (userId) {
         try {
-          // 1. Always get the current token on startup
+          const { status } = await Notifications.getPermissionsAsync();
+          if (status !== 'granted') {
+            await firestore().collection("users").doc(userId).update({
+              fcmToken: firestore.FieldValue.delete(),
+            });
+            return;
+          }
+
           const token = await messaging().getToken();
           
-          // 2. Silently update Firestore so it's NEVER stale
           await firestore().collection("users").doc(userId).set({
             fcmToken: token,
-            // Also good to sync timezone in case they traveled
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             lastActive: firestore.FieldValue.serverTimestamp()
           }, { merge: true });
@@ -941,11 +946,7 @@ const DailyChart = () => {
         onRequestClose={() => setIsQadhaModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={50}
-            style={{ flex: 1, justifyContent: "flex-end" }}
-          >
+          <View style={{ flex: 1, justifyContent: "flex-end" }}>
             <View style={[styles.modalContent, { paddingBottom: insets.bottom + 10 }]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Qadha Salah</Text>
@@ -979,15 +980,9 @@ const DailyChart = () => {
                         >
                           <Icon name="remove" size={20} color="#5CB390" />
                         </TouchableOpacity>
-                        <TextInput
-                          style={styles.qadhaCounterInput}
-                          keyboardType="numeric"
-                          value={String(ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0)}
-                          onChangeText={(text) => {
-                            const newValue = parseInt(text, 10) || 0
-                            adjustCount(prayer, newValue - (ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0))
-                          }}
-                        />
+                        <Text style={styles.qadhaCounterValue}>
+                          {ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0}
+                        </Text>
                         <TouchableOpacity
                           style={styles.counterButton}
                           onPress={() => adjustCount(prayer, 1)}
@@ -1001,7 +996,7 @@ const DailyChart = () => {
                 </View>
               </View>
             </View>
-          </KeyboardAvoidingView>
+          </View>
         </View>
       </Modal>
 
@@ -1451,19 +1446,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#5CB390",
   },
-  qadhaCounterInput: {
-    fontSize: 16,
+  qadhaCounterValue: {
+    fontSize: 18,
+    fontWeight: "700",
     color: "#5CB390",
-    borderWidth: 2,
-    borderColor: "#5CB390",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 60,
+    minWidth: 40,
     textAlign: "center",
-    fontWeight: "600",
-    backgroundColor: "#FFFFFF",
-    width: 50,
   },
   sectionHeader: {
     flexDirection: 'row',
