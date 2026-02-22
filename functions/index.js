@@ -6,6 +6,7 @@ const axios = require("axios");
 const moment = require("moment-timezone");
 const admin = require("firebase-admin");
 const {CloudTasksClient} = require("@google-cloud/tasks");
+const whichCountry = require("which-country");
 
 admin.initializeApp();
 
@@ -54,8 +55,8 @@ exports.incrementPrayerCounts = onSchedule("0 0 * * *", async (event) => {
 // --- 2. PRAYER CALENDAR CACHE HELPER ---
 const calendarCache = new Map();
 
-const getMonthCalendar = async (db, roundedLat, roundedLng, month, year, madhab) => {
-  const calendarId = `${roundedLat}_${roundedLng}_${month}_${year}_${madhab}`;
+const getMonthCalendar = async (db, roundedLat, roundedLng, month, year, madhab, method) => {
+  const calendarId = `${roundedLat}_${roundedLng}_${month}_${year}_${madhab}_${method}`;
 
   if (calendarCache.has(calendarId)) {
     return calendarCache.get(calendarId);
@@ -71,8 +72,22 @@ const getMonthCalendar = async (db, roundedLat, roundedLng, month, year, madhab)
   }
 
   console.log(`Fetching API for region: ${calendarId}`);
+  const params = {
+    latitude: roundedLat,
+    longitude: roundedLng,
+    school: madhab,
+    method,
+    month,
+    year,
+  };
+
+  // Moonsighting Committee requires shafaq
+  if (method === 15) {
+    params.shafaq = "general";
+  }
+
   const response = await axios.get("https://api.aladhan.com/v1/calendar", {
-    params: {latitude: roundedLat, longitude: roundedLng, school: madhab, month, year},
+    params,
     timeout: 5000,
   });
 
@@ -107,6 +122,67 @@ const chunk = (arr, size) =>
 // --- 3. SCHEDULE DAILY PRAYER TASKS ---
 // Runs every hour. Checks all users and schedules any remaining future prayers for their current day.
 // Uses deterministic task names to prevent duplicate scheduling.
+// --- COUNTRY → METHOD MAPPING ---
+const getMethodByCountry = (countryCode) => {
+  switch (countryCode) {
+    // 🇸🇦 Saudi Arabia
+    case "SA":
+      return 4; // Umm Al-Qura
+
+    // 🇵🇰 Pakistan / 🇮🇳 India / 🇧🇩 Bangladesh / 🇦🇫 Afghanistan
+    case "PK":
+    case "IN":
+    case "BD":
+    case "AF":
+      return 1; // Karachi
+
+    // 🇺🇸 USA / 🇨🇦 Canada
+    case "US":
+    case "CA":
+      return 2; // ISNA
+
+    // 🇬🇧 UK / 🇮🇪 Ireland
+    case "GB":
+    case "IE":
+      return 15; // Moonsighting Committee
+
+    // 🇪🇬 Egypt
+    case "EG":
+      return 5;
+
+    // 🇹🇷 Turkey
+    case "TR":
+      return 13;
+
+    // 🇲🇾 Malaysia
+    case "MY":
+      return 17;
+
+    // 🇮🇩 Indonesia
+    case "ID":
+      return 20;
+
+    // 🇲🇦 Morocco
+    case "MA":
+      return 21;
+
+    // 🇯🇴 Jordan
+    case "JO":
+      return 23;
+
+    // 🇫🇷 France
+    case "FR":
+      return 12;
+
+    // 🇷🇺 Russia
+    case "RU":
+      return 14;
+
+    default:
+      return 3; // Muslim World League (safe global default)
+  }
+};
+
 exports.scheduleDailyPrayerTasks = onSchedule(
     {
       schedule: "0 * * * *",
@@ -138,13 +214,27 @@ exports.scheduleDailyPrayerTasks = onSchedule(
         const month = userNow.month() + 1;
         const year = userNow.year();
 
-        const roundedLat = Math.round(user.latitude);
-        const roundedLng = Math.round(user.longitude);
+        const roundedLat = user.latitude.toFixed(1);
+        const roundedLng = user.longitude.toFixed(1);
+
         const madhab = user.madhab === "Hanafi" ? 1 : 0;
+
+        // Use stored country if available
+        let countryCode = user.countryCode;
+
+        if (!countryCode) {
+          const isoCode = whichCountry([user.longitude, user.latitude]); // Note: [lng, lat] order
+          countryCode = isoCode || "DEFAULT";
+
+          // Save it once
+          await db.collection("users").doc(doc.id).update({countryCode});
+        }
+
+        const method = getMethodByCountry(countryCode);
 
         let monthData;
         try {
-          monthData = await getMonthCalendar(db, roundedLat, roundedLng, month, year, madhab);
+          monthData = await getMonthCalendar(db, roundedLat, roundedLng, month, year, madhab, method);
         } catch (err) {
           console.error(`Failed to get calendar for user ${doc.id}:`, err.message);
           return;
