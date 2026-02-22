@@ -341,9 +341,9 @@ exports.sendPrayerNotification = onRequest(
         const body =
           typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-        const {userId, fcmToken, prayer, prayerTime, dateStr} = body;
+        const {userId, prayer, prayerTime, dateStr} = body;
 
-        if (!userId || !fcmToken || !prayer || !prayerTime || !dateStr) {
+        if (!userId || !prayer || !prayerTime || !dateStr) {
           return res.status(400).send("Missing required fields");
         }
 
@@ -355,6 +355,13 @@ exports.sendPrayerNotification = onRequest(
         if (!userSnap.exists) {
           console.log(`User ${userId} no longer exists. Skipping task.`);
           return res.status(200).send("user deleted");
+        }
+
+        const latestToken = userSnap.data().fcmToken;
+
+        if (!latestToken) {
+          console.log(`User ${userId} has no valid FCM token.`);
+          return res.status(200).send("no token");
         }
 
         const logId = `${dateStr}-${prayer}`;
@@ -371,7 +378,7 @@ exports.sendPrayerNotification = onRequest(
         }
 
         await admin.messaging().send({
-          token: fcmToken,
+          token: latestToken,
           notification: {
             title: "iQadha",
             body: `It is time for ${prayer} (${prayerTime})`,
@@ -398,14 +405,16 @@ exports.sendPrayerNotification = onRequest(
         if (err.code === "messaging/registration-token-not-registered") {
           try {
             const db = admin.firestore();
-            await db.collection("users").doc(req.body.userId).update({
+            const body =
+              typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
+            await db.collection("users").doc(body.userId).update({
               fcmToken: null,
             });
             console.log(
-                `Cleared invalid token for ${req.body.userId}`,
+                `Cleared invalid token for ${body.userId}`,
             );
           } catch (updateErr) {
-            // If user was deleted between check and here, ignore it
             console.log(
                 `User missing while clearing token. Safe to ignore.`,
             );
