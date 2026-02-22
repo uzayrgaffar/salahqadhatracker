@@ -157,7 +157,18 @@ const Profile = () => {
           { text: "Cancel", style: "cancel" },
           {
             text: "Open Settings",
-            onPress: () => {
+            onPress: async () => {
+              // Clear location data from Firestore
+              const user = auth().currentUser;
+              if (user) {
+                await firestore().collection("users").doc(user.uid).update({
+                  latitude: firestore.FieldValue.delete(),
+                  longitude: firestore.FieldValue.delete(),
+                  timezone: firestore.FieldValue.delete(),
+                  countryCode: firestore.FieldValue.delete(),
+                });
+                setCountryCode(null);
+              }
               if (Platform.OS === "ios") {
                 Linking.openURL("app-settings:");
               } else {
@@ -208,7 +219,14 @@ const Profile = () => {
           { text: "Cancel", style: "cancel" },
           {
             text: "Open Settings",
-            onPress: () => {
+            onPress: async () => {
+              // Clear FCM token from Firestore
+              const user = auth().currentUser;
+              if (user) {
+                await firestore().collection("users").doc(user.uid).update({
+                  fcmToken: firestore.FieldValue.delete(),
+                });
+              }
               if (Platform.OS === "ios") {
                 Linking.openURL("app-settings:");
               } else {
@@ -245,16 +263,6 @@ const Profile = () => {
       }
     }
   };
-
-  const selectGender = async (newGender) => {
-    if (!userDocRef) return
-    try {
-      await userDocRef.update({ gender: newGender })
-      setGender(newGender)
-    } catch (error) {
-      Alert.alert("Error", "Failed to update gender")
-    }
-  }
 
   const selectMadhab = async (newMadhab) => {
     if (!userDocRef) return
@@ -497,69 +505,80 @@ const Profile = () => {
           {/* Calculation Method Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Salah Time Method</Text>
+            
+            {locationEnabled && (
             <Text style={styles.sectionDescription}>
               <Text style={{ fontWeight: "600", color: "#5CB390" }}>
                 {countryCode ? METHODS.find(m => m.id === getMethodByCountry(countryCode))?.name : "Not set"}
               </Text>
               {" "}is the default for your location - change it here if needed.
             </Text>
-
-            <TouchableOpacity
-              style={[styles.dropdownButton, methodDropdownOpen && styles.dropdownButtonOpen]}
-              onPress={() => setMethodDropdownOpen(prev => !prev)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.dropdownButtonLeft}>
-                <Icon name="calculator-outline" size={18} color="#5CB390" style={{ marginRight: 10 }} />
-                <View>
-                  <Text style={styles.dropdownButtonText}>
-                    {method ? METHODS.find(m => m.id === method)?.name : "Select a method"}
-                  </Text>
-                  {method && (
-                    <Text style={styles.dropdownButtonRegion}>
-                      {METHODS.find(m => m.id === method)?.region}
-                    </Text>
-                  )}
-                </View>
-              </View>
-              <Icon
-                name={methodDropdownOpen ? "chevron-up" : "chevron-down"}
-                size={20}
-                color="#9CA3AF"
-              />
-            </TouchableOpacity>
-
-            {methodDropdownOpen && (
-              <View style={styles.dropdownList}>
-                {METHODS.map((m, index) => (
-                  <TouchableOpacity
-                    key={m.id}
-                    style={[
-                      styles.dropdownItem,
-                      method === m.id && styles.dropdownItemSelected,
-                      index < METHODS.length - 1 && styles.dropdownItemBorder,
-                    ]}
-                    onPress={() => {
-                      selectMethod(m.id);
-                      setMethodDropdownOpen(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.dropdownItemText}>
-                      <Text style={[styles.dropdownItemName, method === m.id && styles.dropdownItemNameSelected]}>
-                        {m.name}
-                      </Text>
-                      <Text style={[styles.dropdownItemRegion, method === m.id && styles.dropdownItemRegionSelected]}>
-                        {m.region}
-                      </Text>
-                    </View>
-                    {method === m.id && (
-                      <Icon name="checkmark" size={18} color="#5CB390" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
             )}
+            
+            {!locationEnabled && (
+              <Text style={{ fontSize: 12, color: "#DC2626", marginBottom: 12 }}>
+                Enable location to change your calculation method
+              </Text>
+            )}
+
+            <View style={[!locationEnabled && { opacity: 0.4 }]}>
+              <TouchableOpacity
+                style={[styles.dropdownButton, methodDropdownOpen && styles.dropdownButtonOpen]}
+                onPress={() => locationEnabled && setMethodDropdownOpen(prev => !prev)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.dropdownButtonLeft}>
+                  <Icon name="calculator-outline" size={18} color="#5CB390" style={{ marginRight: 10 }} />
+                  <View>
+                    <Text style={styles.dropdownButtonText}>
+                      {method ? METHODS.find(m => m.id === method)?.name : "Select a method"}
+                    </Text>
+                    {method && (
+                      <Text style={styles.dropdownButtonRegion}>
+                        {METHODS.find(m => m.id === method)?.region}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <Icon
+                  name={methodDropdownOpen ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color="#9CA3AF"
+                />
+              </TouchableOpacity>
+
+              {methodDropdownOpen && locationEnabled && (
+                <View style={styles.dropdownList}>
+                  {METHODS.map((m, index) => (
+                    <TouchableOpacity
+                      key={m.id}
+                      style={[
+                        styles.dropdownItem,
+                        method === m.id && styles.dropdownItemSelected,
+                        index < METHODS.length - 1 && styles.dropdownItemBorder,
+                      ]}
+                      onPress={() => {
+                        selectMethod(m.id);
+                        setMethodDropdownOpen(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.dropdownItemText}>
+                        <Text style={[styles.dropdownItemName, method === m.id && styles.dropdownItemNameSelected]}>
+                          {m.name}
+                        </Text>
+                        <Text style={[styles.dropdownItemRegion, method === m.id && styles.dropdownItemRegionSelected]}>
+                          {m.region}
+                        </Text>
+                      </View>
+                      {method === m.id && (
+                        <Icon name="checkmark" size={18} color="#5CB390" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
 
           <View style={styles.actionsSection}>
