@@ -19,52 +19,68 @@ const HANDLER_URL = `https://${LOCATION}-${PROJECT_ID}.cloudfunctions.net/sendPr
 
 
 // --- 1. DAILY QADHA INCREMENTER ---
-exports.incrementPrayerCounts = onSchedule("0 * * * *", async (event) => {
+exports.incrementPrayerCounts = onSchedule({
+  timeoutSeconds: 540,
+  memory: "512MiB",
+}, async (event) => {
   const db = admin.firestore();
+
   const usersSnapshot = await db.collection("users").get();
+  console.log(`Starting processing for ${usersSnapshot.size} users.`);
 
-  const promises = usersSnapshot.docs.map(async (userDoc) => {
-    const userData = userDoc.data();
-    const timezone = userData.timezone || "UTC";
+  for (const userDoc of usersSnapshot.docs) {
+    try {
+      const userData = userDoc.data();
+      const userId = userDoc.id;
+      const timezone = userData.timezone || "UTC";
 
-    const nowInUserTz = moment().tz(timezone);
-    if (nowInUserTz.hour() !== 0) return; // Not midnight for this user yet
+      const nowInUserTz = moment().tz(timezone);
 
-    // Get yesterday's date in the user's timezone
-    const yesterday = nowInUserTz.clone().subtract(1, "day").format("YYYY-MM-DD");
+      if (nowInUserTz.hour() !== 0) continue;
 
-    const yesterdayDoc = await db
-        .collection("users")
-        .doc(userDoc.id)
-        .collection("dailyPrayers")
-        .doc(yesterday)
-        .get();
+      const yesterday = nowInUserTz.clone().subtract(1, "day").format("YYYY-MM-DD");
 
-    const prayers = yesterdayDoc.exists() ? (yesterdayDoc.data().prayers || {}) : {};
-
-    const allPrayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
-    if (userData.madhab === "Hanafi") allPrayers.push("witr");
-
-    const updateData = {};
-    allPrayers.forEach((prayer) => {
-      if (!prayers[prayer]) {
-        updateData[prayer] = admin.firestore.FieldValue.increment(1);
+      if (userData.lastQadhaProcessed === yesterday) {
+        continue;
       }
-    });
 
-    if (Object.keys(updateData).length === 0) return;
+      const yesterdayDoc = await db
+          .collection("users")
+          .doc(userId)
+          .collection("dailyPrayers")
+          .doc(yesterday)
+          .get();
 
-    const totalQadhaRef = db
-        .collection("users")
-        .doc(userDoc.id)
-        .collection("totalQadha")
-        .doc("qadhaSummary");
+      const prayersLogged = yesterdayDoc.exists() ? (yesterdayDoc.data().prayers || {}) : {};
 
-    return totalQadhaRef.set(updateData, {merge: true});
-  });
+      const allPrayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+      if (userData.madhab === "Hanafi") allPrayers.push("witr");
 
-  await Promise.all(promises);
-  console.log(`Processed Qadha increments for ${promises.length} users.`);
+      const updateData = {};
+      allPrayers.forEach((prayer) => {
+        if (!prayersLogged[prayer]) {
+          updateData[prayer] = admin.firestore.FieldValue.increment(1);
+        }
+      });
+
+      const batch = db.batch();
+      const userRef = db.collection("users").doc(userId);
+
+      batch.set(userRef, {lastQadhaProcessed: yesterday}, {merge: true});
+
+      if (Object.keys(updateData).length > 0) {
+        const qadhaRef = userRef.collection("totalQadha").doc("qadhaSummary");
+        batch.set(qadhaRef, updateData, {merge: true});
+      }
+
+      await batch.commit();
+    } catch (err) {
+      console.error(`Error processing user ${userDoc.id}:`, err);
+      continue;
+    }
+  }
+
+  console.log("Qadha processing cycle complete.");
 });
 
 
