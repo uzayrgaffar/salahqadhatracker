@@ -6,8 +6,6 @@ const axios = require("axios");
 const moment = require("moment-timezone");
 const admin = require("firebase-admin");
 const {CloudTasksClient} = require("@google-cloud/tasks");
-// @ts-ignore
-const whichCountry = require("which-country");
 
 admin.initializeApp();
 
@@ -121,67 +119,6 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // --- 3. SCHEDULE DAILY PRAYER TASKS ---
 // Runs every hour. Checks all users and schedules any remaining future prayers for their current day.
 // Uses deterministic task names to prevent duplicate scheduling.
-// --- COUNTRY → METHOD MAPPING ---
-const getMethodByCountry = (countryCode) => {
-  switch (countryCode) {
-    // 🇸🇦 Saudi Arabia
-    case "SA":
-      return 4; // Umm Al-Qura
-
-    // 🇵🇰 Pakistan / 🇮🇳 India / 🇧🇩 Bangladesh / 🇦🇫 Afghanistan
-    case "PK":
-    case "IN":
-    case "BD":
-    case "AF":
-      return 1; // Karachi
-
-    // 🇺🇸 USA / 🇨🇦 Canada
-    case "US":
-    case "CA":
-      return 2; // ISNA
-
-    // 🇬🇧 UK / 🇮🇪 Ireland
-    case "GB":
-    case "IE":
-      return 15; // Moonsighting Committee
-
-    // 🇪🇬 Egypt
-    case "EG":
-      return 5;
-
-    // 🇹🇷 Turkey
-    case "TR":
-      return 13;
-
-    // 🇲🇾 Malaysia
-    case "MY":
-      return 17;
-
-    // 🇮🇩 Indonesia
-    case "ID":
-      return 20;
-
-    // 🇲🇦 Morocco
-    case "MA":
-      return 21;
-
-    // 🇯🇴 Jordan
-    case "JO":
-      return 23;
-
-    // 🇫🇷 France
-    case "FR":
-      return 12;
-
-    // 🇷🇺 Russia
-    case "RU":
-      return 14;
-
-    default:
-      return 3; // Muslim World League (safe global default)
-  }
-};
-
 exports.scheduleDailyPrayerTasks = onSchedule(
     {
       schedule: "0 * * * *",
@@ -224,22 +161,10 @@ exports.scheduleDailyPrayerTasks = onSchedule(
         // We prioritize a stored 'method'. If it doesn't exist, we find it via countryCode.
         // If countryCode doesn't exist, we use whichCountry to guess it.
         let method = user.method;
-        let countryCode = user.countryCode;
 
         if (!method) {
-          if (!countryCode) {
-            // which-country expects [lng, lat]
-            const isoCode = whichCountry([user.longitude, user.latitude]);
-            countryCode = isoCode || "DEFAULT";
-          }
-          method = getMethodByCountry(countryCode);
-
-          // Update the user doc so we don't have to guess next hour
-          await db.collection("users").doc(doc.id).update({
-            method: method,
-            countryCode: countryCode,
-          });
-          console.log(`Updated user ${doc.id} with guessed method ${method} for ${countryCode}`);
+          console.log(`User ${doc.id} missing method. Using default method 3.`);
+          method = 3;
         }
 
         // 4. Fetch/Cache Calendar
