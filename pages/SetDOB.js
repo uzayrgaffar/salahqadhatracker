@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SetDOB = () => {
   const navigation = useNavigation()
-  const { setDob, setDop, gender } = useContext(AppContext)
+  const { setDob, setDop } = useContext(AppContext)
   const [selectedDOB, setSelectedDOB] = useState(null)
   const [selectedDOP, setSelectedDOP] = useState(null)
   const [showDOBPicker, setShowDOBPicker] = useState(false)
@@ -19,7 +19,18 @@ const SetDOB = () => {
   const insets = useSafeAreaInsets();
 
   const today = new Date()
-  const minimumDOB = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate())
+  // Minimum age of 9 years old to use the app
+  const minimumDOB = new Date(today.getFullYear() - 9, today.getMonth(), today.getDate())
+
+  // --- Helper Calculations ---
+  const userAgeToday = selectedDOB 
+    ? today.getFullYear() - selectedDOB.getFullYear() - (today < new Date(today.getFullYear(), selectedDOB.getMonth(), selectedDOB.getDate()) ? 1 : 0) 
+    : 0;
+
+  const maxSelectableAge = Math.min(16, userAgeToday);
+  
+  // Show Islamic Default only if they are at least 15 lunar years (approx 14y 8m)
+  const showIslamicOption = userAgeToday >= 15 || (userAgeToday === 14 && today.getMonth() >= (selectedDOB?.getMonth() + 8) % 12);
 
   const selectDOB = (event, selectedDate) => {
     if (event.type === "dismissed") {
@@ -36,20 +47,13 @@ const SetDOB = () => {
 
   const islamicDefault = (date) => {
     if (date) {
-      const newDate = new Date(date)
-      const newMonth = newDate.getMonth() + 8
-      newDate.setFullYear(newDate.getFullYear() + 14)
-
-      if (newMonth > 11) {
-        newDate.setFullYear(newDate.getFullYear() + 1)
-        newDate.setMonth(newMonth - 12)
-      } else {
-        newDate.setMonth(newMonth)
-      }
-      return newDate
+      const newDate = new Date(date);
+      newDate.setFullYear(newDate.getFullYear() + 14);
+      newDate.setMonth(newDate.getMonth() + 8);
+      return newDate > today ? today : newDate;
     }
-    return null
-  }
+    return null;
+  };
 
   const handleIslamicDefault = () => {
     if (selectedDOB) {
@@ -65,22 +69,26 @@ const SetDOB = () => {
   }
 
   const applyExactAge = () => {
-    const age = Number(tempAge)
+    const age = Number(tempAge);
+    if (!selectedDOB) return;
 
-    if (!selectedDOB) return
-
-    if (age < 9 || age > 16) {
-      Alert.alert("Invalid Age", "Age of puberty can only be between 9 and 16.")
-      return
+    if (age < 9 || age > maxSelectableAge) {
+      Alert.alert("Invalid Age", `Based on your birth date, please enter an age between 9 and ${maxSelectableAge}.`);
+      return;
     }
 
-    const newDate = new Date(selectedDOB)
-    newDate.setFullYear(newDate.getFullYear() + age)
-    setSelectedDOP(newDate)
-    setSelectedAge(age)
-    setShowAgePicker(false)
-}
+    const newDate = new Date(selectedDOB);
+    newDate.setFullYear(newDate.getFullYear() + age);
 
+    if (newDate > today) {
+      Alert.alert("Invalid Selection", "The calculated Date of Puberty cannot be in the future.");
+      return;
+    }
+
+    setSelectedDOP(newDate);
+    setSelectedAge(age);
+    setShowAgePicker(false);
+  };
 
   const handleConfirm = async () => {
     if (selectedDOB && selectedDOP) {
@@ -93,27 +101,12 @@ const SetDOB = () => {
         if (user) {
           const userId = user.uid
           const userDocRef = firestore().collection("users").doc(userId)
-          const userDoc = await userDocRef.get()
-
-          if (userDoc.exists) {
-            await userDocRef.update({
-              dob: firestore.Timestamp.fromDate(selectedDOB),
-              dop: firestore.Timestamp.fromDate(selectedDOP),
-            })
-          } else {
-            await userDocRef.set(
-              {
-                dob: firestore.Timestamp.fromDate(selectedDOB),
-                dop: firestore.Timestamp.fromDate(selectedDOP),
-                createdAt: firestore.Timestamp.now(),
-              },
-              { merge: true }
-            )
-          }
-
+          await userDocRef.set({
+            dob: firestore.Timestamp.fromDate(selectedDOB),
+            dop: firestore.Timestamp.fromDate(selectedDOP),
+            updatedAt: firestore.Timestamp.now(),
+          }, { merge: true })
           console.log("Dates saved successfully!")
-        } else {
-          console.error("No authenticated user found!")
         }
       } catch (error) {
         console.error("Error saving dates:", error)
@@ -139,29 +132,34 @@ const SetDOB = () => {
             {selectedDOB ? selectedDOB.toLocaleDateString() : "Select Date"}
           </Text>
         </TouchableOpacity>
-        {showDOBPicker && Platform.OS === "ios" && (
+
+        {/* 1. iOS Spinner Logic */}
+        {showDOBPicker && Platform.OS === 'ios' && (
           <Modal transparent animationType="slide">
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <DateTimePicker
-                  value={selectedDOB || new Date()}
+                  value={selectedDOB || minimumDOB}
                   mode="date"
                   display="spinner"
-                  onChange={(event, date) => {
-                    if (date) setSelectedDOB(date)
-                  }}
+                  onChange={selectDOB}
                   maximumDate={minimumDOB}
                 />
-                <TouchableOpacity onPress={() => setShowDOBPicker(false)}>
-                  <Text>Done</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowDOBPicker(false)} 
+                  style={styles.modalConfirmButton}
+                >
+                  <Text style={styles.modalConfirmButtonText}>Done</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Modal>
         )}
-        {showDOBPicker && Platform.OS !== "ios" && (
+
+        {/* 2. Android Spinner Logic (No Modal wrapper needed) */}
+        {showDOBPicker && Platform.OS === 'android' && (
           <DateTimePicker
-            value={selectedDOB || new Date()}
+            value={selectedDOB || minimumDOB}
             mode="date"
             display="spinner"
             onChange={selectDOB}
@@ -170,37 +168,37 @@ const SetDOB = () => {
         )}
       </View>
 
+      {/* Age of Puberty Card */}
       {selectedDOB && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Age of Puberty</Text>
           <View style={styles.buttonGroup}>
-            <TouchableOpacity
-              style={[
-                styles.optionButton,
-                selectedDOP &&
-                  selectedDOP.getTime() === islamicDefault(selectedDOB)?.getTime() &&
-                  styles.selectedOptionButton,
-              ]}
-              onPress={handleIslamicDefault}
-            >
-              <Text
+            
+            {showIslamicOption && (
+              <TouchableOpacity
                 style={[
-                  styles.optionText,
-                  selectedDOP &&
-                    selectedDOP.getTime() === islamicDefault(selectedDOB)?.getTime() &&
-                    styles.selectedOptionText,
+                  styles.optionButton,
+                  selectedDOP?.getTime() === islamicDefault(selectedDOB)?.getTime() && styles.selectedOptionButton,
                 ]}
+                onPress={handleIslamicDefault}
               >
-                Islamic Default (14 years and 8 months)
-              </Text>
-            </TouchableOpacity>
+                <Text style={[
+                  styles.optionText,
+                  selectedDOP?.getTime() === islamicDefault(selectedDOB)?.getTime() && styles.selectedOptionText,
+                ]}>
+                  Islamic Default (14 years and 8 months)
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={[styles.optionButton, selectedAge !== null && styles.selectedOptionButton]}
               onPress={handleExactAge}
             >
               <Text style={[styles.optionText, selectedAge !== null && styles.selectedOptionText]}>
-                {selectedAge !== null ? `Age ${selectedAge}` : "Select Exact Age"}
+                {selectedAge !== null 
+                  ? `Age ${selectedAge}` 
+                  : userAgeToday < 15 ? "Enter Age of Puberty" : "Select Exact Age"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -215,7 +213,7 @@ const SetDOB = () => {
             <TextInput
               style={styles.ageInput}
               keyboardType="numeric"
-              placeholder="9 - 16"
+              placeholder={`${9}-${maxSelectableAge}`}
               value={tempAge}
               onChangeText={(text) => setTempAge(text.replace(/[^0-9]/g, ""))}
             />
@@ -263,7 +261,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "600",
     color: "#FFFFFF",
-    textAlign: "center",
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -325,7 +322,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: "100%",
     alignItems: "center",
-    alignSelf: "center",
   },
   confirmButton: {
     paddingVertical: 12,
@@ -360,7 +356,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     color: "#777777",
-    marginBottom: 24,
+    marginBottom: 10,
   },
   ageInput: {
     width: "60%",
