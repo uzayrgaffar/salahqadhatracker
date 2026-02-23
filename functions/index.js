@@ -19,35 +19,52 @@ const HANDLER_URL = `https://${LOCATION}-${PROJECT_ID}.cloudfunctions.net/sendPr
 
 
 // --- 1. DAILY QADHA INCREMENTER ---
-exports.incrementPrayerCounts = onSchedule("0 0 * * *", async (event) => {
+exports.incrementPrayerCounts = onSchedule("0 * * * *", async (event) => {
   const db = admin.firestore();
   const usersSnapshot = await db.collection("users").get();
-  const increment = admin.firestore.FieldValue.increment(1);
 
-  const promises = usersSnapshot.docs.map((userDoc) => {
+  const promises = usersSnapshot.docs.map(async (userDoc) => {
     const userData = userDoc.data();
-    const totalQadhaRef = db.collection("users")
+    const timezone = userData.timezone || "UTC";
+
+    const nowInUserTz = moment().tz(timezone);
+    if (nowInUserTz.hour() !== 0) return; // Not midnight for this user yet
+
+    // Get yesterday's date in the user's timezone
+    const yesterday = nowInUserTz.clone().subtract(1, "day").format("YYYY-MM-DD");
+
+    const yesterdayDoc = await db
+        .collection("users")
+        .doc(userDoc.id)
+        .collection("dailyPrayers")
+        .doc(yesterday)
+        .get();
+
+    const prayers = yesterdayDoc.exists() ? (yesterdayDoc.data().prayers || {}) : {};
+
+    const allPrayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+    if (userData.madhab === "Hanafi") allPrayers.push("witr");
+
+    const updateData = {};
+    allPrayers.forEach((prayer) => {
+      if (!prayers[prayer]) {
+        updateData[prayer] = admin.firestore.FieldValue.increment(1);
+      }
+    });
+
+    if (Object.keys(updateData).length === 0) return;
+
+    const totalQadhaRef = db
+        .collection("users")
         .doc(userDoc.id)
         .collection("totalQadha")
         .doc("qadhaSummary");
-
-    const updateData = {
-      fajr: increment,
-      dhuhr: increment,
-      asr: increment,
-      maghrib: increment,
-      isha: increment,
-    };
-
-    if (userData.madhab === "Hanafi") {
-      updateData.witr = increment;
-    }
 
     return totalQadhaRef.set(updateData, {merge: true});
   });
 
   await Promise.all(promises);
-  console.log(`Successfully incremented Qadha for ${promises.length} users.`);
+  console.log(`Processed Qadha increments for ${promises.length} users.`);
 });
 
 

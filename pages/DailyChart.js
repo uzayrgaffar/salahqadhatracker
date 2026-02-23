@@ -456,10 +456,14 @@ const DailyChart = () => {
       prayers: updatedStates[selectedDate],
     }, { merge: true });
 
-    if (wasSelected) {
-      await adjustTotalQadha(prayer, 1)
-    } else {
-      await adjustTotalQadha(prayer, -1)
+    const isPastDate = selectedDate !== today;
+
+    if (isPastDate) {
+      if (wasSelected) {
+        await adjustTotalQadha(prayer, 1)
+      } else {
+        await adjustTotalQadha(prayer, -1)
+      }
     }
   }
 
@@ -570,15 +574,19 @@ const DailyChart = () => {
     try {
       const batch = firestore().batch();
       const dailyRef = firestore().collection("users").doc(userId).collection("dailyPrayers").doc(selectedDate);
-      const summaryRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
 
       batch.set(dailyRef, { prayers: updatedDayPrayers }, { merge: true });
 
-      unticked.forEach(prayer => {
-        batch.set(summaryRef, {
-          [prayer]: firestore.FieldValue.increment(-1),
-        }, { merge: true });
-      });
+      const isPastDate = selectedDate !== today;
+
+      if (isPastDate) {
+        const summaryRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
+        unticked.forEach(prayer => {
+          batch.set(summaryRef, {
+            [prayer]: firestore.FieldValue.increment(-1),
+          }, { merge: true });
+        });
+      }
 
       await batch.commit();
     } catch (error) {
