@@ -122,9 +122,7 @@ const MainPages = () => {
 const App = () => {
 
   useEffect(() => {
-    // Listen for foreground messages
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      // You can customize this to show a modal or a simple Alert
       Alert.alert(
         remoteMessage.notification?.title || "iQadha",
         remoteMessage.notification?.body || "It is time for Salah."

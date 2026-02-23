@@ -371,22 +371,15 @@ const DailyChart = () => {
       if (!userId) return;
       
       try {
+        const hasSeen = await AsyncStorage.getItem('hasSeenNotificationPrompt');
+        if (hasSeen) return;
+
         const { status } = await Notifications.getPermissionsAsync();
-        const systemNotificationsEnabled = status === 'granted';
-
-        // Check if location permission is granted
         const { status: locationStatus } = await Location.getForegroundPermissionsAsync();
-        const systemLocationEnabled = locationStatus === 'granted';
 
-        // Check Firestore data
-        const userDoc = await firestore().collection("users").doc(userId).get();
-        const userData = userDoc.data();
-        const hasLocationData = !!(userData?.latitude && userData?.longitude);
-        const hasFCMToken = !!userData?.fcmToken;
-
-        // Show prompt if EITHER system permissions are off OR data is missing
-        if (!systemNotificationsEnabled || !systemLocationEnabled || !hasLocationData || !hasFCMToken) {
+        if (status !== 'granted' || locationStatus !== 'granted') {
           setShowNotificationPrompt(true);
+          await AsyncStorage.setItem('hasSeenNotificationPrompt', 'true');
         }
       } catch (error) {
         console.error("Error checking notification status:", error);
@@ -635,7 +628,6 @@ const DailyChart = () => {
 
   const setupNotifications = async () => {
     try {
-      // 1. Request Permissions
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
       
@@ -653,10 +645,8 @@ const DailyChart = () => {
         return;
       }
 
-      // 2. Get FCM token
       const token = await messaging().getToken();
 
-      // 2. Get Location
       const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
       if (locStatus !== "granted") return;
 
@@ -664,7 +654,6 @@ const DailyChart = () => {
       const rawLat = loc.coords.latitude;
       const rawLng = loc.coords.longitude;
 
-      // 3. REVERSE GEOCODE (To get the Country Code)
       const reverseResult = await Location.reverseGeocodeAsync({
         latitude: rawLat,
         longitude: rawLng
@@ -673,25 +662,22 @@ const DailyChart = () => {
       const countryCode = reverseResult[0]?.isoCountryCode || "DEFAULT";
       const userMethod = getMethodByCountry(countryCode);
 
-      // 4. ROUND FOR PRIVACY
       const roundedLat = parseFloat(rawLat.toFixed(1));
       const roundedLng = parseFloat(rawLng.toFixed(1));
 
       locationRef.current = { latitude: roundedLat, longitude: roundedLng };
 
-      // 5. Save everything to Firestore
       await firestore().collection("users").doc(userId).set({
         fcmToken: token,
         madhab: madhab,
-        method: userMethod,       // Saved: Now the Backend knows exactly which logic to use
-        countryCode: countryCode, // Helpful for debugging
+        method: userMethod,
+        countryCode: countryCode,
         latitude: roundedLat,
         longitude: roundedLng,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         lastActive: firestore.FieldValue.serverTimestamp()
       }, { merge: true });
 
-      // 6. Fetch prayer times
       fetchPrayerTimes(selectedDate);
 
       Alert.alert(
@@ -1454,6 +1440,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#5CB390",
+  },
+  counterButtonDisabled: {
+    backgroundColor: "#F3F4F6",
+    borderColor: "#E5E7EB",
   },
   qadhaCounterValue: {
     fontSize: 18,

@@ -120,6 +120,13 @@ export const SetQadhaSalah = () => {
       witr = selectedSalah.Witr ? 0 : ramadanDays
     }
 
+    fajr = Math.max(0, fajr)
+    dhuhr = Math.max(0, dhuhr)
+    asr = Math.max(0, asr)
+    maghrib = Math.max(0, maghrib)
+    isha = Math.max(0, isha)
+    witr = Math.max(0, witr)
+
     setFajr?.(fajr)
     setDhuhr?.(dhuhr)
     setAsr?.(asr)
