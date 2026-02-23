@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const MadhabSelection = () => {
   const navigation = useNavigation()
-  const { setMadhab } = useContext(AppContext)
+  const { setMadhab, yearsMissed } = useContext(AppContext)
   const [selectedMadhab, setSelectedMadhab] = useState(null)
   const insets = useSafeAreaInsets();
 
@@ -37,7 +37,7 @@ const MadhabSelection = () => {
 
       setMadhab(selectedMadhab);
 
-      if (!hasCalculationData) {
+      if (!hasCalculationData || !yearsMissed || yearsMissed === 0) {
         const totalQadhaRef = firestore()
           .collection("users")
           .doc(userId)

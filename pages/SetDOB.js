@@ -139,11 +139,31 @@ const SetDOB = () => {
             {selectedDOB ? selectedDOB.toLocaleDateString() : "Select Date"}
           </Text>
         </TouchableOpacity>
-        {showDOBPicker && (
+        {showDOBPicker && Platform.OS === "ios" && (
+          <Modal transparent animationType="slide">
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <DateTimePicker
+                  value={selectedDOB || new Date()}
+                  mode="date"
+                  display="spinner"
+                  onChange={(event, date) => {
+                    if (date) setSelectedDOB(date)
+                  }}
+                  maximumDate={minimumDOB}
+                />
+                <TouchableOpacity onPress={() => setShowDOBPicker(false)}>
+                  <Text>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )}
+        {showDOBPicker && Platform.OS !== "ios" && (
           <DateTimePicker
             value={selectedDOB || new Date()}
             mode="date"
-            display={Platform.OS === "android" ? "spinner" : "default"}
+            display="spinner"
             onChange={selectDOB}
             maximumDate={minimumDOB}
           />
@@ -295,6 +315,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#777777",
     fontWeight: "500",
+    textAlign: "center",
   },
   selectedOptionText: {
     color: "#FFFFFF",

@@ -188,8 +188,6 @@ const Progress = () => {
     yearsToFinish = `(${years} years)`;
   }
 
-  const screenWidth = Dimensions.get("window").width
-
   return (
     <View style={styles.safeArea}>
       <View style={styles.container}>
@@ -238,55 +236,62 @@ const Progress = () => {
 
           <View style={styles.chartContainer}>
             <Text style={styles.chartTitle}>Qadha Prayers (Last {selectedRange} Days)</Text>
-            <LineChart
-              data={{
-                labels: dates.map((date, index) => {
-                  const labelInterval = selectedRange <= 7 ? 1 : selectedRange <= 14 ? 2 : selectedRange <= 30 ? 5 : selectedRange <= 60 ? 10 : 15;
-                  if (index % labelInterval === 0) {
-                    const currentMonth = moment().month();
-                    const dateMonth = moment(date).month();
-                    return currentMonth !== dateMonth ? moment(date).format("DD MMM") : moment(date).format("DD");   
-                  }
-                  return "";
-                }),
-                datasets: [{
-                  data: prayerCounts.length > 0 ? prayerCounts : [0],
+            <View style={{ alignItems: "center" }}>
+              <LineChart
+                data={{
+                  labels: dates.map((date, index) => {
+                    const labelInterval =
+                      selectedRange <= 7
+                        ? 1
+                        : selectedRange <= 14
+                        ? 2
+                        : selectedRange <= 30
+                        ? 5
+                        : selectedRange <= 60
+                        ? 10
+                        : 15
+
+                    if (index % labelInterval === 0) {
+                      return moment(date).format("DD")
+                    }
+                    return ""
+                  }),
+                  datasets: [
+                    {
+                      data: prayerCounts.length > 0 ? prayerCounts : [0],
+                      strokeWidth: 3,
+                    },
+                  ],
+                }}
+                width={Dimensions.get("window").width - 50}
+                height={220}
+                yAxisInterval={1}
+                chartConfig={{
+                  backgroundGradientFrom: "#ffffff",
+                  backgroundGradientTo: "#ffffff",
+                  decimalPlaces: 0,
                   color: (opacity = 1) => `rgba(75, 212, 162, ${opacity})`,
-                  strokeWidth: 2,
-                }],
-              }}
-              width={screenWidth - 40}
-              height={220}
-              yAxisSuffix=""
-              yAxisInterval={1}
-              chartConfig={{
-                backgroundColor: "#ffffff",
-                backgroundGradientFrom: "#ffffff",
-                backgroundGradientTo: "#ffffff",
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(75, 212, 162, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: {
+                  labelColor: () => "#9CA3AF",
+                  propsForDots: {
+                    r: "3",
+                    strokeWidth: "0",
+                  },
+                  propsForBackgroundLines: {
+                    strokeWidth: 0,
+                  },
+                  propsForHorizontalLabels: {
+                    fontSize: 11,
+                  },
+                  propsForVerticalLabels: {
+                    fontSize: 11,
+                  },
+                }}
+                bezier
+                style={{
                   borderRadius: 16,
-                },
-                propsForDots: {
-                  r: "4",
-                  strokeWidth: "2",
-                  stroke: "#5CB390",
-                },
-                propsForBackgroundLines: {
-                  strokeDasharray: "",
-                },
-                propsForHorizontalLabels: {
-                  fontSize: 10,
-                },
-                propsForVerticalLabels: {
-                  fontSize: 10,
-                },
-              }}
-              bezier
-              style={styles.chart}
-            />
+                }}
+              />
+            </View>
           </View>
 
           <View style={styles.summaryCard}>
@@ -505,9 +510,16 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     backgroundColor: "#FFFFFF",
-    paddingTop: 16,
-    paddingBottom: 16,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
   chartTitle: {
     fontSize: 16,

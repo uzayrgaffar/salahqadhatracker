@@ -889,6 +889,7 @@ const DailyChart = () => {
               }}
               markingType={"custom"}
               markedDates={getMarkedDates()}
+              maxDate={today}
               theme={{
                 backgroundColor: "#ffffff",
                 calendarBackground: "#ffffff",
