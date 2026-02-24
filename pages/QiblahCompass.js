@@ -1,20 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
@@ -33,77 +23,65 @@ const calculateQibla = (lat, lng) => {
 
 const QiblahCompass = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  
   const [qiblaDir, setQiblaDir] = useState(0);
-  const [accuracy, setAccuracy] = useState(0);
+  const [accuracy, setAccuracy] = useState(3);
   const [isAligned, setIsAligned] = useState(false);
-
-  const compassRotation = useSharedValue(0);
-  const kaabaRotation = useSharedValue(0);
 
   const isAlignedRef = useRef(false);
   const qiblaDirRef = useRef(0);
-  const lastHapticTime = useRef(0);
-  const rawHeadingRef = useRef(0);
+  const rotation = useSharedValue(0);
 
   useEffect(() => {
-    let subscription;
+    let headingSub;
+    let locationSub;
 
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
 
-      let location = await Location.getCurrentPositionAsync({});
-      const qDir = calculateQibla(
-        location.coords.latitude,
-        location.coords.longitude
+      locationSub = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 5000, 
+        },
+        (location) => {
+          const newQibla = calculateQibla(
+            location.coords.latitude,
+            location.coords.longitude
+          );
+          setQiblaDir(newQibla);
+          qiblaDirRef.current = newQibla; 
+        }
       );
-      setQiblaDir(qDir);
-      qiblaDirRef.current = qDir;
 
-      subscription = await Location.watchHeadingAsync((data) => {
-        const rawAngle =
-          data.trueHeading !== -1 ? data.trueHeading : data.magHeading;
+      headingSub = await Location.watchHeadingAsync((data) => {
+        if (qiblaDirRef.current === 0) return;
 
-        rawHeadingRef.current = rawAngle;
+        const heading = data.trueHeading !== -1 ? data.trueHeading : data.magHeading;
+        setAccuracy(data.accuracy);
 
-        let diff = rawAngle - (compassRotation.value % 360);
+        let diff = heading - (rotation.value % 360);
         if (diff > 180) diff -= 360;
         if (diff < -180) diff += 360;
 
-        compassRotation.value = withSpring(compassRotation.value + diff, {
-          damping: 20,
-          stiffness: 90,
-          mass: 1,
+        rotation.value = withSpring(rotation.value + diff, {
+          damping: 12,
+          stiffness: 150,
+          mass: 0.5,
         });
 
-        const kaabaAngle = qiblaDirRef.current - rawAngle;
-        let kaabaDiff = kaabaAngle - (kaabaRotation.value % 360);
-        if (kaabaDiff > 180) kaabaDiff -= 360;
-        if (kaabaDiff < -180) kaabaDiff += 360;
-
-        kaabaRotation.value = withSpring(kaabaRotation.value + kaabaDiff, {
-          damping: 20,
-          stiffness: 90,
-          mass: 1,
-        });
-
-        setAccuracy(data.accuracy);
-
-        const currentHeading = rawHeadingRef.current;
-        const angleDiff = Math.abs(qiblaDirRef.current - currentHeading);
+        // Alignment logic relative ONLY to Makkah
+        const angleDiff = Math.abs(qiblaDirRef.current - heading);
         const normalizedDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
 
-        if (normalizedDiff < 4) {
+        if (normalizedDiff < 3) {
           if (!isAlignedRef.current) {
             isAlignedRef.current = true;
             setIsAligned(true);
-            const now = Date.now();
-            if (now - lastHapticTime.current > 2500) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              lastHapticTime.current = now;
-            }
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           }
-        } else {
+        } else if (normalizedDiff > 6) {
           if (isAlignedRef.current) {
             isAlignedRef.current = false;
             setIsAligned(false);
@@ -112,15 +90,18 @@ const QiblahCompass = ({ navigation }) => {
       });
     })();
 
-    return () => subscription?.remove();
+    return () => {
+      headingSub?.remove();
+      locationSub?.remove();
+    };
   }, []);
 
   const animatedCompassStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${-compassRotation.value}deg` }],
+    transform: [{ rotate: `${-rotation.value}deg` }],
   }));
 
   const animatedKaabaStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${kaabaRotation.value}deg` }],
+        transform: [{ rotate: `${qiblaDir}deg` }], 
   }));
 
   return (
@@ -134,7 +115,7 @@ const QiblahCompass = ({ navigation }) => {
       </View>
 
       <View style={styles.content}>
-        {accuracy < 3 && accuracy !== 0 && (
+        {accuracy < 3 && (
           <View style={styles.warningBox}>
             <Icon name="warning-outline" size={16} color="#B45309" />
             <Text style={styles.warningText}>
@@ -149,7 +130,7 @@ const QiblahCompass = ({ navigation }) => {
           </View>
 
           <Animated.View style={[styles.rotatingWorld, animatedCompassStyle]}>
-            <View style={[styles.compassRing, isAligned && styles.alignedRing]}>
+            <View style={styles.compassRing}>
 
               <Text style={[styles.cardinal, styles.north]}>N</Text>
               <Text style={[styles.cardinal, styles.east]}>E</Text>
@@ -170,16 +151,17 @@ const QiblahCompass = ({ navigation }) => {
                 />
               ))}
             </View>
-          </Animated.View>
 
-          <Animated.View
-            style={[styles.kaabaPositioner, animatedKaabaStyle]}
-            pointerEvents="none"
-          >
-            <View style={styles.kaabaIndicator}>
-              <Icon name="location" size={28} color="#E11D48" />
-              <Text style={styles.kaabaLabel}>MAKKAH</Text>
-            </View>
+            <Animated.View
+                style={[styles.kaabaPositioner, animatedKaabaStyle]}
+                pointerEvents="none"
+            >
+                <View style={styles.kaabaIndicator}>
+                <Icon name="location" size={28} color="#E11D48" />
+                <Text style={styles.kaabaLabel}>MAKKAH</Text>
+                </View>
+            </Animated.View>
+
           </Animated.View>
         </View>
 

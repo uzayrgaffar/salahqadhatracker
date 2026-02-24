@@ -17,7 +17,11 @@ export default {
       buildNumber: "1",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
-        UIBackgroundModes: ["remote-notification"]
+        UIBackgroundModes: ["remote-notification"],
+        NSLocationWhenInUseUsageDescription:
+          "Location is required to accurately determine the Qiblah direction and prayer times.",
+        NSMotionUsageDescription:
+          "Motion access improves compass accuracy for Qiblah direction."
       },
       googleServicesFile: "./GoogleService-Info.plist"
     },
@@ -29,7 +33,7 @@ export default {
       config: {
         keepConsistentProguardFile: true
       },
-      permissions: ["RECEIVE_BOOT_COMPLETED", "POST_NOTIFICATIONS"]
+      permissions: ["RECEIVE_BOOT_COMPLETED", "POST_NOTIFICATIONS", "ACCESS_FINE_LOCATION"]
     },
     splash: {
       image: "./assets/splash.png",
@@ -70,7 +74,7 @@ export default {
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow location access to calculate prayer times."
+          "locationWhenInUsePermission": "Allow location access to calculate prayer times and Qiblah direction."
         }
       ]
     ],
