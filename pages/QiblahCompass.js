@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Linking, Platform, StatusBar, AppState } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, StatusBar, AppState, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolateColor, useDerivedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolateColor, withTiming } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
@@ -37,89 +37,77 @@ const QiblahCompass = ({ navigation }) => {
     alignmentAnim.value = withTiming(isAligned ? 1 : 0, { duration: 300 });
   }, [isAligned]);
 
-  const handleRequestPermission = async () => {
-    const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
-    
-    if (status === 'granted') {
-      setHasPermission(true);
-    } else if (!canAskAgain) {
-      Platform.OS === 'ios' ? Linking.openURL('app-settings:') : Linking.openSettings();
-    }
-  };
-
   useEffect(() => {
     let headingSub;
     let locationSub;
     let isMounted = true;
 
     const startServices = async () => {
-      // 1. Check current permission status
       const { status } = await Location.getForegroundPermissionsAsync();
       
       if (!isMounted) return;
-      setHasPermission(status === 'granted');
 
-      if (status === 'granted') {
-        // 2. Clean up any existing subscriptions
-        headingSub?.remove();
-        locationSub?.remove();
+      if (status !== 'granted') {
+        setHasPermission(false);
+        Alert.alert(
+          "Location Required",
+          "Please enable location on the Profile page to use the Qiblah compass.",
+          [{ text: "OK", onPress: () => navigation.goBack() }]
+        );
+        return;
+      }
 
-        try {
-          // 3. Start Location Watcher
-          locationSub = await Location.watchPositionAsync(
-            { accuracy: Location.Accuracy.Balanced, distanceInterval: 5000 },
-            (location) => {
-              // Fixed: Using calculateQibla instead of getQiblaData
-              const newQibla = calculateQibla(location.coords.latitude, location.coords.longitude);
-              setQiblaDir(newQibla);
-              qiblaDirRef.current = newQibla;
-            }
-          );
+      setHasPermission(true);
 
-          // 4. Start Heading Watcher
-          headingSub = await Location.watchHeadingAsync((data) => {
-            if (qiblaDirRef.current === 0) return;
-            
-            const heading = data.trueHeading !== -1 ? data.trueHeading : data.magHeading;
-            setAccuracy(data.accuracy);
+      try {
+        locationSub = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.Balanced, distanceInterval: 5000 },
+          (location) => {
+            const newQibla = calculateQibla(location.coords.latitude, location.coords.longitude);
+            setQiblaDir(newQibla);
+            qiblaDirRef.current = newQibla;
+          }
+        );
 
-            // Calculate rotation for the animated compass
-            let diff = heading - (rotation.value % 360);
-            if (diff > 180) diff -= 360;
-            if (diff < -180) diff += 360;
+        headingSub = await Location.watchHeadingAsync((data) => {
+          if (qiblaDirRef.current === 0) return;
+          
+          const heading = data.trueHeading !== -1 ? data.trueHeading : data.magHeading;
+          setAccuracy(data.accuracy);
 
-            rotation.value = withSpring(rotation.value + diff, { 
-              damping: 50, 
-              stiffness: 300, 
-              mass: 1
-            });
+          let diff = heading - (rotation.value % 360);
+          if (diff > 180) diff -= 360;
+          if (diff < -180) diff += 360;
 
-            // Check alignment (3 degree threshold)
-            const angleDiff = Math.abs(qiblaDirRef.current - heading);
-            const normalizedDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
-
-            if (normalizedDiff < 3) {
-              if (!isAlignedRef.current) {
-                isAlignedRef.current = true;
-                setIsAligned(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              }
-            } else if (normalizedDiff > 6) {
-              if (isAlignedRef.current) {
-                isAlignedRef.current = false;
-                setIsAligned(false);
-              }
-            }
+          rotation.value = withSpring(rotation.value + diff, { 
+            damping: 60, 
+            stiffness: 300, 
+            mass: 1 
           });
-        } catch (err) {
-          console.error("Error starting compass services:", err);
-        }
+
+          const angleDiff = Math.abs(qiblaDirRef.current - heading);
+          const normalizedDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
+
+          if (normalizedDiff < 3) {
+            if (!isAlignedRef.current) {
+              isAlignedRef.current = true;
+              setIsAligned(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            }
+          } else if (normalizedDiff > 6) {
+            if (isAlignedRef.current) {
+              isAlignedRef.current = false;
+              setIsAligned(false);
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Error starting compass services:", err);
       }
     };
 
     startServices();
 
-    // 5. Listen for App State changes (Detect when user returns from Settings)
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
         startServices();
@@ -153,31 +141,12 @@ const QiblahCompass = ({ navigation }) => {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" />
-        
-        <View style={{ height: 100 }} /> 
-
-        <View style={[styles.content, { justifyContent: 'center' }]}>
-          <View style={styles.permissionBox}>
-            <Icon name="location" size={64} color="#5CB390" />
-            <Text style={styles.permissionTitle}>Location Access</Text>
-            <Text style={styles.permissionText}>
-              Your location is needed to determine the direction of the Qiblah from your current position.
-            </Text>
-            
-            <TouchableOpacity 
-              style={styles.permissionButton} 
-              onPress={handleRequestPermission}
-            >
-              <Text style={styles.permissionButtonText}>Allow Access</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.backLink} 
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.backLinkText}>Go Back</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconLeft}>
+            <Icon name="chevron-back" size={28} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Qiblah Finder</Text>
+          <View style={styles.headerIconRight} />
         </View>
       </View>
     );
@@ -232,10 +201,13 @@ const QiblahCompass = ({ navigation }) => {
 
         <View style={styles.footer}>
           <View style={[styles.statusBadge, isAligned && styles.statusBadgeActive]}>
-             <Text style={[styles.statusText, isAligned && styles.statusTextActive]}>
-                {isAligned ? "YOU ARE FACING QIBLAH" : "ROTATE TO ALIGN"}
-             </Text>
+              <Text style={[styles.statusText, isAligned && styles.statusTextActive]}>
+                {isAligned ? "YOU ARE FACING THE QIBLAH" : "ROTATE TO ALIGN"}
+              </Text>
           </View>
+          <Text style={styles.footerInstruction}>
+            Point the top of your phone towards the <Text style={{color: '#5cb390', fontWeight: '700'}}>Makkah</Text> icon
+          </Text>
         </View>
       </View>
     </View>
@@ -244,8 +216,6 @@ const QiblahCompass = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F3F4F6' },
-  container2: { flex: 1, backgroundColor: '#5cb390' },
-  center: { justifyContent: 'center', alignItems: 'center' },
   header: {
     backgroundColor: '#5CB390',
     flexDirection: 'row',
@@ -321,25 +291,7 @@ const styles = StyleSheet.create({
   statusBadgeActive: { backgroundColor: '#D1FAE5' },
   statusText: { color: '#6B7280', fontWeight: '800', fontSize: 12, letterSpacing: 1 },
   statusTextActive: { color: '#5cb390' },
-  permissionBox: { width: '85%', alignItems: 'center', padding: 32, backgroundColor: '#FFF', borderRadius: 32, elevation: 10 },
-  permissionTitle: { fontSize: 24, fontWeight: '800', color: '#111827', marginTop: 16 },
-  permissionText: { textAlign: 'center', color: '#6B7280', marginTop: 8, lineHeight: 22 },
-  permissionButton: { backgroundColor: '#5cb390', paddingVertical: 16, paddingHorizontal: 40, borderRadius: 16, marginTop: 24, width: '100%', alignItems: 'center' },
-  permissionButtonText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
-  backLink: {
-    marginTop: 20,
-  },
-  backLinkText: {
-    color: "#9CA3AF",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingBottom: 40,
-  },
+  footerInstruction: { textAlign: 'center', fontSize: 14, color: '#6B7280', width: '70%', lineHeight: 20 },
 });
 
 export default QiblahCompass;
