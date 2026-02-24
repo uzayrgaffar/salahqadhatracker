@@ -113,7 +113,6 @@ const getMonthCalendar = async (db, roundedLat, roundedLng, month, year, madhab,
     year,
   };
 
-  // Moonsighting Committee requires shafaq
   if (method === 15) {
     params.shafaq = "general";
   }
@@ -131,6 +130,15 @@ const getMonthCalendar = async (db, roundedLat, roundedLng, month, year, madhab,
       Asr: dayData.timings.Asr,
       Maghrib: dayData.timings.Maghrib,
       Isha: dayData.timings.Isha,
+    },
+    hijri: {
+      day: dayData.date.hijri.day,
+      month: {
+        number: dayData.date.hijri.month.number,
+        en: dayData.date.hijri.month.en,
+        ar: dayData.date.hijri.month.ar,
+      },
+      year: dayData.date.hijri.year,
     },
   }));
 
