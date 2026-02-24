@@ -29,6 +29,7 @@ import PostNatal from './pages/PostNatal';
 import SignUp from './pages/SignUp';
 import Totals from './pages/Totals';
 import QadhaFasts from './pages/QadhaFasts';
+import QiblahCompass from './pages/QiblahCompass';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -167,6 +168,7 @@ const App = () => {
             <Stack.Screen name="PostNatal" component={PostNatal} options={{ headerShown: false }} />
             <Stack.Screen name="YearsMissed" component={YearsMissed} options={{ headerShown: false }} />
             <Stack.Screen name="Totals" component={Totals} options={{ headerShown: false }} />
+            <Stack.Screen name="QiblahCompass" component={QiblahCompass} options={{ headerShown: false }} />
           </Stack.Navigator>
 
         </NavigationContainer>

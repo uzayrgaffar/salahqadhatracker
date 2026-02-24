@@ -9,7 +9,7 @@ import firestore from "@react-native-firebase/firestore"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Location from "expo-location"
 import axios from "axios"
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import messaging from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
@@ -19,6 +19,7 @@ const DailyChart = () => {
   const { setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr, madhab, setMadhab } = useContext(AppContext)
   
   const insets = useSafeAreaInsets()
+  const navigation = useNavigation()
   const user = auth().currentUser
   const userId = user ? user.uid : null
 
@@ -764,12 +765,18 @@ const DailyChart = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate("QiblahCompass")}
+          style={{ position: 'absolute', left: 25, top: 65 }}
+        >
+          <Icon name="compass" size={26} color="#FFF" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Daily Chart</Text>
         <TouchableOpacity 
           onPress={() => setShowHelp(true)}
-          style={{ position: 'absolute', right: 20, top: 65 }}
+          style={{ position: 'absolute', right: 25, top: 65 }}
         >
-          <Icon name="help-circle" size={24} color="#FFF" />
+          <Icon name="help-circle" size={26} color="#FFF" />
         </TouchableOpacity>
       </View>
 
