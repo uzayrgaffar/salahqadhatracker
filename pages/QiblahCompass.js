@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Linking, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,18 +27,25 @@ const QiblahCompass = ({ navigation }) => {
   const [qiblaDir, setQiblaDir] = useState(0);
   const [accuracy, setAccuracy] = useState(3);
   const [isAligned, setIsAligned] = useState(false);
+  const [hasPermission, setHasPermission] = useState(null);
 
   const isAlignedRef = useRef(false);
   const qiblaDirRef = useRef(0);
   const rotation = useSharedValue(0);
+
+  const checkPermissions = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    setHasPermission(status === 'granted');
+    return status === 'granted';
+  };
 
   useEffect(() => {
     let headingSub;
     let locationSub;
 
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      const granted = await checkPermissions();
+      if (!granted) return;
 
       locationSub = await Location.watchPositionAsync(
         {
@@ -71,7 +78,6 @@ const QiblahCompass = ({ navigation }) => {
           mass: 0.5,
         });
 
-        // Alignment logic relative ONLY to Makkah
         const angleDiff = Math.abs(qiblaDirRef.current - heading);
         const normalizedDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
 
@@ -101,8 +107,31 @@ const QiblahCompass = ({ navigation }) => {
   }));
 
   const animatedKaabaStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${qiblaDir}deg` }], 
+    transform: [{ rotate: `${qiblaDir}deg` }], 
   }));
+
+  if (hasPermission === false) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <View style={styles.permissionBox}>
+            <Icon name="location-outline" size={64} color="#5CB390" />
+            <Text style={styles.permissionTitle}>Location Required</Text>
+            <Text style={styles.permissionText}>
+                We need your location to calculate the Qiblah direction from where you are.
+            </Text>
+            <TouchableOpacity 
+                style={styles.permissionButton} 
+                onPress={() => Platform.OS === 'ios' ? Linking.openURL('app-settings:') : Linking.openSettings()}
+            >
+                <Text style={styles.permissionButtonText}>Enable in Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20 }}>
+                <Text style={{ color: '#6B7280' }}>Go Back</Text>
+            </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container]}>
@@ -131,7 +160,6 @@ const QiblahCompass = ({ navigation }) => {
 
           <Animated.View style={[styles.rotatingWorld, animatedCompassStyle]}>
             <View style={styles.compassRing}>
-
               <Text style={[styles.cardinal, styles.north]}>N</Text>
               <Text style={[styles.cardinal, styles.east]}>E</Text>
               <Text style={[styles.cardinal, styles.south]}>S</Text>
@@ -315,6 +343,48 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 18,
     letterSpacing: 0.5,
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionBox: {
+    width: '80%',
+    alignItems: 'center',
+    padding: 30,
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  permissionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginTop: 20,
+  },
+  permissionText: {
+    textAlign: 'center',
+    color: '#6B7280',
+    marginTop: 10,
+    lineHeight: 20,
+  },
+  permissionButton: {
+    backgroundColor: '#5CB390',
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    marginTop: 25,
+    width: '100%',
+    alignItems: 'center',
+  },
+  permissionButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 
