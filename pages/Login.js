@@ -76,7 +76,7 @@ const Login = () => {
     setLoading(true);
     try {
       await auth().signInWithEmailAndPassword(email.trim(), password);
-      navigation.replace("MainPages", { screen: "Daily Chart" });
+      navigation.replace("MainPages", { screen: "Daily Salah" });
     } catch (error) {
       handleAuthError(error);
     } finally {

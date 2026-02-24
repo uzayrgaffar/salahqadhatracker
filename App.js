@@ -40,7 +40,7 @@ const MainPages = () => {
 
   const getLabel = (routeName) => {
     const tabLabels = {
-      'Daily Chart': { English: 'Daily Chart', Arabic: 'الرسم البياني اليومي', Urdu: 'یومیہ چارٹ', Hindi: 'दैनिक चार्ट' },
+      'Daily Salah': { English: 'Daily Salah', Arabic: 'الرسم البياني اليومي', Urdu: 'یومیہ چارٹ', Hindi: 'दैनिक चार्ट' },
       'FAQ': { English: 'FAQ', Arabic: 'المنتديات', Urdu: 'فورم', Hindi: 'مंचों' },
       'Profile': { English: 'Settings', Arabic: 'الإعدادات', Urdu: 'ترتیبات', Hindi: 'सेटिंग्स' },
       'Progress': { English: 'Progress', Arabic: 'التقدم', Urdu: 'ترقی', Hindi: 'برکت' },
@@ -67,10 +67,10 @@ const MainPages = () => {
       }}
     >
       <Tab.Screen 
-        name="Daily Chart" 
+        name="Daily Salah" 
         component={DailyChart} 
         options={{
-          tabBarLabel: getLabel('Daily Chart'),
+          tabBarLabel: getLabel('Daily Salah'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="stats-chart" size={size} color={color} />
           ),

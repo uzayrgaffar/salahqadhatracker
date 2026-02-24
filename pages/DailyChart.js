@@ -318,7 +318,7 @@ const DailyChart = () => {
         const calendarId = `${roundedLat}_${roundedLng}_${month}_${year}_${school}_${method}`;
         const calendarDoc = await firestore().collection("prayerCalendars").doc(calendarId).get();
 
-        if (calendarDoc.exists) {
+        if (calendarDoc.exists()) {
           const data = calendarDoc.data();
           const days = data?.days;
 
@@ -771,7 +771,7 @@ const DailyChart = () => {
         >
           <Icon name="compass" size={26} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Daily Chart</Text>
+        <Text style={styles.headerTitle}>Daily Salah</Text>
         <TouchableOpacity 
           onPress={() => setShowHelp(true)}
           style={{ position: 'absolute', right: 25, top: 65 }}
@@ -1048,7 +1048,7 @@ const DailyChart = () => {
           <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalTitle}>How to use Daily Chart</Text>
+                <Text style={styles.modalTitle}>How to use Daily Salah</Text>
                 <Text style={styles.modalSubtitle}>Manage your daily salah and qadha</Text>
               </View>
               <TouchableOpacity onPress={() => setShowHelp(false)}>
@@ -1064,7 +1064,7 @@ const DailyChart = () => {
                 <View style={styles.helpTextContainer}>
                   <Text style={styles.helpLabel}>Daily Tracking</Text>
                   <Text style={styles.helpDescription}>
-                    Tap a salah after you perform it. The app adds today's salah to your total qadha count automatically at the start of the day. Current salah is highlighted in green.
+                    Tap a salah after you perform it. The app adds qadha at the end of the day based on which salah you didn't pray. Current salah is highlighted in green.
                   </Text>
                 </View>
               </View>
