@@ -26,6 +26,9 @@ const DailyChart = () => {
   const [selectedDate, setSelectedDate] = useState(today)
   const [prayerStates, setPrayerStates] = useState({})
   const [ldailyPrayerCounts, lsetDailyPrayerCounts] = useState({})
+  const [totalQadhaCounts, setTotalQadhaCounts] = useState({
+    fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0,
+  })
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isQadhaModalVisible, setIsQadhaModalVisible] = useState(false)
   const [prayerTimes, setPrayerTimes] = useState(null)
@@ -174,12 +177,52 @@ const DailyChart = () => {
           setMaghrib(data.maghrib || 0)
           setIsha(data.isha || 0)
           setWitr(data.witr || 0)
+
+          setTotalQadhaCounts({
+            fajr: data.fajr || 0,
+            dhuhr: data.dhuhr || 0,
+            asr: data.asr || 0,
+            maghrib: data.maghrib || 0,
+            isha: data.isha || 0,
+            witr: data.witr || 0,
+          })
         }
       }
     }
   
     fetchPrayerCounts()
   }, [userId])
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const unsubscribe = firestore()
+      .collection("users")
+      .doc(userId)
+      .collection("totalQadha")
+      .doc("qadhaSummary")
+      .onSnapshot((doc) => {
+        if (doc.exists()) {
+          const data = doc.data() || {};
+          setTotalQadhaCounts({
+            fajr:    data.fajr    || 0,
+            dhuhr:   data.dhuhr   || 0,
+            asr:     data.asr     || 0,
+            maghrib: data.maghrib || 0,
+            isha:    data.isha    || 0,
+            witr:    data.witr    || 0,
+          });
+          setFajr(data.fajr || 0);
+          setDhuhr(data.dhuhr || 0);
+          setAsr(data.asr || 0);
+          setMaghrib(data.maghrib || 0);
+          setIsha(data.isha || 0);
+          setWitr(data.witr || 0);
+        }
+      }, (error) => console.error("totalQadha Listen Error:", error));
+
+    return () => unsubscribe();
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -223,61 +266,19 @@ const DailyChart = () => {
 
   const getMethodByCountry = (countryCode) => {
     switch (countryCode) {
-      // 🇸🇦 Saudi Arabia
-      case "SA":
-        return 4; // Umm Al-Qura
-
-      // 🇵🇰 Pakistan / 🇮🇳 India / 🇧🇩 Bangladesh / 🇦🇫 Afghanistan
-      case "PK":
-      case "IN":
-      case "BD":
-      case "AF":
-        return 1; // Karachi
-
-      // 🇺🇸 USA / 🇨🇦 Canada
-      case "US":
-      case "CA":
-        return 2; // ISNA
-
-      // 🇬🇧 UK / 🇮🇪 Ireland
-      case "GB":
-      case "IE":
-        return 15; // Moonsighting Committee
-
-      // 🇪🇬 Egypt
-      case "EG":
-        return 5;
-
-      // 🇹🇷 Turkey
-      case "TR":
-        return 13;
-
-      // 🇲🇾 Malaysia
-      case "MY":
-        return 17;
-
-      // 🇮🇩 Indonesia
-      case "ID":
-        return 20;
-
-      // 🇲🇦 Morocco
-      case "MA":
-        return 21;
-
-      // 🇯🇴 Jordan
-      case "JO":
-        return 23;
-
-      // 🇫🇷 France
-      case "FR":
-        return 12;
-
-      // 🇷🇺 Russia
-      case "RU":
-        return 14;
-
-      default:
-        return 3; // Muslim World League (safe global default)
+      case "SA": return 4;
+      case "PK": case "IN": case "BD": case "AF": return 1;
+      case "US": case "CA": return 2;
+      case "GB": case "IE": return 15;
+      case "EG": return 5;
+      case "TR": return 13;
+      case "MY": return 17;
+      case "ID": return 20;
+      case "MA": return 21;
+      case "JO": return 23;
+      case "FR": return 12;
+      case "RU": return 14;
+      default: return 3;
     }
   };
 
@@ -474,6 +475,7 @@ const DailyChart = () => {
     const currentCount = ldailyPrayerCounts[selectedDate]?.[prayer] || 0;
     const newCount = currentCount + amount;
     if (newCount < 0) return;
+    if (amount > 0 && totalQadhaCounts[prayer] <= 0) return;
 
     lsetDailyPrayerCounts(prev => ({
       ...prev,
@@ -596,7 +598,6 @@ const DailyChart = () => {
     const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
     
     if (status === "denied" && !canAskAgain) {
-      // Permission permanently denied - open settings
       Alert.alert(
         "Location Permission Required",
         "Please enable location access in Settings to see prayer times.",
@@ -615,7 +616,6 @@ const DailyChart = () => {
         ]
       );
     } else {
-      // Try requesting permission
       const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
       if (newStatus === "granted") {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -735,7 +735,6 @@ const DailyChart = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // force rerender every minute
       setSelectedDate(prev => prev);
     }, 60000);
 
@@ -954,40 +953,52 @@ const DailyChart = () => {
               </View>
               
               <Text style={styles.modalText}>
-                Enter the number of Qadha prayers you completed today
+                Enter the number of Qadha prayers you completed on {moment(selectedDate).format("MMMM D, YYYY")}.
               </Text>
         
               <View style={styles.qadhaView}>
                 <View style={styles.qadhaCountersContainer}>
-                  {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => (
-                    <View key={prayer} style={styles.qadhaCounterWrapper}>
-                      <View style={styles.qadhaLabelContainer}>
-                        <Icon name={getPrayerIcon(prayer)} size={20} color="#5CB390" style={styles.qadhaIcon} />
-                        <Text style={styles.qadhaCounterLabel}>
-                          {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
-                        </Text>
+                  {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => {
+                    const remainingQadha = totalQadhaCounts[prayer] ?? 0;
+                    const addDisabled = remainingQadha <= 0;
+                    return (
+                      <View key={prayer} style={styles.qadhaCounterWrapper}>
+                        <View style={styles.qadhaLabelContainer}>
+                          <Icon name={getPrayerIcon(prayer)} size={20} color="#5CB390" style={styles.qadhaIcon} />
+                          <View>
+                            <Text style={styles.qadhaCounterLabel}>
+                              {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
+                            </Text>
+                            <Text style={styles.qadhaRemainingText}>
+                              {remainingQadha > 0
+                                ? `${remainingQadha} remaining`
+                                : "All caught up!"}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.qadhaCounterControls}>
+                          <TouchableOpacity
+                            style={styles.counterButton}
+                            onPress={() => adjustCount(prayer, -1)}
+                            activeOpacity={0.7}
+                          >
+                            <Icon name="remove" size={20} color="#5CB390" />
+                          </TouchableOpacity>
+                          <Text style={styles.qadhaCounterValue}>
+                            {ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0}
+                          </Text>
+                          <TouchableOpacity
+                            style={[styles.counterButton, addDisabled && styles.counterButtonDisabled]}
+                            onPress={() => adjustCount(prayer, 1)}
+                            activeOpacity={addDisabled ? 1 : 0.7}
+                            disabled={addDisabled}
+                          >
+                            <Icon name="add" size={20} color={addDisabled ? "#D1D5DB" : "#5CB390"} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                      <View style={styles.qadhaCounterControls}>
-                        <TouchableOpacity
-                          style={styles.counterButton}
-                          onPress={() => adjustCount(prayer, -1)}
-                          activeOpacity={0.7}
-                        >
-                          <Icon name="remove" size={20} color="#5CB390" />
-                        </TouchableOpacity>
-                        <Text style={styles.qadhaCounterValue}>
-                          {ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.counterButton}
-                          onPress={() => adjustCount(prayer, 1)}
-                          activeOpacity={0.7}
-                        >
-                          <Icon name="add" size={20} color="#5CB390" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
             </View>
@@ -1014,7 +1025,6 @@ const DailyChart = () => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Section 1: Daily Tracking */}
               <View style={styles.helpItem}>
                 <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
                   <Icon name="checkbox" size={24} color="#5CB390" />
@@ -1027,7 +1037,6 @@ const DailyChart = () => {
                 </View>
               </View>
 
-              {/* Section 2: Calendar */}
               <View style={styles.helpItem}>
                 <View style={[styles.helpIconCircle, { backgroundColor: '#F3F4F6' }]}>
                   <Icon name="calendar" size={24} color="#6B7280" />
@@ -1040,7 +1049,6 @@ const DailyChart = () => {
                 </View>
               </View>
 
-              {/* Section 3: Extra Qadha */}
               <View style={styles.helpItem}>
                 <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
                   <Icon name="add-circle" size={24} color="#4F46E5" />
@@ -1425,6 +1433,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#374151",
     fontWeight: "600",
+  },
+  qadhaRemainingText: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 1,
   },
   qadhaCounterControls: {
     flexDirection: "row",
