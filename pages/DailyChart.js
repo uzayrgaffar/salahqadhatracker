@@ -39,10 +39,16 @@ const DailyChart = () => {
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
   const [madhabReady, setMadhabReady] = useState(false);
+  const [hijriData, setHijriData] = useState(null);
 
   useEffect(() => {
     handleDateSelect(today);
   }, []);
+
+  useEffect(() => {
+    setHijriData(null); // Clear old data
+    fetchPrayerTimes(selectedDate);
+  }, [selectedDate]);
 
   useEffect(() => {
     const configureAndroidChannel = async () => {
@@ -288,8 +294,9 @@ const DailyChart = () => {
     const monthKey = mDate.format("YYYY-MM");
     const cacheKey = `${madhab}-${monthKey}`;
 
-    if (monthCache[cacheKey]?.[dayKey]) {
-      setPrayerTimes(monthCache[cacheKey][dayKey]);
+    if (monthCache[cacheKey]?.[dayKey]?.hijri) {
+      setPrayerTimes(monthCache[cacheKey][dayKey].timings);
+      setHijriData(monthCache[cacheKey][dayKey].hijri);
       return;
     }
 
@@ -297,12 +304,8 @@ const DailyChart = () => {
     try {
       const userSnap = await firestore().collection("users").doc(userId).get();
       const userData = userSnap.data();
-      
-      const method = userData?.method || 3; 
-      const coords = { 
-        lat: userData?.latitude, 
-        lng: userData?.longitude 
-      };
+      const method = userData?.method || 3;
+      const coords = { lat: userData?.latitude, lng: userData?.longitude };
 
       if (coords.lat && coords.lng) {
         const roundedLat = coords.lat.toFixed(1);
@@ -314,44 +317,51 @@ const DailyChart = () => {
         const calendarId = `${roundedLat}_${roundedLng}_${month}_${year}_${school}_${method}`;
         const calendarDoc = await firestore().collection("prayerCalendars").doc(calendarId).get();
 
-        if (calendarDoc.exists()) {
+        if (calendarDoc.exists) {
           const data = calendarDoc.data();
           const days = data?.days;
 
-          if (!days || !Array.isArray(days)) {
-            console.error("Malformed calendar doc — no days array:", calendarId);
-          } else {
+          const hasHijriData = days?.[0]?.hijri !== undefined;
+
+          if (days && Array.isArray(days) && hasHijriData) {
             const monthData = {};
             days.forEach((dayData, index) => {
               const dString = moment(`${year}-${month}-${index + 1}`, "YYYY-M-D").format("DD-MM-YYYY");
-              monthData[dString] = dayData.timings;
+              monthData[dString] = { timings: dayData.timings, hijri: dayData.hijri };
             });
+
             setMonthCache(prev => ({ ...prev, [cacheKey]: monthData }));
-            setPrayerTimes(monthData[dayKey]);
-            return;
+            setPrayerTimes(monthData[dayKey].timings);
+            setHijriData(monthData[dayKey].hijri);
+            return; 
           }
         }
-        
+
         const params = { 
           latitude: coords.lat, 
           longitude: coords.lng, 
           school: school, 
           method: method 
         };
-
-        if (method === 15) {
-          params.shafaq = "general";
-        }
+        if (method === 15) params.shafaq = "general";
 
         const res = await axios.get(`https://api.aladhan.com/v1/calendar/${year}/${month}`, { params });
-        
+
         const monthData = {};
-        res.data.data.forEach(day => { 
-          monthData[day.date.gregorian.date] = day.timings; 
+        res.data.data.forEach(day => {
+          monthData[day.date.gregorian.date] = {
+            timings: day.timings,
+            hijri: {
+              day: day.date.hijri.day,
+              month: { en: day.date.hijri.month.en },
+              year: day.date.hijri.year
+            }
+          };
         });
-        
+
         setMonthCache(prev => ({ ...prev, [cacheKey]: monthData }));
-        setPrayerTimes(monthData[dayKey]);
+        setPrayerTimes(monthData[dayKey].timings);
+        setHijriData(monthData[dayKey].hijri);
       }
     } catch (e) {
       console.error("Fetch Error:", e);
@@ -401,8 +411,18 @@ const DailyChart = () => {
   
   const handleDateSelect = (date) => {
     if (moment(date).isSameOrBefore(today)) {
+
+      const dayKey = moment(date).format("DD-MM-YYYY");
+      const monthKey = moment(date).format("YYYY-MM");
+      const cacheKey = `${madhab}-${monthKey}`;
+      
       setSelectedDate(date)
       setIsModalVisible(false)
+
+      if (monthCache[cacheKey]?.[dayKey]) {
+        setHijriData(monthCache[cacheKey][dayKey].hijri);
+      }
+      
       if (!prayerStates[date]) {
         setPrayerStates((prevStates) => ({
           ...prevStates,
@@ -759,7 +779,12 @@ const DailyChart = () => {
             <Icon name="calendar-outline" size={24} color="#5CB390" />
             <View style={styles.dateTextContainer}>
               <Text style={styles.dateButtonLabel}>Selected Date</Text>
-              <Text style={styles.dateButtonText}>{moment(selectedDate).format("MMMM D, YYYY")}</Text>
+              <Text style={styles.dateButtonText}>{moment(selectedDate).format("D MMMM YYYY")}</Text>
+              {hijriData && (
+                <Text style={styles.hijriDateText}>
+                  {`${hijriData.day} ${hijriData.month.en} ${hijriData.year}`}
+                </Text>
+              )}
             </View>
           </View>
           <Icon name="chevron-forward" size={20} color="#9CA3AF" />
@@ -1221,12 +1246,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#9CA3AF",
     fontWeight: "500",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   dateButtonText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1F2937",
+  },
+  hijriDateText: {
+    fontSize: 13,
+    color: '#5CB390',
+    fontWeight: '500',
+    marginTop: 1,
   },
   locationAlert: {
     flexDirection: "row",
