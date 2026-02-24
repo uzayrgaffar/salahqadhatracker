@@ -111,7 +111,7 @@ const Profile = () => {
     if (locationEnabled) {
       Alert.alert(
         "Disable Location",
-        "To turn off location access, please go to your device Settings. You will lose access to salah times and notifications if you disable location.",
+        "To turn off location access, please go to your device Settings. You will lose access to salah times, notifications and qiblah direction if you disable location.",
         [
           { text: "Cancel", style: "cancel" },
           {
