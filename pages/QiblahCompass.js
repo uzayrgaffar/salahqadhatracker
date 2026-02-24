@@ -1,107 +1,197 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image, Dimensions } from 'react-native';
-import { Magnetometer } from 'expo-sensors';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import * as Location from 'expo-location';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
+const calculateQibla = (lat, lng) => {
+  const phiK = (21.4225 * Math.PI) / 180;
+  const lambdaK = (39.8262 * Math.PI) / 180;
+  const phi = (lat * Math.PI) / 180;
+  const lambda = (lng * Math.PI) / 180;
+  const psi = Math.atan2(
+    Math.sin(lambdaK - lambda),
+    Math.cos(phi) * Math.tan(phiK) - Math.sin(phi) * Math.cos(lambdaK - lambda)
+  );
+  let result = (psi * 180) / Math.PI;
+  return result < 0 ? result + 360 : result;
+};
+
 const QiblahCompass = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const [subscription, setSubscription] = useState(null);
-  const [magnetometer, setMagnetometer] = useState(0);
-  const [qibladir, setQibladir] = useState(0);
-  const [error, setError] = useState(null);
+  const [qiblaDir, setQiblaDir] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
+  const [isAligned, setIsAligned] = useState(false);
+
+  const compassRotation = useSharedValue(0);
+  const kaabaRotation = useSharedValue(0);
+
+  const isAlignedRef = useRef(false);
+  const qiblaDirRef = useRef(0);
+  const lastHapticTime = useRef(0);
+  const rawHeadingRef = useRef(0);
 
   useEffect(() => {
+    let subscription;
+
     (async () => {
-      // 1. Request Permissions
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Location permission is required for Qiblah direction.');
-        return;
-      }
+      if (status !== 'granted') return;
 
-      // 2. Get User Location & Calculate Qiblah
       let location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-      const calculatedDir = calculateQibla(latitude, longitude);
-      setQibladir(calculatedDir);
+      const qDir = calculateQibla(
+        location.coords.latitude,
+        location.coords.longitude
+      );
+      setQiblaDir(qDir);
+      qiblaDirRef.current = qDir;
 
-      // 3. Start Magnetometer
-      _subscribe();
+      subscription = await Location.watchHeadingAsync((data) => {
+        const rawAngle =
+          data.trueHeading !== -1 ? data.trueHeading : data.magHeading;
+
+        rawHeadingRef.current = rawAngle;
+
+        let diff = rawAngle - (compassRotation.value % 360);
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+
+        compassRotation.value = withSpring(compassRotation.value + diff, {
+          damping: 20,
+          stiffness: 90,
+          mass: 1,
+        });
+
+        const kaabaAngle = qiblaDirRef.current - rawAngle;
+        let kaabaDiff = kaabaAngle - (kaabaRotation.value % 360);
+        if (kaabaDiff > 180) kaabaDiff -= 360;
+        if (kaabaDiff < -180) kaabaDiff += 360;
+
+        kaabaRotation.value = withSpring(kaabaRotation.value + kaabaDiff, {
+          damping: 20,
+          stiffness: 90,
+          mass: 1,
+        });
+
+        setAccuracy(data.accuracy);
+
+        const currentHeading = rawHeadingRef.current;
+        const angleDiff = Math.abs(qiblaDirRef.current - currentHeading);
+        const normalizedDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
+
+        if (normalizedDiff < 4) {
+          if (!isAlignedRef.current) {
+            isAlignedRef.current = true;
+            setIsAligned(true);
+            const now = Date.now();
+            if (now - lastHapticTime.current > 2500) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              lastHapticTime.current = now;
+            }
+          }
+        } else {
+          if (isAlignedRef.current) {
+            isAlignedRef.current = false;
+            setIsAligned(false);
+          }
+        }
+      });
     })();
 
-    return () => _unsubscribe();
+    return () => subscription?.remove();
   }, []);
 
-  const _subscribe = () => {
-    setSubscription(
-      Magnetometer.addListener((data) => {
-        let angle = Math.atan2(data.y, data.x) * (180 / Math.PI);
-        if (angle < 0) angle += 360;
-        setMagnetometer(angle);
-      })
-    );
-  };
+  const animatedCompassStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${-compassRotation.value}deg` }],
+  }));
 
-  const _unsubscribe = () => {
-    subscription && subscription.remove();
-    setSubscription(null);
-  };
-
-  const calculateQibla = (lat, lng) => {
-    const phiK = (21.4225 * Math.PI) / 180;
-    const lambdaK = (39.8262 * Math.PI) / 180;
-    const phi = (lat * Math.PI) / 180;
-    const lambda = (lng * Math.PI) / 180;
-    const psi = Math.atan2(
-      Math.sin(lambdaK - lambda),
-      Math.cos(phi) * Math.tan(phiK) - Math.sin(phi) * Math.cos(lambdaK - lambda)
-    );
-    return (psi * 180) / Math.PI;
-  };
-
-  // The rotation of the compass needle
-  // We subtract magnetometer (current heading) from the target qibla direction
-  const rotation = qibladir - magnetometer;
+  const animatedKaabaStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${kaabaRotation.value}deg` }],
+  }));
 
   return (
-    <View style={styles.container}>
-      {/* Dynamic Header matching your Daily Chart */}
-      <View style={[styles.header, { paddingTop: insets.top + 10, height: 70 + insets.top }]}>
+    <View style={[styles.container]}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconLeft}>
           <Icon name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Qiblah Finder</Text>
-        <View style={styles.headerIconRight} /> 
+        <View style={styles.headerIconRight} />
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.instruction}>Hold your phone flat for best accuracy</Text>
-        
-        <View style={styles.compassContainer}>
-          {/* Main Compass Ring */}
-          <View style={[styles.compassRing, { transform: [{ rotate: `${360 - magnetometer}deg` }] }]}>
-             <Text style={[styles.cardinal, styles.north]}>N</Text>
-             <Text style={[styles.cardinal, styles.east]}>E</Text>
-             <Text style={[styles.cardinal, styles.south]}>S</Text>
-             <Text style={[styles.cardinal, styles.west]}>W</Text>
+        {accuracy < 3 && accuracy !== 0 && (
+          <View style={styles.warningBox}>
+            <Icon name="warning-outline" size={16} color="#B45309" />
+            <Text style={styles.warningText}>
+              Calibrate: Move phone in a ∞ pattern
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.compassWrapper}>
+          <View style={styles.fixedArrowContainer}>
+            <Icon name="caret-up" size={36} color={isAligned ? '#10B981' : '#6B7280'} />
           </View>
 
-          {/* Qiblah Needle */}
-          <View style={[styles.needleContainer, { transform: [{ rotate: `${rotation}deg` }] }]}>
-            <Icon name="navigate" size={width * 0.4} color="#5CB390" />
-            <Icon name="location" size={30} color="#E11D48" style={styles.kaabaIcon} />
-          </View>
+          <Animated.View style={[styles.rotatingWorld, animatedCompassStyle]}>
+            <View style={[styles.compassRing, isAligned && styles.alignedRing]}>
+
+              <Text style={[styles.cardinal, styles.north]}>N</Text>
+              <Text style={[styles.cardinal, styles.east]}>E</Text>
+              <Text style={[styles.cardinal, styles.south]}>S</Text>
+              <Text style={[styles.cardinal, styles.west]}>W</Text>
+
+              {[...Array(72)].map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.tick,
+                    {
+                      transform: [{ rotate: `${i * 5}deg` }],
+                      height: i % 6 === 0 ? 12 : 6,
+                      opacity: i % 6 === 0 ? 0.7 : 0.3,
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          </Animated.View>
+
+          <Animated.View
+            style={[styles.kaabaPositioner, animatedKaabaStyle]}
+            pointerEvents="none"
+          >
+            <View style={styles.kaabaIndicator}>
+              <Icon name="location" size={28} color="#E11D48" />
+              <Text style={styles.kaabaLabel}>MAKKAH</Text>
+            </View>
+          </Animated.View>
         </View>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.qiblaText}>
-            Qiblah is <Text style={styles.bold}>{Math.round(qibladir)}°</Text> from North
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Rotate your device until the{' '}
+            <Text style={styles.bold}>Green Arrow</Text> meets{' '}
+            <Text style={styles.boldRed}>Makkah</Text>
           </Text>
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {isAligned && (
+            <Text style={styles.successText}>✓ Facing Qiblah</Text>
+          )}
         </View>
       </View>
     </View>
@@ -109,60 +199,141 @@ const QiblahCompass = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
   header: {
     backgroundColor: '#5CB390',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingBottom: 14,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', textAlign: 'center', flex: 1 },
-  headerIconLeft: { width: 40, alignItems: 'flex-start' },
-  headerIconRight: { width: 40 },
-  content: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  instruction: { fontSize: 14, color: '#6B7280', marginBottom: 40 },
-  compassContainer: {
-    width: width * 0.8,
-    height: width * 0.8,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
+    textAlign: 'center',
+    flex: 1,
+  },
+  headerIconLeft: {
+    width: 40,
+  },
+  headerIconRight: {
+    width: 40,
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 30,
+    position: 'absolute',
+    top: 30,
+    alignItems: 'center',
+    zIndex: 50,
+  },
+  warningText: {
+    color: '#B45309',
+    marginLeft: 8,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  compassWrapper: {
+    width: width * 0.88,
+    height: width * 0.88,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fixedArrowContainer: {
+    position: 'absolute',
+    top: -35,
+    zIndex: 10,
+  },
+  rotatingWorld: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
   compassRing: {
+    width: '100%',
+    height: '100%',
+    borderRadius: width,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+  },
+  alignedRing: {
+    borderColor: '#10B981',
+    borderWidth: 2.5,
+  },
+  cardinal: {
+    position: 'absolute',
+    fontWeight: '900',
+    fontSize: 20,
+    color: '#1F2937',
+  },
+  north: { top: 20, color: '#E11D48' },
+  east: { right: 20 },
+  south: { bottom: 20 },
+  west: { left: 20 },
+  tick: {
+    position: 'absolute',
+    top: 0,
+    width: 1.5,
+    backgroundColor: '#1F2937',
+  },
+  kaabaPositioner: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    borderRadius: width * 0.4,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
-  cardinal: { position: 'absolute', fontWeight: 'bold', color: '#9CA3AF' },
-  north: { top: 10, color: '#E11D48' },
-  east: { right: 10 },
-  south: { bottom: 10 },
-  west: { left: 10 },
-  needleContainer: {
+  kaabaIndicator: {
+    marginTop: -4,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  kaabaIcon: { position: 'absolute', top: -10 },
-  infoCard: {
-    marginTop: 60,
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 15,
-    width: '100%',
+  kaabaLabel: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#E11D48',
+    marginTop: -2,
+  },
+  footer: {
+    marginTop: 80,
+    paddingHorizontal: 50,
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
   },
-  qiblaText: { fontSize: 16, color: '#374151' },
-  bold: { fontWeight: 'bold', color: '#5CB390' },
-  errorText: { color: '#E11D48', marginTop: 10, fontSize: 12 }
+  footerText: {
+    textAlign: 'center',
+    fontSize: 15,
+    color: '#4B5563',
+    lineHeight: 22,
+  },
+  bold: {
+    color: '#5CB390',
+    fontWeight: '700',
+  },
+  boldRed: {
+    color: '#E11D48',
+    fontWeight: '700',
+  },
+  successText: {
+    color: '#10B981',
+    fontWeight: 'bold',
+    marginTop: 12,
+    fontSize: 18,
+    letterSpacing: 0.5,
+  },
 });
 
 export default QiblahCompass;
