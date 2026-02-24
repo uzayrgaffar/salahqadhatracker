@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform, Alert } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, ScrollView, TextInput, KeyboardAvoidingView, Platform, Alert, TouchableWithoutFeedback } from "react-native"
 import Icon from "react-native-vector-icons/Ionicons"
 import auth from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore'
@@ -211,43 +211,48 @@ const QadhaFasts = () => {
 
       {/* --- HELP MODAL --- */}
       <Modal visible={showHelp} transparent={true} animationType="fade">
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>Qadha Fasts Guide</Text>
-                <Text style={styles.modalSubtitle}>Tracking your missed fasts</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowHelp(false)}>
-                <Icon name="close-circle" size={28} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.helpItem}>
-                <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
-                  <Icon name="calendar-outline" size={24} color="#4F46E5" />
+        <TouchableWithoutFeedback onPress={() => setShowHelp(false)}>
+            <View style={styles.modalContainer}>
+              <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+                  <View style={styles.modalHeader}>
+                    <View>
+                      <Text style={styles.modalTitle}>Qadha Fasts Guide</Text>
+                      <Text style={styles.modalSubtitle}>Tracking your missed fasts</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => setShowHelp(false)}>
+                      <Icon name="close-circle" size={28} color="#6B7280" />
+                    </TouchableOpacity>
+                  </View>
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={styles.helpItem}>
+                      <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
+                        <Icon name="calendar-outline" size={24} color="#4F46E5" />
+                      </View>
+                      <View style={styles.helpTextContainer}>
+                        <Text style={styles.helpLabel}>Manual Adjustments</Text>
+                        <Text style={styles.helpDescription}>Tap the large number on the main screen to manually type in a new total at any time.</Text>
+                      </View>
+                    </View>
+                    <View style={styles.helpItem}>
+                      <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
+                        <Icon name="checkmark-done" size={24} color="#5CB390" />
+                      </View>
+                      <View style={styles.helpTextContainer}>
+                        <Text style={styles.helpLabel}>Completing Fasts</Text>
+                        <Text style={styles.helpDescription}>Use the minus (-) button when you complete a fast to lower your debt.</Text>
+                      </View>
+                    </View>
+                  </ScrollView>
+                  <TouchableOpacity style={styles.gotItButton} onPress={() => setShowHelp(false)}>
+                    <Text style={styles.gotItButtonText}>Got it!</Text>
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.helpTextContainer}>
-                  <Text style={styles.helpLabel}>Manual Adjustments</Text>
-                  <Text style={styles.helpDescription}>Tap the large number on the main screen to manually type in a new total at any time.</Text>
-                </View>
-              </View>
-              <View style={styles.helpItem}>
-                <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
-                  <Icon name="checkmark-done" size={24} color="#5CB390" />
-                </View>
-                <View style={styles.helpTextContainer}>
-                  <Text style={styles.helpLabel}>Completing Fasts</Text>
-                  <Text style={styles.helpDescription}>Use the minus (-) button when you complete a fast to lower your debt.</Text>
-                </View>
-              </View>
-            </ScrollView>
-            <TouchableOpacity style={styles.gotItButton} onPress={() => setShowHelp(false)}>
-              <Text style={styles.gotItButtonText}>Got it!</Text>
-            </TouchableOpacity>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
+
     </View>
   )
 }

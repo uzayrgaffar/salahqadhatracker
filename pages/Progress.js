@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react"
-import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity, Modal } from "react-native"
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity, Modal, TouchableWithoutFeedback } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
 import auth from '@react-native-firebase/auth'
@@ -372,65 +372,69 @@ const Progress = () => {
         animationType="fade"
         onRequestClose={() => setShowHelp(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>Understanding Progress</Text>
-                <Text style={styles.modalSubtitle}>How your stats are calculated</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowHelp(false)}>
-                <Icon name="close-circle" size={28} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
+        <TouchableWithoutFeedback onPress={() => setShowHelp(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+                <View style={styles.modalHeader}>
+                  <View>
+                    <Text style={styles.modalTitle}>Understanding Progress</Text>
+                    <Text style={styles.modalSubtitle}>How your stats are calculated</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setShowHelp(false)}>
+                    <Icon name="close-circle" size={28} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.helpItem}>
-                <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
-                  <Icon name="stats-chart" size={24} color="#5CB390" />
-                </View>
-                <View style={styles.helpTextContainer}>
-                  <Text style={styles.helpLabel}>Progress Chart</Text>
-                  <Text style={styles.helpDescription}>
-                    This shows how many Qadha prayers you completed on each day. (From the Pray Qadha button on Daily Salah page)
-                  </Text>
-                </View>
-              </View>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
+                      <Icon name="stats-chart" size={24} color="#5CB390" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Progress Chart</Text>
+                      <Text style={styles.helpDescription}>
+                        This shows how many Qadha prayers you completed on each day. (From the Pray Qadha button on Daily Salah page)
+                      </Text>
+                    </View>
+                  </View>
 
-              <View style={styles.helpItem}>
-                <View style={[styles.helpIconCircle, { backgroundColor: '#FFFBEB' }]}>
-                  <Icon name="time" size={24} color="#D97706" />
-                </View>
-                <View style={styles.helpTextContainer}>
-                  <Text style={styles.helpLabel}>Completion Estimate</Text>
-                  <Text style={styles.helpDescription}>
-                    Based on your average performance over the selected range (7d, 14d, etc.), this tells you roughly how long it will take to clear all your qadha.
-                  </Text>
-                </View>
-              </View>
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#FFFBEB' }]}>
+                      <Icon name="time" size={24} color="#D97706" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Completion Estimate</Text>
+                      <Text style={styles.helpDescription}>
+                        Based on your average performance over the selected range (7d, 14d, etc.), this tells you roughly how long it will take to clear all your qadha.
+                      </Text>
+                    </View>
+                  </View>
 
-              <View style={styles.helpItem}>
-                <View style={[styles.helpIconCircle, { backgroundColor: '#F3F4F6' }]}>
-                  <Icon name="list" size={24} color="#6B7280" />
-                </View>
-                <View style={styles.helpTextContainer}>
-                  <Text style={styles.helpLabel}>Remaining Qadha</Text>
-                  <Text style={styles.helpDescription}>
-                    A real-time breakdown of what qadha you have left. If you find these numbers are incorrect, use the Adjust button to fix them.
-                  </Text>
-                </View>
-              </View>
-            </ScrollView>
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#F3F4F6' }]}>
+                      <Icon name="list" size={24} color="#6B7280" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Remaining Qadha</Text>
+                      <Text style={styles.helpDescription}>
+                        A real-time breakdown of what qadha you have left. If you find these numbers are incorrect, use the Adjust button to fix them.
+                      </Text>
+                    </View>
+                  </View>
+                </ScrollView>
 
-            <TouchableOpacity 
-              style={styles.gotItButton} 
-              onPress={() => setShowHelp(false)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.gotItButtonText}>Got it!</Text>
-            </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.gotItButton} 
+                  onPress={() => setShowHelp(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.gotItButtonText}>Got it!</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   )

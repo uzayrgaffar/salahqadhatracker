@@ -89,9 +89,9 @@ const QiblahCompass = ({ navigation }) => {
             if (diff < -180) diff += 360;
 
             rotation.value = withSpring(rotation.value + diff, { 
-              damping: 12, 
-              stiffness: 150, 
-              mass: 0.5 
+              damping: 50, 
+              stiffness: 300, 
+              mass: 1
             });
 
             // Check alignment (3 degree threshold)
@@ -233,12 +233,9 @@ const QiblahCompass = ({ navigation }) => {
         <View style={styles.footer}>
           <View style={[styles.statusBadge, isAligned && styles.statusBadgeActive]}>
              <Text style={[styles.statusText, isAligned && styles.statusTextActive]}>
-                {isAligned ? "ALIGNED WITH QIBLAH" : "ROTATE TO ALIGN"}
+                {isAligned ? "YOU ARE FACING QIBLAH" : "ROTATE TO ALIGN"}
              </Text>
           </View>
-          <Text style={styles.footerInstruction}>
-            Point the top of your phone towards the <Text style={{color: '#5cb390', fontWeight: '700'}}>Makkah</Text> icon
-          </Text>
         </View>
       </View>
     </View>
@@ -324,7 +321,6 @@ const styles = StyleSheet.create({
   statusBadgeActive: { backgroundColor: '#D1FAE5' },
   statusText: { color: '#6B7280', fontWeight: '800', fontSize: 12, letterSpacing: 1 },
   statusTextActive: { color: '#5cb390' },
-  footerInstruction: { textAlign: 'center', fontSize: 14, color: '#6B7280', width: '70%', lineHeight: 20 },
   permissionBox: { width: '85%', alignItems: 'center', padding: 32, backgroundColor: '#FFF', borderRadius: 32, elevation: 10 },
   permissionTitle: { fontSize: 24, fontWeight: '800', color: '#111827', marginTop: 16 },
   permissionText: { textAlign: 'center', color: '#6B7280', marginTop: 8, lineHeight: 22 },

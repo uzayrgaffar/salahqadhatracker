@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect, useCallback, useRef } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Platform, Keyboard, Alert, Linking } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Platform, Keyboard, Alert, Linking, TouchableWithoutFeedback } from "react-native"
 import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
 import moment from "moment"
@@ -897,72 +897,76 @@ const DailyChart = () => {
         animationType="slide"
         onRequestClose={() => setIsModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
-              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                <Icon name="close-circle" size={28} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
+        <TouchableWithoutFeedback onPress={() => setIsModalVisible(false)}>
+          <View style={styles.modalContainer}>
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Date</Text>
+                  <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+                    <Icon name="close-circle" size={28} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
 
-            <Calendar
-              current={selectedDate}
-              onDayPress={(day) => {
-                handleDateSelect(day.dateString)
-                setIsModalVisible(false)
-              }}
-              markingType={"custom"}
-              markedDates={getMarkedDates()}
-              maxDate={today}
-              theme={{
-                backgroundColor: "#ffffff",
-                calendarBackground: "#ffffff",
-                textSectionTitleColor: "#9CA3AF",
-                selectedDayBackgroundColor: "#5CB390",
-                selectedDayTextColor: "#ffffff",
-                todayTextColor: "#5CB390",
-                dayTextColor: "#1F2937",
-                textDisabledColor: "#D1D5DB",
-                dotColor: "#5CB390",
-                selectedDotColor: "#ffffff",
-                arrowColor: "#5CB390",
-                monthTextColor: "#1F2937",
-                indicatorColor: "#5CB390",
-                textDayFontFamily: "System",
-                textMonthFontFamily: "System",
-                textDayHeaderFontFamily: "System",
-                textDayFontWeight: "400",
-                textMonthFontWeight: "700",
-                textDayHeaderFontWeight: "600",
-                textDayFontSize: 15,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 14,
-              }}
-            />
+                <Calendar
+                  current={selectedDate}
+                  onDayPress={(day) => {
+                    handleDateSelect(day.dateString)
+                    setIsModalVisible(false)
+                  }}
+                  markingType={"custom"}
+                  markedDates={getMarkedDates()}
+                  maxDate={today}
+                  theme={{
+                    backgroundColor: "#ffffff",
+                    calendarBackground: "#ffffff",
+                    textSectionTitleColor: "#9CA3AF",
+                    selectedDayBackgroundColor: "#5CB390",
+                    selectedDayTextColor: "#ffffff",
+                    todayTextColor: "#5CB390",
+                    dayTextColor: "#1F2937",
+                    textDisabledColor: "#D1D5DB",
+                    dotColor: "#5CB390",
+                    selectedDotColor: "#ffffff",
+                    arrowColor: "#5CB390",
+                    monthTextColor: "#1F2937",
+                    indicatorColor: "#5CB390",
+                    textDayFontFamily: "System",
+                    textMonthFontFamily: "System",
+                    textDayHeaderFontFamily: "System",
+                    textDayFontWeight: "400",
+                    textMonthFontWeight: "700",
+                    textDayHeaderFontWeight: "600",
+                    textDayFontSize: 15,
+                    textMonthFontSize: 18,
+                    textDayHeaderFontSize: 14,
+                  }}
+                />
 
-            <View style={styles.colorKeyContainer}>
-              <Text style={styles.colorKeyTitle}>Prayer Completion</Text>
-              <View style={styles.colorKeyRow}>
-                {[
-                  { color: "#E5E7EB", label: "0", textColor: "#6B7280" },
-                  { color: "#9CA3AF", label: "1" },
-                  { color: "#6B7280", label: "2" },
-                  { color: "#4B8B6F", label: "3" },
-                  { color: "#34A853", label: "4" },
-                  { color: "#1F9D55", label: "5" },
-                  ...(madhab === "Hanafi" ? [{ color: "#0F7C3A", label: "6" }] : []),
-                ].map((item) => (
-                  <View key={item.color} style={styles.colorKeyItem}>
-                    <View style={[styles.colorBox, { backgroundColor: item.color }]}>
-                      <Text style={[styles.colorBoxText, { color: item.textColor || "#FFFFFF" }]}>{item.label}</Text>
-                    </View>
+                <View style={styles.colorKeyContainer}>
+                  <Text style={styles.colorKeyTitle}>Prayer Completion</Text>
+                  <View style={styles.colorKeyRow}>
+                    {[
+                      { color: "#E5E7EB", label: "0", textColor: "#6B7280" },
+                      { color: "#9CA3AF", label: "1" },
+                      { color: "#6B7280", label: "2" },
+                      { color: "#4B8B6F", label: "3" },
+                      { color: "#34A853", label: "4" },
+                      { color: "#1F9D55", label: "5" },
+                      ...(madhab === "Hanafi" ? [{ color: "#0F7C3A", label: "6" }] : []),
+                    ].map((item) => (
+                      <View key={item.color} style={styles.colorKeyItem}>
+                        <View style={[styles.colorBox, { backgroundColor: item.color }]}>
+                          <Text style={[styles.colorBoxText, { color: item.textColor || "#FFFFFF" }]}>{item.label}</Text>
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                ))}
+                </View>
               </View>
-            </View>
+              </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <Modal
@@ -971,71 +975,73 @@ const DailyChart = () => {
         animationType="slide"
         onRequestClose={() => setIsQadhaModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={{ flex: 1, justifyContent: "flex-end" }}>
-            <View style={[styles.modalContent, { paddingBottom: insets.bottom + 10 }]}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Qadha Salah</Text>
-                <TouchableOpacity onPress={() => {
-                  Keyboard.dismiss()
-                  setIsQadhaModalVisible(false)
-                }}>
-                  <Icon name="close-circle" size={28} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-              
-              <Text style={styles.modalText}>
-                Enter the number of Qadha prayers you completed on {moment(selectedDate).format("MMMM D, YYYY")}.
-              </Text>
-        
-              <View style={styles.qadhaView}>
-                <View style={styles.qadhaCountersContainer}>
-                  {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => {
-                    const remainingQadha = totalQadhaCounts[prayer] ?? 0;
-                    const addDisabled = remainingQadha <= 0;
-                    return (
-                      <View key={prayer} style={styles.qadhaCounterWrapper}>
-                        <View style={styles.qadhaLabelContainer}>
-                          <Icon name={getPrayerIcon(prayer)} size={20} color="#5CB390" style={styles.qadhaIcon} />
-                          <View>
-                            <Text style={styles.qadhaCounterLabel}>
-                              {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
-                            </Text>
-                            <Text style={styles.qadhaRemainingText}>
-                              {remainingQadha > 0
-                                ? `${remainingQadha} remaining`
-                                : "All caught up!"}
-                            </Text>
+      <TouchableWithoutFeedback onPress={() => setIsQadhaModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <View style={[styles.modalContent, { paddingBottom: insets.bottom + 10 }]}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Qadha Salah</Text>
+                    <TouchableOpacity onPress={() => {
+                      Keyboard.dismiss()
+                      setIsQadhaModalVisible(false)
+                    }}>
+                      <Icon name="close-circle" size={28} color="#6B7280" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <Text style={styles.modalText}>
+                    Enter the number of Qadha prayers you completed on {moment(selectedDate).format("MMMM D, YYYY")}.
+                  </Text>
+            
+                  <View style={styles.qadhaView}>
+                    <View style={styles.qadhaCountersContainer}>
+                      {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => {
+                        const remainingQadha = totalQadhaCounts[prayer] ?? 0;
+                        const addDisabled = remainingQadha <= 0;
+                        return (
+                          <View key={prayer} style={styles.qadhaCounterWrapper}>
+                            <View style={styles.qadhaLabelContainer}>
+                              <Icon name={getPrayerIcon(prayer)} size={20} color="#5CB390" style={styles.qadhaIcon} />
+                              <View>
+                                <Text style={styles.qadhaCounterLabel}>
+                                  {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
+                                </Text>
+                                <Text style={styles.qadhaRemainingText}>
+                                  {remainingQadha > 0
+                                    ? `${remainingQadha} remaining`
+                                    : "All caught up!"}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.qadhaCounterControls}>
+                              <TouchableOpacity
+                                style={styles.counterButton}
+                                onPress={() => adjustCount(prayer, -1)}
+                                activeOpacity={0.7}
+                              >
+                                <Icon name="remove" size={20} color="#5CB390" />
+                              </TouchableOpacity>
+                              <Text style={styles.qadhaCounterValue}>
+                                {ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0}
+                              </Text>
+                              <TouchableOpacity
+                                style={[styles.counterButton, addDisabled && styles.counterButtonDisabled]}
+                                onPress={() => adjustCount(prayer, 1)}
+                                activeOpacity={addDisabled ? 1 : 0.7}
+                                disabled={addDisabled}
+                              >
+                                <Icon name="add" size={20} color={addDisabled ? "#D1D5DB" : "#5CB390"} />
+                              </TouchableOpacity>
+                            </View>
                           </View>
-                        </View>
-                        <View style={styles.qadhaCounterControls}>
-                          <TouchableOpacity
-                            style={styles.counterButton}
-                            onPress={() => adjustCount(prayer, -1)}
-                            activeOpacity={0.7}
-                          >
-                            <Icon name="remove" size={20} color="#5CB390" />
-                          </TouchableOpacity>
-                          <Text style={styles.qadhaCounterValue}>
-                            {ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0}
-                          </Text>
-                          <TouchableOpacity
-                            style={[styles.counterButton, addDisabled && styles.counterButtonDisabled]}
-                            onPress={() => adjustCount(prayer, 1)}
-                            activeOpacity={addDisabled ? 1 : 0.7}
-                            disabled={addDisabled}
-                          >
-                            <Icon name="add" size={20} color={addDisabled ? "#D1D5DB" : "#5CB390"} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
+                        );
+                      })}
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <Modal
@@ -1044,65 +1050,69 @@ const DailyChart = () => {
         animationType="fade"
         onRequestClose={() => setShowHelp(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>How to use Daily Salah</Text>
-                <Text style={styles.modalSubtitle}>Manage your daily salah and qadha</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowHelp(false)}>
-                <Icon name="close-circle" size={28} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
+        <TouchableWithoutFeedback onPress={() => setShowHelp(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+                <View style={styles.modalHeader}>
+                  <View>
+                    <Text style={styles.modalTitle}>How to use Daily Salah</Text>
+                    <Text style={styles.modalSubtitle}>Manage your daily salah and qadha</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setShowHelp(false)}>
+                    <Icon name="close-circle" size={28} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.helpItem}>
-                <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
-                  <Icon name="checkbox" size={24} color="#5CB390" />
-                </View>
-                <View style={styles.helpTextContainer}>
-                  <Text style={styles.helpLabel}>Daily Tracking</Text>
-                  <Text style={styles.helpDescription}>
-                    Tap a salah after you perform it. The app adds qadha at the end of the day based on which salah you didn't pray. Current salah is highlighted in green.
-                  </Text>
-                </View>
-              </View>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#E8FFF6' }]}>
+                      <Icon name="checkbox" size={24} color="#5CB390" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Daily Tracking</Text>
+                      <Text style={styles.helpDescription}>
+                        Tap a salah after you perform it. The app checks at the end of the day which salah you didn't pray and adds qadha accordingly. Current salah is highlighted in green.
+                      </Text>
+                    </View>
+                  </View>
 
-              <View style={styles.helpItem}>
-                <View style={[styles.helpIconCircle, { backgroundColor: '#F3F4F6' }]}>
-                  <Icon name="calendar" size={24} color="#6B7280" />
-                </View>
-                <View style={styles.helpTextContainer}>
-                  <Text style={styles.helpLabel}>Calendar & History</Text>
-                  <Text style={styles.helpDescription}>
-                    Tap the date to look back. Darker green dates mean more prayers were completed. You can log missed prayers for any past date!
-                  </Text>
-                </View>
-              </View>
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#F3F4F6' }]}>
+                      <Icon name="calendar" size={24} color="#6B7280" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Calendar & History</Text>
+                      <Text style={styles.helpDescription}>
+                        Tap the date to look back. Darker green dates mean more prayers were completed. You can log missed prayers for any past date!
+                      </Text>
+                    </View>
+                  </View>
 
-              <View style={styles.helpItem}>
-                <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
-                  <Icon name="add-circle" size={24} color="#4F46E5" />
-                </View>
-                <View style={styles.helpTextContainer}>
-                  <Text style={styles.helpLabel}>Praying Extra Qadha</Text>
-                  <Text style={styles.helpDescription}>
-                    If you pray any qadha prayers today, use the "Pray Qadha" button to log them.
-                  </Text>
-                </View>
-              </View>
-            </ScrollView>
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
+                      <Icon name="add-circle" size={24} color="#4F46E5" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Praying Extra Qadha</Text>
+                      <Text style={styles.helpDescription}>
+                        If you pray any qadha prayers today, use the "Pray Qadha" button to log them.
+                      </Text>
+                    </View>
+                  </View>
+                </ScrollView>
 
-            <TouchableOpacity 
-              style={[styles.prayQadhaButton, { marginTop: 20 }]} 
-              onPress={() => setShowHelp(false)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.prayQadhaButtonText}>Got it, thanks!</Text>
-            </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.prayQadhaButton, { marginTop: 20 }]} 
+                  onPress={() => setShowHelp(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.prayQadhaButtonText}>Got it!</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {selectedDate !== today && (
