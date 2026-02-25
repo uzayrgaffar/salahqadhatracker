@@ -297,24 +297,26 @@ const Progress = () => {
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>Summary (Last {selectedRange} days)</Text>
 
-            <View style={styles.summaryItem}>
+            <View style={[styles.summaryItem, styles.itemBorder]}>
               <Text style={styles.summaryLabel}>Total Qadha Prayed</Text>
               <Text style={styles.summaryValue}>{totalQadhaPrayed}</Text>
             </View>
 
-            <View style={styles.summaryItem}>
+            <View style={[styles.summaryItem, totalQadhaPrayed > 0 && styles.itemBorder]}>
               <Text style={styles.summaryLabel}>Average Qadha per Day</Text>
               <Text style={styles.summaryValue}>{averageQadhaPerDay}</Text>
             </View>
-
-            <View style={[styles.summaryItem, { borderBottomWidth: 0 }]}>
-              <Text style={styles.summaryLabel}>Estimated Completion</Text>
-              <Text style={styles.summaryValue}>
-                {totalRemainingPrayers === 0
-                  ? "All caught up!"
-                  : `${daysToFinish} days ${yearsToFinish}`}
-              </Text>
-            </View>
+            
+            {totalQadhaPrayed > 0 && (
+              <View style={[styles.summaryItem, { borderBottomWidth: 0 }]}>
+                <Text style={styles.summaryLabel}>Estimated Completion</Text>
+                <Text style={styles.summaryValue}>
+                  {totalRemainingPrayers === 0
+                    ? "All caught up!"
+                    : `${daysToFinish} days ${yearsToFinish}`}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.breakdownCard}>
@@ -559,6 +561,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 12,
+  },
+  itemBorder: {
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
