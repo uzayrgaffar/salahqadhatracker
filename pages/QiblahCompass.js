@@ -38,7 +38,6 @@ const decor = StyleSheet.create({
 });
 
 const QiblahCompass = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const [accuracy, setAccuracy] = useState(3);
   const [isAligned, setIsAligned] = useState(false);
   const [hasPermission, setHasPermission] = useState(null);
@@ -178,13 +177,12 @@ const QiblahCompass = ({ navigation }) => {
   }));
 
   const Header = () => (
-    <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.header]}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconLeft}>
         <Icon name="chevron-back" size={26} color='#FFFFFF' />
       </TouchableOpacity>
       <View style={styles.headerCenter}>
         <Text style={styles.headerTitle}>Qiblah Compass</Text>
-        <Text style={styles.headerArabic}>القبلة</Text>
       </View>
       <View style={styles.headerIconRight} />
     </View>
@@ -214,16 +212,6 @@ const QiblahCompass = ({ navigation }) => {
       </View>
     );
   }
-
-  const renderReadout = () => {
-    if (degreesToQibla === null || isAligned) return null;
-    const dir = degreesToQibla > 0 ? 'Turn Right  →' : '←  Turn Left';
-    return (
-      <View style={styles.readoutBox}>
-        <Text style={styles.readoutText}>{dir}</Text>
-      </View>
-    );
-  };
 
   return (
     <View style={styles.container}>
@@ -268,12 +256,12 @@ const QiblahCompass = ({ navigation }) => {
           <View style={[styles.statusBadge, isAligned && styles.statusBadgeActive]}>
             {isAligned && <Text style={styles.statusIcon}>✦  </Text>}
             <Text style={[styles.statusText, isAligned && styles.statusTextActive]}>
-              {isAligned ? 'FACING QIBLAH' : {dir}}
+              <Text style={[styles.statusText, isAligned && styles.statusTextActive]}>
+                {isAligned ? 'FACING QIBLAH' : degreesToQibla === null ? 'ROTATE TO ALIGN' : degreesToQibla > 0 ? 'TURN RIGHT →' : '← TURN LEFT'}
+              </Text>
             </Text>
             {isAligned && <Text style={styles.statusIcon}>  ✦</Text>}
           </View>
-
-          {renderReadout()}
 
           <Text style={styles.footerInstruction}>
             Align the top of your phone with the{' '}
@@ -287,7 +275,7 @@ const QiblahCompass = ({ navigation }) => {
   );
 };
 
-const COMPASS_SIZE = width * 0.84;
+const COMPASS_SIZE = width * 0.85;
 
 const styles = StyleSheet.create({
   container: {
@@ -298,29 +286,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingTop: 60,
+    paddingBottom: 20,
     backgroundColor: '#5cb390',
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
   },
-  headerArabic: {
-    fontSize: 18,
-    color: '#FFFFFF',
-    fontWeight: '400',
-  },
   headerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    letterSpacing: 2,
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textAlign: "center",
   },
   headerIconLeft:  { 
-    width: 36 
+    width: 64,
+    paddingVertical: 5,
   },
   headerIconRight: { 
-    width: 36 
+    width: 64 
   },
   loadingText: {
     fontSize: 14,
