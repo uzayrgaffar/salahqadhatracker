@@ -1,22 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions, StatusBar, AppState, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, AppState, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Svg, { Rect, Polygon, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolateColor } from 'react-native-reanimated';
+import KaabaSvg from '../assets/kaaba.svg';
 
 const { width } = Dimensions.get('window');
-
-const C = {
-  bg: '#F0F7F4',
-  surface: '#FFFFFF',
-  border: '#B8DDD0',
-  gold: '#C9A84C',
-  goldDim: '#7A6230',
-  green: '#5cb390',
-};
 
 const calculateQibla = (lat, lng) => {
   const phiK = (21.4225 * Math.PI) / 180;
@@ -31,129 +22,8 @@ const calculateQibla = (lat, lng) => {
   return result < 0 ? result + 360 : result;
 };
 
-// ── Kaaba SVG ──────────────────────────────────────────────────────────────
-// A clean flat illustration: black cube body, gold kiswa band, gold door
-const KaabaIcon = ({ size = 48 }) => {
-  const s = size;
-  const bodyW = s * 0.72;
-  const bodyH = s * 0.60;
-  const bodyX = (s - bodyW) / 2;
-  const bodyY = s * 0.22;
 
-  // Side face (right trapezoid gives 3D feel)
-  const sideW = s * 0.14;
-  const sidePoints = [
-    `${bodyX + bodyW},${bodyY}`,
-    `${bodyX + bodyW + sideW},${bodyY + s * 0.07}`,
-    `${bodyX + bodyW + sideW},${bodyY + bodyH + s * 0.07}`,
-    `${bodyX + bodyW},${bodyY + bodyH}`,
-  ].join(' ');
-
-  // Top face
-  const topPoints = [
-    `${bodyX},${bodyY}`,
-    `${bodyX + bodyW},${bodyY}`,
-    `${bodyX + bodyW + sideW},${bodyY - s * 0.07 + s * 0.07}`,
-    `${bodyX + sideW},${bodyY - s * 0.07}`,
-  ].join(' ');
-
-  // Kiswa band (gold stripe across body)
-  const bandY = bodyY + bodyH * 0.30;
-  const bandH = bodyH * 0.18;
-
-  // Door dimensions
-  const doorW = bodyW * 0.26;
-  const doorH = bodyH * 0.38;
-  const doorX = bodyX + (bodyW - doorW) / 2;
-  const doorY = bodyY + bodyH - doorH;
-  const doorRx = doorW * 0.22;
-
-  return (
-    <Svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-      <Defs>
-        <LinearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#1a1a1a" />
-          <Stop offset="1" stopColor="#050505" />
-        </LinearGradient>
-        <LinearGradient id="sideGrad" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#2a2a2a" />
-          <Stop offset="1" stopColor="#111111" />
-        </LinearGradient>
-        <LinearGradient id="topGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#333333" />
-          <Stop offset="1" stopColor="#1a1a1a" />
-        </LinearGradient>
-        <LinearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#E8C96A" />
-          <Stop offset="1" stopColor={C.gold} />
-        </LinearGradient>
-      </Defs>
-
-      {/* Top face */}
-      {/* <Polygon points={topPoints} fill="url(#topGrad)" /> */}
-
-      {/* Side face */}
-      <Polygon points={sidePoints} fill="url(#sideGrad)" />
-
-      {/* Main body */}
-      <Rect x={bodyX} y={bodyY} width={bodyW} height={bodyH} fill="url(#bodyGrad)" />
-
-      {/* Gold kiswa band */}
-      <Rect x={bodyX} y={bandY} width={bodyW} height={bandH} fill="url(#goldGrad)" opacity={0.95} />
-
-      {/* Band continues on side face (slightly darker) */}
-      <Polygon
-        points={[
-          `${bodyX + bodyW},${bandY}`,
-          `${bodyX + bodyW + sideW},${bandY + s * 0.07}`,
-          `${bodyX + bodyW + sideW},${bandY + bandH + s * 0.07}`,
-          `${bodyX + bodyW},${bandY + bandH}`,
-        ].join(' ')}
-        fill={C.gold}
-        opacity={0.7}
-      />
-
-      {/* Bottom face */}
-      <Polygon
-        points={[
-          `${bodyX},${bodyY + bodyH}`,
-          `${bodyX + bodyW},${bodyY + bodyH}`,
-          `${bodyX + bodyW + sideW},${bodyY + bodyH + s * 0.07}`,
-          `${bodyX + sideW},${bodyY + bodyH + s * 0.07}`,
-        ].join(' ')}
-        fill="#0a0a0a"
-      />
-
-      {/* Gold door */}
-      <Rect
-        x={doorX}
-        y={doorY}
-        width={doorW}
-        height={doorH}
-        rx={doorRx}
-        fill="url(#goldGrad)"
-      />
-      {/* Door inner recess */}
-      <Rect
-        x={doorX + doorW * 0.15}
-        y={doorY + doorH * 0.12}
-        width={doorW * 0.70}
-        height={doorH * 0.76}
-        rx={doorRx * 0.5}
-        fill="#1a1100"
-        opacity={0.5}
-      />
-
-      {/* Outline strokes for crispness */}
-      <Rect x={bodyX} y={bodyY} width={bodyW} height={bodyH} fill="none" stroke={C.goldDim} strokeWidth={0.8} />
-      <Polygon points={sidePoints} fill="none" stroke={C.goldDim} strokeWidth={0.6} />
-      {/* <Polygon points={topPoints} fill="none" stroke={C.goldDim} strokeWidth={0.6} /> */}
-    </Svg>
-  );
-};
-
-// ── Decorative star/crescent divider ──────────────────────────────────────
-const StarDivider = ({ color = C.green }) => (
+const StarDivider = ({ color = '#5cb390' }) => (
   <View style={decor.row}>
     <View style={[decor.line, { backgroundColor: color }]} />
     <Text style={[decor.star, { color: color }]}>✦</Text>
@@ -163,11 +33,10 @@ const StarDivider = ({ color = C.green }) => (
 
 const decor = StyleSheet.create({
   row:  { flexDirection: 'row', alignItems: 'center', width: '60%', marginVertical: 2 },
-  line: { flex: 1, height: 1, backgroundColor: C.green, opacity: 0.5 },
-  star: { color: C.green, fontSize: 10, marginHorizontal: 8 },
+  line: { flex: 1, height: 1, backgroundColor: '#5cb390', opacity: 0.5 },
+  star: { color: '#5cb390', fontSize: 10, marginHorizontal: 8 },
 });
 
-// ── Main component ─────────────────────────────────────────────────────────
 const QiblahCompass = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [accuracy, setAccuracy] = useState(3);
@@ -302,7 +171,7 @@ const QiblahCompass = ({ navigation }) => {
   }));
 
   const animatedRingStyle = useAnimatedStyle(() => ({
-    borderColor: interpolateColor(alignmentAnim.value, [0, 1], [C.border, C.green]),
+    borderColor: interpolateColor(alignmentAnim.value, [0, 1], ['#B8DDD0', '#5cb390']),
     borderWidth: withTiming(isAligned ? 3 : 1.5, { duration: 300 }),
     shadowOpacity: withTiming(isAligned ? 0.6 : 0.15, { duration: 300 }),
     transform: [{ scale: withSpring(isAligned ? 1.02 : 1) }],
@@ -311,7 +180,7 @@ const QiblahCompass = ({ navigation }) => {
   const Header = () => (
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconLeft}>
-        <Icon name="chevron-back" size={26} color={C.surface} />
+        <Icon name="chevron-back" size={26} color='#FFFFFF' />
       </TouchableOpacity>
       <View style={styles.headerCenter}>
         <Text style={styles.headerTitle}>Qiblah Compass</Text>
@@ -324,8 +193,11 @@ const QiblahCompass = ({ navigation }) => {
   if (hasPermission === false) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={C.bg} />
-        <Header />
+        <View style={styles.content}>
+          <KaabaSvg height={100} width={100} />
+          <StarDivider />
+          <Text style={styles.loadingText}>Location Denied</Text>
+        </View>
       </View>
     );
   }
@@ -333,10 +205,9 @@ const QiblahCompass = ({ navigation }) => {
   if (hasPermission === null || isLoading) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={C.bg} />
         <Header />
         <View style={styles.content}>
-          <KaabaIcon size={64} />
+          <KaabaSvg height={100} width={100} />
           <StarDivider />
           <Text style={styles.loadingText}>Locating your position…</Text>
         </View>
@@ -356,13 +227,12 @@ const QiblahCompass = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
       <Header />
 
       <View style={styles.content}>
         {accuracy < 3 && (
           <View style={styles.warningBox}>
-            <Icon name="sync" size={13} color={C.green} />
+            <Icon name="sync" size={13} color='#5cb390' />
             <Text style={styles.warningText}>Calibrating sensors…</Text>
           </View>
         )}
@@ -386,9 +256,7 @@ const QiblahCompass = ({ navigation }) => {
 
             <Animated.View style={[styles.kaabaPositioner, animatedKaabaStyle]} pointerEvents="none">
               <View style={styles.kaabaIndicator}>
-                <View style={styles.kaabaGlow} />
-                <KaabaIcon size={52} />
-                <Text style={styles.kaabaLabel}>مكة المكرمة</Text>
+                <KaabaSvg height={48} width={48} />
               </View>
             </Animated.View>
           </Animated.View>
@@ -400,7 +268,7 @@ const QiblahCompass = ({ navigation }) => {
           <View style={[styles.statusBadge, isAligned && styles.statusBadgeActive]}>
             {isAligned && <Text style={styles.statusIcon}>✦  </Text>}
             <Text style={[styles.statusText, isAligned && styles.statusTextActive]}>
-              {isAligned ? 'FACING THE QIBLAH' : 'ROTATE TO ALIGN'}
+              {isAligned ? 'FACING QIBLAH' : {dir}}
             </Text>
             {isAligned && <Text style={styles.statusIcon}>  ✦</Text>}
           </View>
@@ -424,14 +292,14 @@ const COMPASS_SIZE = width * 0.84;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: C.green,
+    backgroundColor: '#5cb390',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 8,
-    backgroundColor: C.green,
+    backgroundColor: '#5cb390',
   },
   headerCenter: {
     flex: 1,
@@ -439,13 +307,13 @@ const styles = StyleSheet.create({
   },
   headerArabic: {
     fontSize: 18,
-    color: C.surface,
+    color: '#FFFFFF',
     fontWeight: '400',
   },
   headerTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: C.surface,
+    color: '#FFFFFF',
     letterSpacing: 2,
   },
   headerIconLeft:  { 
@@ -454,15 +322,9 @@ const styles = StyleSheet.create({
   headerIconRight: { 
     width: 36 
   },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 14,
-  },
   loadingText: {
     fontSize: 14,
-    color: C.green,
+    color: '#5cb390',
     fontWeight: '500',
     letterSpacing: 1,
   },
@@ -473,11 +335,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: C.surface,
+    backgroundColor: '#FFFFFF',
   },
   warningBox: {
     flexDirection: 'row',
-    backgroundColor: C.surface,
+    backgroundColor: '#FFFFFF',
     paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: 20,
@@ -485,10 +347,10 @@ const styles = StyleSheet.create({
     top: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: C.green,
+    borderColor: '#5cb390',
   },
   warningText: {
-    color: C.green,
+    color: '#5cb390',
     marginLeft: 6,
     fontSize: 12,
     fontWeight: '600',
@@ -514,10 +376,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 22,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderBottomColor: C.green,
+    borderBottomColor: '#5cb390',
   },
   pointerArrowAligned: {
-    borderBottomColor: C.green,
+    borderBottomColor: '#5cb390',
   },
   rotatingWorld: {
     width: '100%',
@@ -529,10 +391,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: COMPASS_SIZE / 2,
-    backgroundColor: C.bg,
+    backgroundColor: '#F0F7F4',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: C.green,
+    shadowColor: '#5cb390',
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 20,
     elevation: 12,
@@ -543,8 +405,8 @@ const styles = StyleSheet.create({
     height: COMPASS_SIZE * 0.62,
     borderRadius: COMPASS_SIZE,
     borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.surface,
+    borderColor: '#B8DDD0',
+    backgroundColor: '#F0F7F4',
   },
   cardinal: {
     position: 'absolute',
@@ -552,10 +414,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     letterSpacing: 1,
   },
-  cN: { top: 22,    color: C.green },
-  cE: { right: 22,  color: C.green },
-  cS: { bottom: 22, color: C.green },
-  cW: { left: 22,   color: C.green },
+  cN: { top: 22,    color: '#5cb390' },
+  cE: { right: 22,  color: '#5cb390' },
+  cS: { bottom: 22, color: '#5cb390' },
+  cW: { left: 22,   color: '#5cb390' },
   kaabaPositioner: {
     position: 'absolute',
     width: '100%',
@@ -564,24 +426,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   kaabaIndicator: {
-    marginTop: -10,
+    marginTop: 9,
     alignItems: 'center',
-  },
-  kaabaGlow: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#C9A84C',
-    opacity: 0.08,
-    top: -4,
-  },
-  kaabaLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: C.gold,
-    marginTop: 3,
-    letterSpacing: 1,
   },
   footer: {
     marginTop: 40,
@@ -597,31 +443,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: '#B8DDD0',
   },
   statusBadgeActive: {
-    backgroundColor: C.green,
+    backgroundColor: '#5cb390',
     borderColor: '#3D8A6B',
   },
   statusIcon: {
-    color: C.surface,
+    color: '#FFFFFF',
     fontSize: 10,
   },
   statusText: {
-    color: C.green,
+    color: '#5cb390',
     fontWeight: '800',
     fontSize: 11,
     letterSpacing: 2,
   },
   statusTextActive: {
-    color: C.surface,
+    color: '#FFFFFF',
   },
   readoutBox: {
     alignItems: 'center',
   },
   readoutText: {
     fontSize: 14,
-    color: C.gold,
+    color: '#C9A84C',
     fontWeight: '700',
     letterSpacing: 1.5,
   },
@@ -634,7 +480,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   footerHighlight: {
-    color: C.gold,
+    color: '#C9A84C',
     fontWeight: '700',
   },
 });
