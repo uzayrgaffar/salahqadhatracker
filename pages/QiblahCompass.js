@@ -264,7 +264,7 @@ const QiblahCompass = ({ navigation }) => {
           </View>
 
           <Text style={styles.footerInstruction}>
-            Align the top of your phone with the{' '}
+            Align the arrow with the{' '}
             <Text style={styles.footerHighlight}>Kaaba</Text> icon
           </Text>
 
