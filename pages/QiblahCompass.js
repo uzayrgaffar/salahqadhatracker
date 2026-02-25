@@ -200,13 +200,12 @@ const QiblahCompass = ({ navigation }) => {
 
   const Header = () => (
     <View style={[styles.header]}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconLeft}>
-        <Icon name="chevron-back" size={26} color='#FFFFFF' />
+      <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', left: 25, top: 65 }}>
+        <Icon name="arrow-back-circle" size={26} color='#FFFFFF' />
       </TouchableOpacity>
       <View style={styles.headerCenter}>
         <Text style={styles.headerTitle}>Qiblah Compass</Text>
       </View>
-      <View style={styles.headerIconRight} />
     </View>
   );
 
@@ -333,6 +332,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     backgroundColor: '#5cb390',
+    zIndex: 1000,
+    elevation: 1000,
   },
   headerCenter: {
     flex: 1,
@@ -343,13 +344,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FFFFFF",
     textAlign: "center",
-  },
-  headerIconLeft:  { 
-    width: 64,
-    paddingVertical: 5,
-  },
-  headerIconRight: { 
-    width: 64 
   },
   loadingText: {
     fontSize: 14,
