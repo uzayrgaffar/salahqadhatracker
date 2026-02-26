@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppProvider, AppContext } from './AppContext';
@@ -31,7 +31,7 @@ import Totals from './pages/Totals';
 import QadhaFasts from './pages/QadhaFasts';
 import QiblahCompass from './pages/QiblahCompass';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const MainPages = () => {
