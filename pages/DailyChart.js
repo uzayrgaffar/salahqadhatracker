@@ -61,7 +61,7 @@ const DailyChart = () => {
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#5CB390',
-          sound: 'default', // You can change this to a custom file later
+          sound: 'default',
         });
       }
     };
@@ -928,25 +928,35 @@ const DailyChart = () => {
                   markedDates={getMarkedDates()}
                   maxDate={today}
                   hideExtraDays={true}
-                  renderHeader={(date) => (
-                    <TouchableOpacity
-                      onPress={() => setShowMonthPicker(true)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 6,
-                        paddingVertical: 4,
-                        paddingHorizontal: 12,
-                        backgroundColor: '#F3F4F6',
-                        borderRadius: 20,
-                      }}
-                    >
-                      <Text style={{ color: '#374151', fontWeight: '600', fontSize: 15 }}>
-                        {moment(calendarMonth).format('MMMM YYYY')}
-                      </Text>
-                      <Icon name="chevron-down" size={16} color="#9CA3AF" />
-                    </TouchableOpacity>
-                  )}
+                  renderHeader={(date) => {
+                    let display = moment(calendarMonth);
+                    if (date) {
+                      const parsed = moment(date.toString());
+                      if (parsed.isValid()) display = parsed;
+                    }
+                    return (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setIsModalVisible(false);
+                          setTimeout(() => setShowMonthPicker(true), 1);
+                        }}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          paddingVertical: 4,
+                          paddingHorizontal: 12,
+                          backgroundColor: '#F3F4F6',
+                          borderRadius: 20,
+                        }}
+                      >
+                        <Text style={{ color: '#374151', fontWeight: '600', fontSize: 15 }}>
+                          {display.format('MMMM YYYY')}
+                        </Text>
+                        <Icon name="chevron-down" size={16} color="#9CA3AF" />
+                      </TouchableOpacity>
+                    );
+                  }}
                   theme={{
                     backgroundColor: "#ffffff",
                     calendarBackground: "#ffffff",
@@ -1003,9 +1013,16 @@ const DailyChart = () => {
         visible={showMonthPicker}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowMonthPicker(false)}
+        presentationStyle="overFullScreen"
+        onRequestClose={() => {
+          setShowMonthPicker(false);
+          setTimeout(() => setIsModalVisible(true), 1);
+        }}
       >
-        <TouchableWithoutFeedback onPress={() => setShowMonthPicker(false)}>
+        <TouchableWithoutFeedback onPress={() => {
+          setShowMonthPicker(false);
+          setTimeout(() => setIsModalVisible(true), 1);
+        }}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
               <View style={{
@@ -1022,9 +1039,9 @@ const DailyChart = () => {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <TouchableOpacity
                     onPress={() => {
-                      const newYear = moment(calendarMonth).subtract(1, 'year');
-                      if (newYear.year() >= 1900) {
-                        setCalendarMonth(newYear.format('YYYY-MM-DD'));
+                      const newYear = moment(calendarMonth).subtract(1, 'year').startOf('month').format('YYYY-MM-DD');
+                      if (moment(newYear).year() >= 1900) {
+                        setCalendarMonth(newYear);
                       }
                     }}
                     style={{ padding: 8 }}
@@ -1036,9 +1053,9 @@ const DailyChart = () => {
                   </Text>
                   <TouchableOpacity
                     onPress={() => {
-                      const newYear = moment(calendarMonth).add(1, 'year');
-                      if (newYear.isSameOrBefore(today, 'year')) {
-                        setCalendarMonth(newYear.format('YYYY-MM-DD'));
+                      const newYear = moment(calendarMonth).add(1, 'year').startOf('month').format('YYYY-MM-DD');
+                      if (moment(newYear).isSameOrBefore(today, 'year')) {
+                        setCalendarMonth(newYear);
                       }
                     }}
                     disabled={moment(calendarMonth).year() >= moment(today).year()}
@@ -1059,8 +1076,10 @@ const DailyChart = () => {
                         key={month}
                         disabled={isFuture}
                         onPress={() => {
-                          setCalendarMonth(moment(calendarMonth).month(index).format('YYYY-MM-DD'));
+                          const newMonth = moment(calendarMonth).month(index).startOf('month').format('YYYY-MM-DD');
+                          setCalendarMonth(newMonth);
                           setShowMonthPicker(false);
+                          setTimeout(() => setIsModalVisible(true), 1);
                         }}
                         style={{
                           width: '22%',
