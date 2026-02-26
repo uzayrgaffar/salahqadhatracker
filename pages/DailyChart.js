@@ -1454,7 +1454,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#1F2937",
-    marginBottom: 12,
+    marginBottom: 0,
   },
   prayersContainer: {
     gap: 10,
@@ -1650,7 +1650,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   markAllText: {
     color: "#5CB390",
