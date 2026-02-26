@@ -214,19 +214,19 @@ const DailyChart = () => {
         if (doc.exists()) {
           const data = doc.data() || {};
           setTotalQadhaCounts({
-            fajr:    data.fajr    || 0,
-            dhuhr:   data.dhuhr   || 0,
-            asr:     data.asr     || 0,
-            maghrib: data.maghrib || 0,
-            isha:    data.isha    || 0,
-            witr:    data.witr    || 0,
+            fajr:    Math.max(0, data.fajr    || 0),
+            dhuhr:   Math.max(0, data.dhuhr   || 0),
+            asr:     Math.max(0, data.asr     || 0),
+            maghrib: Math.max(0, data.maghrib || 0),
+            isha:    Math.max(0, data.isha    || 0),
+            witr:    Math.max(0, data.witr    || 0),
           });
-          setFajr(data.fajr || 0);
-          setDhuhr(data.dhuhr || 0);
-          setAsr(data.asr || 0);
-          setMaghrib(data.maghrib || 0);
-          setIsha(data.isha || 0);
-          setWitr(data.witr || 0);
+          setFajr(Math.max(0, data.fajr || 0));
+          setDhuhr(Math.max(0, data.dhuhr || 0));
+          setAsr(Math.max(0, data.asr || 0));
+          setMaghrib(Math.max(0, data.maghrib || 0));
+          setIsha(Math.max(0, data.isha || 0));
+          setWitr(Math.max(0, data.witr || 0));
         }
       }, (error) => console.error("totalQadha Listen Error:", error));
 
@@ -486,6 +486,11 @@ const DailyChart = () => {
 
   const adjustTotalQadha = async (prayer, amount) => {
     const totalQadhaRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary")
+
+    if (amount < 0) {
+      const current = totalQadhaCounts[prayer] ?? 0;
+      if (current <= 0) return;
+    }
 
     await totalQadhaRef.set({
       [prayer]: firestore.FieldValue.increment(amount),
