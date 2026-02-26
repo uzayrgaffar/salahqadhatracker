@@ -49,7 +49,7 @@ const DailyChart = () => {
   }, []);
 
   useEffect(() => {
-    setHijriData(null); // Clear old data
+    setHijriData(null);
     fetchPrayerTimes(selectedDate);
   }, [selectedDate]);
 
@@ -787,7 +787,6 @@ const DailyChart = () => {
           <View style={styles.dateButtonContent}>
             <Icon name="calendar-outline" size={24} color="#5CB390" />
             <View style={styles.dateTextContainer}>
-              <Text style={styles.dateButtonLabel}>Selected Date</Text>
               <Text style={styles.dateButtonText}>{moment(selectedDate).format("D MMMM YYYY")}</Text>
               {hijriData && (
                 <Text style={styles.hijriDateText}>
@@ -901,52 +900,13 @@ const DailyChart = () => {
       >
         <TouchableWithoutFeedback onPress={() => setIsModalVisible(false)}>
           <View style={styles.modalContainer}>
-          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
               <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>Select Date</Text>
                   <TouchableOpacity onPress={() => setIsModalVisible(false)}>
                     <Icon name="close-circle" size={28} color="#6B7280" />
                   </TouchableOpacity>
-                </View>
-
-                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 12, gap: 12 }}>
-                  {[6, 12, 24].map((months) => (
-                    <TouchableOpacity
-                      key={months}
-                      onPress={() => {
-                        const newMonth = moment(calendarMonth).subtract(months, 'months').format('YYYY-MM-DD');
-                        if (moment(newMonth).isSameOrBefore(today, 'month')) {
-                          setCalendarMonth(newMonth);
-                        }
-                      }}
-                      style={{
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                        backgroundColor: '#E8FFF6',
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: '#5CB390',
-                      }}
-                    >
-                      <Text style={{ color: '#5CB390', fontWeight: '600', fontSize: 13 }}>-{months}mo</Text>
-                    </TouchableOpacity>
-                  ))}
-                  {moment(calendarMonth).format('YYYY-MM') !== moment(today).format('YYYY-MM') && (
-                    <TouchableOpacity
-                      onPress={() => setCalendarMonth(today)}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        backgroundColor: '#5CB390',
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>
-                        Reset
-                      </Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
 
                 <Calendar
@@ -963,6 +923,25 @@ const DailyChart = () => {
                   markedDates={getMarkedDates()}
                   maxDate={today}
                   hideExtraDays={true}
+                  renderHeader={(date) => (
+                    <TouchableOpacity
+                      onPress={() => setShowMonthPicker(true)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        paddingVertical: 4,
+                        paddingHorizontal: 12,
+                        backgroundColor: '#F3F4F6',
+                        borderRadius: 20,
+                      }}
+                    >
+                      <Text style={{ color: '#374151', fontWeight: '600', fontSize: 15 }}>
+                        {moment(calendarMonth).format('MMMM YYYY')}
+                      </Text>
+                      <Icon name="chevron-down" size={16} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  )}
                   theme={{
                     backgroundColor: "#ffffff",
                     calendarBackground: "#ffffff",
@@ -1010,7 +989,96 @@ const DailyChart = () => {
                   </View>
                 </View>
               </View>
-              </TouchableWithoutFeedback>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <Modal
+        visible={showMonthPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowMonthPicker(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowMonthPicker(false)}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={{
+                backgroundColor: '#fff',
+                borderRadius: 20,
+                padding: 24,
+                width: '85%',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 8,
+              }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const newYear = moment(calendarMonth).subtract(1, 'year');
+                      if (newYear.year() >= 1900) {
+                        setCalendarMonth(newYear.format('YYYY-MM-DD'));
+                      }
+                    }}
+                    style={{ padding: 8 }}
+                  >
+                    <Icon name="chevron-back" size={22} color="#5CB390" />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 20, fontWeight: '700', color: '#1F2937' }}>
+                    {moment(calendarMonth).year()}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const newYear = moment(calendarMonth).add(1, 'year');
+                      if (newYear.isSameOrBefore(today, 'year')) {
+                        setCalendarMonth(newYear.format('YYYY-MM-DD'));
+                      }
+                    }}
+                    disabled={moment(calendarMonth).year() >= moment(today).year()}
+                    style={{ padding: 8, opacity: moment(calendarMonth).year() >= moment(today).year() ? 0.3 : 1 }}
+                  >
+                    <Icon name="chevron-forward" size={22} color="#5CB390" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                  {moment.monthsShort().map((month, index) => {
+                    const isSelected = moment(calendarMonth).month() === index;
+                    const isFuture =
+                      moment(calendarMonth).year() === moment(today).year() &&
+                      index > moment(today).month();
+                    return (
+                      <TouchableOpacity
+                        key={month}
+                        disabled={isFuture}
+                        onPress={() => {
+                          setCalendarMonth(moment(calendarMonth).month(index).format('YYYY-MM-DD'));
+                          setShowMonthPicker(false);
+                        }}
+                        style={{
+                          width: '22%',
+                          paddingVertical: 10,
+                          alignItems: 'center',
+                          backgroundColor: isSelected ? '#5CB390' : '#F3F4F6',
+                          borderRadius: 10,
+                          opacity: isFuture ? 0.3 : 1,
+                        }}
+                      >
+                        <Text style={{
+                          color: isSelected ? '#fff' : '#374151',
+                          fontWeight: isSelected ? '700' : '500',
+                          fontSize: 14,
+                        }}>
+                          {month}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -1021,70 +1089,70 @@ const DailyChart = () => {
         animationType="slide"
         onRequestClose={() => setIsQadhaModalVisible(false)}
       >
-      <TouchableWithoutFeedback onPress={() => setIsQadhaModalVisible(false)}>
+        <TouchableWithoutFeedback onPress={() => setIsQadhaModalVisible(false)}>
           <View style={styles.modalContainer}>
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-                <View style={[styles.modalContent, { paddingBottom: insets.bottom + 10 }]}>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Qadha Salah</Text>
-                    <TouchableOpacity onPress={() => {
-                      Keyboard.dismiss()
-                      setIsQadhaModalVisible(false)
-                    }}>
-                      <Icon name="close-circle" size={28} color="#6B7280" />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <Text style={styles.modalText}>
-                    Enter the number of Qadha prayers you completed on {moment(selectedDate).format("MMMM D, YYYY")}.
-                  </Text>
-            
-                  <View style={styles.qadhaView}>
-                    <View style={styles.qadhaCountersContainer}>
-                      {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => {
-                        const remainingQadha = totalQadhaCounts[prayer] ?? 0;
-                        const addDisabled = remainingQadha <= 0;
-                        return (
-                          <View key={prayer} style={styles.qadhaCounterWrapper}>
-                            <View style={styles.qadhaLabelContainer}>
-                              <Icon name={getPrayerIcon(prayer)} size={20} color="#5CB390" style={styles.qadhaIcon} />
-                              <View>
-                                <Text style={styles.qadhaCounterLabel}>
-                                  {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
-                                </Text>
-                                <Text style={styles.qadhaRemainingText}>
-                                  {remainingQadha > 0
-                                    ? `${remainingQadha} remaining`
-                                    : "All caught up!"}
-                                </Text>
-                              </View>
-                            </View>
-                            <View style={styles.qadhaCounterControls}>
-                              <TouchableOpacity
-                                style={styles.counterButton}
-                                onPress={() => adjustCount(prayer, -1)}
-                                activeOpacity={0.7}
-                              >
-                                <Icon name="remove" size={20} color="#5CB390" />
-                              </TouchableOpacity>
-                              <Text style={styles.qadhaCounterValue}>
-                                {ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0}
+              <View style={[styles.modalContent, { paddingBottom: insets.bottom + 10 }]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Qadha Salah</Text>
+                  <TouchableOpacity onPress={() => {
+                    Keyboard.dismiss()
+                    setIsQadhaModalVisible(false)
+                  }}>
+                    <Icon name="close-circle" size={28} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={styles.modalText}>
+                  Enter the number of Qadha prayers you completed on {moment(selectedDate).format("MMMM D, YYYY")}.
+                </Text>
+          
+                <View style={styles.qadhaView}>
+                  <View style={styles.qadhaCountersContainer}>
+                    {["fajr", "dhuhr", "asr", "maghrib", "isha", ...(madhab === "Hanafi" ? ["witr"] : [])].map((prayer) => {
+                      const remainingQadha = totalQadhaCounts[prayer] ?? 0;
+                      const addDisabled = remainingQadha <= 0;
+                      return (
+                        <View key={prayer} style={styles.qadhaCounterWrapper}>
+                          <View style={styles.qadhaLabelContainer}>
+                            <Icon name={getPrayerIcon(prayer)} size={20} color="#5CB390" style={styles.qadhaIcon} />
+                            <View>
+                              <Text style={styles.qadhaCounterLabel}>
+                                {prayer.charAt(0).toUpperCase() + prayer.slice(1)}
                               </Text>
-                              <TouchableOpacity
-                                style={[styles.counterButton, addDisabled && styles.counterButtonDisabled]}
-                                onPress={() => adjustCount(prayer, 1)}
-                                activeOpacity={addDisabled ? 1 : 0.7}
-                                disabled={addDisabled}
-                              >
-                                <Icon name="add" size={20} color={addDisabled ? "#D1D5DB" : "#5CB390"} />
-                              </TouchableOpacity>
+                              <Text style={styles.qadhaRemainingText}>
+                                {remainingQadha > 0
+                                  ? `${remainingQadha} remaining`
+                                  : "All caught up!"}
+                              </Text>
                             </View>
                           </View>
-                        );
-                      })}
-                    </View>
+                          <View style={styles.qadhaCounterControls}>
+                            <TouchableOpacity
+                              style={styles.counterButton}
+                              onPress={() => adjustCount(prayer, -1)}
+                              activeOpacity={0.7}
+                            >
+                              <Icon name="remove" size={20} color="#5CB390" />
+                            </TouchableOpacity>
+                            <Text style={styles.qadhaCounterValue}>
+                              {ldailyPrayerCounts[selectedDate]?.[prayer] ?? 0}
+                            </Text>
+                            <TouchableOpacity
+                              style={[styles.counterButton, addDisabled && styles.counterButtonDisabled]}
+                              onPress={() => adjustCount(prayer, 1)}
+                              activeOpacity={addDisabled ? 1 : 0.7}
+                              disabled={addDisabled}
+                            >
+                              <Icon name="add" size={20} color={addDisabled ? "#D1D5DB" : "#5CB390"} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
+              </View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
@@ -1305,12 +1373,6 @@ const styles = StyleSheet.create({
   },
   dateTextContainer: {
     marginLeft: 12,
-  },
-  dateButtonLabel: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    fontWeight: "500",
-    marginBottom: 1,
   },
   dateButtonText: {
     fontSize: 16,
