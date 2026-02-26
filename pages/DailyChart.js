@@ -41,6 +41,8 @@ const DailyChart = () => {
   const [locationDenied, setLocationDenied] = useState(false);
   const [madhabReady, setMadhabReady] = useState(false);
   const [hijriData, setHijriData] = useState(null);
+  const [calendarMonth, setCalendarMonth] = useState(selectedDate);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   useEffect(() => {
     handleDateSelect(today);
@@ -908,15 +910,59 @@ const DailyChart = () => {
                   </TouchableOpacity>
                 </View>
 
+                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 12, gap: 12 }}>
+                  {[6, 12, 24].map((months) => (
+                    <TouchableOpacity
+                      key={months}
+                      onPress={() => {
+                        const newMonth = moment(calendarMonth).subtract(months, 'months').format('YYYY-MM-DD');
+                        if (moment(newMonth).isSameOrBefore(today, 'month')) {
+                          setCalendarMonth(newMonth);
+                        }
+                      }}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        backgroundColor: '#E8FFF6',
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: '#5CB390',
+                      }}
+                    >
+                      <Text style={{ color: '#5CB390', fontWeight: '600', fontSize: 13 }}>-{months}mo</Text>
+                    </TouchableOpacity>
+                  ))}
+                  {moment(calendarMonth).format('YYYY-MM') !== moment(today).format('YYYY-MM') && (
+                    <TouchableOpacity
+                      onPress={() => setCalendarMonth(today)}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        backgroundColor: '#5CB390',
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>
+                        Reset
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
                 <Calendar
-                  current={selectedDate}
+                  key={calendarMonth}
+                  current={calendarMonth}
                   onDayPress={(day) => {
                     handleDateSelect(day.dateString)
                     setIsModalVisible(false)
                   }}
+                  onMonthChange={(month) => {
+                    setCalendarMonth(month.dateString);
+                  }}
                   markingType={"custom"}
                   markedDates={getMarkedDates()}
                   maxDate={today}
+                  hideExtraDays={true}
                   theme={{
                     backgroundColor: "#ffffff",
                     calendarBackground: "#ffffff",
@@ -1120,6 +1166,7 @@ const DailyChart = () => {
           style={[styles.todayPill, { bottom: insets.bottom }]} 
           onPress={() => {
             setSelectedDate(today);
+            setCalendarMonth(today)
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           }}
           activeOpacity={0.9}
