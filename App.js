@@ -58,7 +58,7 @@ const MainPages = () => {
         tabBarStyle: {
           paddingBottom: insets.bottom || 10,
           paddingTop: 5,
-          height: 70 + insets.bottom,
+          height: 55 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: 12,
