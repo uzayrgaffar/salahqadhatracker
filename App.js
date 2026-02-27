@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
+import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs"
 
 // Pages 
 import SelectLanguage from './pages/SelectLanguage';
@@ -35,38 +36,20 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const MainPages = () => {
-  const { selectedLanguage } = useContext(AppContext);
-  const insets = useSafeAreaInsets();
-
-  const getLabel = (routeName) => {
-    const tabLabels = {
-      'Daily Salah': { English: 'Daily Salah', Arabic: 'الرسم البياني اليومي', Urdu: 'یومیہ چارٹ', Hindi: 'दैनिक चार्ट' },
-      'FAQ': { English: 'FAQ', Arabic: 'المنتديات', Urdu: 'فورم', Hindi: 'مंचों' },
-      'Profile': { English: 'Settings', Arabic: 'الإعدادات', Urdu: 'ترتیبات', Hindi: 'सेटिंग्स' },
-      'Progress': { English: 'Progress', Arabic: 'التقدم', Urdu: 'ترقی', Hindi: 'برکت' },
-      'Fasts': { English: 'Fasts', Arabic: 'الصيام', Urdu: 'روزے', Hindi: 'उपवास' },
-    };
-    return tabLabels[routeName]?.[selectedLanguage] || routeName;
-  };
 
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#2F7F6F',
-        tabBarInactiveTintColor: '#9CA3AF',
-        tabBarStyle: {
-          paddingBottom: insets.bottom || 10,
-          paddingTop: 5,
-          height: 55 + insets.bottom,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: 'bold',
-        },
-      }}
+    <NativeTabs
     >
-      <Tab.Screen 
+      <NativeTabs.Trigger name="Daily Salah">
+        <Label>Daily Salah</Label>
+        <Icon sf={"house.fill"} drawable="ic_menu_mylocation"/>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="Progress">
+        <Label>Progress</Label>
+        <Icon sf={"gearshape.arrow.trianglehead.2.clockwise.rotate.90"} drawable="ic_menu_manage"/>
+      </NativeTabs.Trigger>
+      {/* <Tab.Screen 
         name="Daily Salah" 
         component={DailyChart} 
         options={{
@@ -115,8 +98,8 @@ const MainPages = () => {
             <Ionicons name="person-circle" size={size} color={color} />
           ),
         }} 
-      />
-    </Tab.Navigator>
+      /> */}
+    </NativeTabs>
   );
 };
 
