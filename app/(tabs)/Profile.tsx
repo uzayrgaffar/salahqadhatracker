@@ -1,13 +1,13 @@
 import { useState, useEffect, useContext } from "react"
 import { View, TouchableOpacity, StyleSheet, Text, Alert, ScrollView, Modal, TextInput, Linking, Platform } from "react-native"
-import { useNavigation } from "@react-navigation/native"
 import auth from "@react-native-firebase/auth"
 import firestore from "@react-native-firebase/firestore"
 import messaging from "@react-native-firebase/messaging"
-import { AppContext } from "../AppContext"
+import { AppContext } from "../../AppContext"
 import Icon from "react-native-vector-icons/Ionicons"
 import * as Location from "expo-location"
 import * as Notifications from "expo-notifications"
+import { useRouter } from "expo-router"
 
 const getMethodByCountry = (countryCode) => {
   switch (countryCode) {
@@ -44,7 +44,7 @@ const METHODS = [
 ];
 
 const Profile = () => {
-  const navigation = useNavigation()
+  const router = useRouter()
   const { madhab, setMadhab } = useContext(AppContext)
   const [gender, setGender] = useState("")
   const [userDocRef, setUserDocRef] = useState(null)
@@ -76,7 +76,7 @@ const Profile = () => {
           }
         })
       } else {
-        navigation.replace("SelectLanguage")
+        router.replace("/SelectLanguage")
       }
     })
 
@@ -308,7 +308,7 @@ const Profile = () => {
                 console.error("Failed to delete dailyPrayers:", error);
               }
             }
-            navigation.navigate("Setup");
+            router.push("/Setup")
           },
         },
       ]
@@ -384,10 +384,7 @@ const Profile = () => {
         [{
           text: "OK",
           onPress: () => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "SelectLanguage" }],
-            });
+            router.replace("/SelectLanguage")
           }
         }]
       );
@@ -452,7 +449,7 @@ const Profile = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => navigation.navigate("QiblahCompass")}
+            onPress={() => router.push("/QiblahCompass")}
             style={{ position: 'absolute', left: 25, top: 65 }}
           >
             <Icon name="compass" size={26} color="#FFF" />

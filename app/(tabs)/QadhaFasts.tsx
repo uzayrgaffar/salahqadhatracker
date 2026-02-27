@@ -5,7 +5,7 @@ import auth from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore'
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Haptics from 'expo-haptics';
-import { useNavigation } from "@react-navigation/native"
+import { useRouter } from "expo-router"
 
 const QadhaFasts = () => {
   const [fastCount, setFastCount] = useState(0)
@@ -18,7 +18,7 @@ const QadhaFasts = () => {
 
   const userId = auth().currentUser?.uid
   const insets = useSafeAreaInsets()
-  const navigation = useNavigation()
+  const router = useRouter()
 
   useEffect(() => {
     if (!userId) return
@@ -100,7 +100,7 @@ const QadhaFasts = () => {
       >
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => navigation.navigate("QiblahCompass")}
+            onPress={() => router.push("/QiblahCompass")}
             style={{ position: 'absolute', left: 25, top: 65 }}
           >
             <Icon name="compass" size={26} color="#FFF" />

@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
 import Icon from "react-native-vector-icons/Ionicons";
+import { useRouter } from 'expo-router';
 
 const SignUp = () => {
-  const navigation = useNavigation();
+  const router = useRouter()
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -90,8 +90,7 @@ const SignUp = () => {
                 email: user.email,
                 createdAt: firestore.FieldValue.serverTimestamp()
               });
-                
-              navigation.replace("Setup");
+              router.replace("/Setup")
             } catch (error) {
               handleAuthError(error);
             } finally {
@@ -131,7 +130,7 @@ const SignUp = () => {
                         isAnonymous: true,
                         createdAt: firestore.FieldValue.serverTimestamp()
                       });
-                      navigation.replace("Setup");
+                      router.replace("/Setup")
                     } catch (error) {
                       Alert.alert("Error", "Failed to sign in anonymously.");
                     } finally {
@@ -229,7 +228,7 @@ const SignUp = () => {
 
         <TouchableOpacity 
           style={styles.switchButton} 
-          onPress={() => navigation.navigate('Login')}
+          onPress={() => router.push("/Login")}
         >
           <Text style={styles.switchButtonText}>Already have an account? <Text style={{fontWeight: '700'}}>Sign In</Text></Text>
         </TouchableOpacity>

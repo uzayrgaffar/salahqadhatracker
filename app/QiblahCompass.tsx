@@ -4,7 +4,8 @@ import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolateColor } from 'react-native-reanimated';
-import KaabaSvg from '../assets/kaaba2.svg';
+import KaabaSvg from './assets/kaaba2.svg';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -52,7 +53,8 @@ const decor = StyleSheet.create({
   star: { color: '#5cb390', fontSize: 10, marginHorizontal: 8 },
 });
 
-const QiblahCompass = ({ navigation }) => {
+const QiblahCompass = () => {
+  const router = useRouter();
   const [accuracy, setAccuracy] = useState(3);
   const [isAligned, setIsAligned] = useState(false);
   const [hasPermission, setHasPermission] = useState(null);
@@ -93,7 +95,7 @@ const QiblahCompass = ({ navigation }) => {
       Alert.alert(
         'Location Required',
         'Please enable location on the Profile page to use the Qiblah compass.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        [{ text: 'OK', onPress: () => router.back() }]
       );
       return;
     }
@@ -200,7 +202,7 @@ const QiblahCompass = ({ navigation }) => {
 
   const Header = () => (
     <View style={styles.header}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', left: 25, top: 65 }}>
+      <TouchableOpacity onPress={() => router.back()} style={{ position: 'absolute', left: 25, top: 65 }}>
         <Icon name="arrow-back-circle" size={26} color='#FFFFFF' />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Qiblah Compass</Text>

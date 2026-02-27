@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState, useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Keyboard, StatusBar } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import { AppContext } from "../AppContext";
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from "expo-router";
 
 const Totals = () => {
-  const navigation = useNavigation();
+  const router = useRouter()
   const { madhab } = useContext(AppContext);
   const [qadhaCounts, setQadhaCounts] = useState({
     Fajr: 0,
@@ -32,7 +32,7 @@ const Totals = () => {
         
         if (qadhaDoc.exists) {
           const data = qadhaDoc.data();
-          const newCounts = {
+          const newCounts: any = {
             Fajr: data.fajr || 0,
             Dhuhr: data.dhuhr || 0,
             Asr: data.asr || 0,
@@ -82,7 +82,7 @@ const Totals = () => {
 
   const confirmSelection = () => {
     Keyboard.dismiss();
-    navigation.replace("MainPages");
+    router.replace("/DailyChart")
   };
 
   if (isLoading) {

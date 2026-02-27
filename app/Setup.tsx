@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
-import { useNavigation } from "@react-navigation/native"
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+import { useRouter } from "expo-router";
 
 const Setup = () => {
-  const navigation = useNavigation()
+  const router = useRouter()
 
   return (
     <View style={styles.container}>
@@ -24,7 +24,7 @@ const Setup = () => {
         <View style={styles.buttonGroup}>
           <TouchableOpacity 
             style={styles.optionButton}
-            onPress={() => navigation.navigate("SetDOB")}
+            onPress={() => router.push("/SetDOB")}
           >
             <Text style={styles.optionText}>Yes, calculate for me</Text>
           </TouchableOpacity>
@@ -38,7 +38,7 @@ const Setup = () => {
                   setupComplete: true
                 }, { merge: true });
               }
-              navigation.replace("MadhabSelection");
+              router.replace("/MadhabSelection")
             }}
           >
             <Text style={[styles.optionText, styles.secondaryText]}>No, I'll enter them manually</Text>
