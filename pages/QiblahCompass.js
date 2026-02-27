@@ -199,13 +199,11 @@ const QiblahCompass = ({ navigation }) => {
   }));
 
   const Header = () => (
-    <View style={[styles.header]}>
+    <View style={styles.header}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', left: 25, top: 65 }}>
         <Icon name="arrow-back-circle" size={26} color='#FFFFFF' />
       </TouchableOpacity>
-      <View style={styles.headerCenter}>
-        <Text style={styles.headerTitle}>Qiblah Compass</Text>
-      </View>
+      <Text style={styles.headerTitle}>Qiblah Compass</Text>
     </View>
   );
 
@@ -326,18 +324,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#5cb390',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: '#5cb390',
-    zIndex: 1000,
-    elevation: 1000,
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 28,
@@ -353,12 +342,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   warningBox: {
     flexDirection: 'row',
@@ -384,6 +372,7 @@ const styles = StyleSheet.create({
     height: COMPASS_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: COMPASS_SIZE / 2,
   },
   pointerContainer: {
     position: 'absolute',
@@ -409,6 +398,7 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: COMPASS_SIZE / 2,
   },
   compassRing: {
     width: '100%',
