@@ -219,12 +219,12 @@ const SetDOB = () => {
             />
 
             <View style={styles.modalButtonsRow}>
-              <TouchableOpacity style={styles.modalConfirmButton} onPress={applyExactAge}>
-                <Text style={styles.modalConfirmButtonText}>Confirm</Text>
-              </TouchableOpacity>
-
               <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowAgePicker(false)}>
                 <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.modalConfirmButton} onPress={applyExactAge}>
+                <Text style={styles.modalConfirmButtonText}>Confirm</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -320,7 +320,8 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    width: "100%",
+    left: 0,
+    right: 0,
     alignItems: "center",
   },
   confirmButton: {

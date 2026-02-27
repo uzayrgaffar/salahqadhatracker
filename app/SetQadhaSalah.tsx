@@ -238,7 +238,7 @@ export const SetQadhaSalah = () => {
       </ScrollView>
 
       {isAnySelected && (
-        <View style={[styles.bottomContainer, { paddingBottom: insets.bottom || 20 }]}>
+        <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 20 }]}>
           <TouchableOpacity style={styles.confirmButton} onPress={confirmSelection}>
             <Text style={styles.confirmButtonText}>{getTranslation("confirm")}</Text>
           </TouchableOpacity>
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   bottomContainer: {
     backgroundColor: "#5CB390",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 20,
   },
   confirmButton: {
     backgroundColor: "#2F7F6F",

@@ -60,7 +60,7 @@ const Profile = () => {
   const [method, setMethod] = useState(null);
   const [methodDropdownOpen, setMethodDropdownOpen] = useState(false);
   const [countryCode, setCountryCode] = useState(null);
-  const bottomPadding = useBottomPadding(90, 60)
+  const bottomPadding = useBottomPadding(0, 20)
 
   useEffect(() => {
     const unsubscribeAuth = auth().onAuthStateChanged((user) => {
@@ -721,7 +721,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 60,
   },
   header: {
     paddingTop: 60,

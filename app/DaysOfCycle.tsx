@@ -100,13 +100,14 @@ const DaysOfCycle = () => {
             />
 
             <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowCyclePicker(false)}>
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
               <TouchableOpacity style={styles.modalConfirmButton} onPress={applyCycleDays}>
                 <Text style={styles.modalConfirmButtonText}>Confirm</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowCyclePicker(false)}>
-                <Text style={styles.modalCloseButtonText}>Cancel</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>

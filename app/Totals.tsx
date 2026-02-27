@@ -5,6 +5,7 @@ import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from "expo-router";
+import Icon from "react-native-vector-icons/Ionicons";
 
 const Totals = () => {
   const router = useRouter()
@@ -15,12 +16,11 @@ const Totals = () => {
     Asr: 0,
     Maghrib: 0,
     Isha: 0,
-    Witr: madhab === "Hanafi" ? 0 : null, 
+    Witr: madhab === "Hanafi" ? 0 : null,
   });
   const [isLoading, setIsLoading] = useState(true);
   const insets = useSafeAreaInsets();
 
-  // Memoized fetch function to prevent unnecessary re-renders
   const fetchQadhaCounts = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -29,7 +29,7 @@ const Totals = () => {
         const userId = user.uid;
         const qadhaDocRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
         const qadhaDoc = await qadhaDocRef.get();
-        
+
         if (qadhaDoc.exists) {
           const data = qadhaDoc.data();
           const newCounts: any = {
@@ -40,7 +40,6 @@ const Totals = () => {
             Isha: data.isha || 0,
             ...(madhab === "Hanafi" ? { Witr: data.witr || 0 } : {}),
           };
-          
           setQadhaCounts(newCounts);
         }
       }
@@ -56,22 +55,18 @@ const Totals = () => {
     fetchQadhaCounts();
   }, [fetchQadhaCounts]);
 
-  // Improved adjustQadha method with error handling
-  const adjustQadha = async (salah, newValue) => {
+  const adjustQadha = async (salah, amount) => {
     try {
-      const numValue = parseInt(newValue, 10) || 0;
-      const safeValue = Math.max(0, numValue);
-      
-      setQadhaCounts((prev) => ({ ...prev, [salah]: safeValue }));
+      const current = qadhaCounts[salah] ?? 0;
+      const newValue = Math.max(0, current + amount);
+
+      setQadhaCounts((prev) => ({ ...prev, [salah]: newValue }));
 
       const user = auth().currentUser;
       if (user) {
         const userId = user.uid;
         const qadhaDocRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
-        
-        await qadhaDocRef.set({ 
-          [salah.toLowerCase()]: safeValue 
-        }, { merge: true });
+        await qadhaDocRef.set({ [salah.toLowerCase()]: newValue }, { merge: true });
       }
     } catch (error) {
       console.error("Error updating Qadha count:", error);
@@ -79,6 +74,34 @@ const Totals = () => {
       setQadhaCounts((prev) => ({ ...prev, [salah]: qadhaCounts[salah] }));
     }
   };
+
+  const handleTextChange = async (salah, text) => {
+    const numValue = parseInt(text, 10) || 0;
+    const safeValue = Math.max(0, numValue);
+
+    setQadhaCounts((prev) => ({ ...prev, [salah]: safeValue }));
+
+    const user = auth().currentUser;
+    if (user) {
+      const userId = user.uid;
+      const qadhaDocRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
+      await qadhaDocRef.set({ [salah.toLowerCase()]: safeValue }, { merge: true });
+    }
+  };
+
+  const getPrayerIcon = (prayer) => {
+    const icons = {
+      Fajr: "sunny-outline",
+      Dhuhr: "partly-sunny-outline",
+      Asr: "sunny-outline",
+      Maghrib: "moon-outline",
+      Isha: "moon-outline",
+      Witr: "moon-outline",
+    }
+    return icons[prayer] || "checkmark-circle-outline"
+  }
+
+  const totalRemaining = Object.values(qadhaCounts).reduce((sum, v) => sum + (v ?? 0), 0);
 
   const confirmSelection = () => {
     Keyboard.dismiss();
@@ -102,29 +125,53 @@ const Totals = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Total Qadha Salah</Text>
       </View>
-      
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Feel free to adjust your Qadha Salah totals as needed. You can revisit this page anytime from the progress page.
-          </Text>
 
-          {Object.entries(qadhaCounts).map(([salah, count], index) =>
+      <ScrollView
+        style={styles.card}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: (insets.bottom || 20) + 100 }]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.totalBanner}>
+          <Text style={styles.totalBannerLabel}>Total Remaining</Text>
+          <Text style={styles.totalBannerValue}>{totalRemaining}</Text>
+          <Text style={styles.totalBannerSubtitle}>Adjust your total qadha salah as needed</Text>
+        </View>
+
+        <View style={styles.qadhaCountersContainer}>
+          {Object.entries(qadhaCounts).map(([salah, count]) =>
             count !== null ? (
-              <View key={salah} style={[
-                styles.prayerItem,
-                index === Object.entries(qadhaCounts).length - 1 && { borderBottomWidth: 0 }
-              ]}>
-                <Text style={styles.prayerName}>
-                  {salah.charAt(0).toUpperCase() + salah.slice(1)}:
-                </Text>
-                <TextInput
-                  selectTextOnFocus={true}
-                  style={styles.counterInput}
-                  keyboardType="numeric"
-                  value={String(count)}
-                  onChangeText={(text) => adjustQadha(salah, text)}
-                />
+              <View key={salah} style={styles.qadhaCounterWrapper}>
+                <View style={styles.qadhaLabelContainer}>
+                  <View style={styles.qadhaIconContainer}>
+                    <Icon name={getPrayerIcon(salah)} size={20} color="#5CB390" />
+                  </View>
+                  <View>
+                    <Text style={styles.qadhaCounterLabel}>{salah}</Text>
+                  </View>
+                </View>
+                <View style={styles.qadhaCounterControls}>
+                  <TouchableOpacity
+                    style={styles.counterButton}
+                    onPress={() => adjustQadha(salah, -1)}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="remove" size={20} color="#5CB390" />
+                  </TouchableOpacity>
+                  <TextInput
+                    selectTextOnFocus={true}
+                    style={styles.qadhaCounterValue}
+                    keyboardType="numeric"
+                    value={String(count)}
+                    onChangeText={(text) => handleTextChange(salah, text)}
+                  />
+                  <TouchableOpacity
+                    style={styles.counterButton}
+                    onPress={() => adjustQadha(salah, 1)}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="add" size={20} color="#5CB390" />
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : null
           )}
@@ -135,6 +182,7 @@ const Totals = () => {
         <TouchableOpacity
           style={styles.confirmButton}
           onPress={confirmSelection}
+          activeOpacity={0.8}
         >
           <Text style={styles.confirmButtonText}>Confirm</Text>
         </TouchableOpacity>
@@ -159,61 +207,100 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     textAlign: "center",
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollViewContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 150,
-  },
   card: {
+    flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  scrollContent: {
     padding: 20,
-    width: "100%",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 5,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#777777",
-    marginBottom: 20,
-    textAlign: "center",
+  totalBanner: {
+    backgroundColor: "#E8F8F3",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#5CB390",
   },
-  prayerItem: {
+  totalBannerLabel: {
+    fontSize: 12,
+    color: "#5CB390",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  totalBannerValue: {
+    fontSize: 48,
+    fontWeight: "800",
+    color: "#2F7F6F",
+    marginTop: 4,
+    lineHeight: 56,
+  },
+  totalBannerSubtitle: {
+    fontSize: 14,
+    color: "#5cb390",
+    marginTop: 4,
+  },
+  qadhaCountersContainer: {
+    gap: 12,
+  },
+  qadhaCounterWrapper: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    padding: 12,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
-  prayerName: {
+  qadhaLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  qadhaIconContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  qadhaCounterLabel: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#777777",
+    color: "#1F2937",
+    fontWeight: "600",
   },
-  counterInput: {
-    width: 60,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
+  qadhaCounterControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  counterButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F8F3",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "#5CB390",
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "500",
+  },
+  qadhaCounterValue: {
+    fontSize: 20,
+    fontWeight: "800",
     color: "#5CB390",
-    paddingHorizontal: 8,
+    minWidth: 50,
+    textAlign: "center",
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    left: 20,
+    right: 20,
     alignItems: "center",
   },
   confirmButton: {

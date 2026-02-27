@@ -13,7 +13,7 @@ import { useBottomPadding } from "../hooks/useBottomPadding"
 const Progress = () => {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const bottomPadding = useBottomPadding(80, 20)
+  const bottomPadding = useBottomPadding(0, 0)
 
   const [userData, setUserData] = useState<any>(null)
   const [dailyPrayerCounts, setDailyPrayerCounts] = useState<any>({})
@@ -424,6 +424,19 @@ const Progress = () => {
                       </Text>
                     </View>
                   </View>
+
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
+                      <Icon name="compass" size={24} color="#C9A84C" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Qiblah Compass</Text>
+                      <Text style={styles.helpDescription}>
+                        In the top left of this screen, you can click on the compass icon to open the Qiblah Compass to accurately find the direction you should pray your Salah in. 
+                      </Text>
+                    </View>
+                  </View>
+                
                 </ScrollView>
 
                 <TouchableOpacity 
