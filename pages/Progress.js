@@ -189,15 +189,20 @@ const Progress = () => {
   }
 
   return (
-    <View style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate("QiblahCompass")}
+            style={{ position: 'absolute', left: 25, top: 65 }}
+          >
+            <Icon name="compass" size={26} color="#FFF" />
+          </TouchableOpacity> 
           <Text style={styles.headerTitle}>Progress</Text>
           <TouchableOpacity 
             onPress={() => setShowHelp(true)}
-            style={{ position: 'absolute', right: 20, top: 65 }}
+            style={{ position: 'absolute', right: 25, top: 65 }}
           >
-            <Icon name="help-circle" size={24} color="#FFF" />
+            <Icon name="help-circle" size={26} color="#FFF" />
           </TouchableOpacity>
         </View>
         <ScrollView style={styles.content}>
@@ -367,7 +372,6 @@ const Progress = () => {
             </View>
           </View>
         </ScrollView>
-      </View>
       <Modal
         visible={showHelp}
         transparent={true}
@@ -443,22 +447,16 @@ const Progress = () => {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: "#5CB390",
   },
-  container: {
-    flex: 1,
-  },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingTop: 60,
     paddingBottom: 20,
-    paddingHorizontal: 20,
+    alignItems: "center",
   },
   headerTitle: {
-    flex: 1,
     fontSize: 28,
     fontWeight: "600",
     color: "#FFFFFF",

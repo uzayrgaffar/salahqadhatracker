@@ -429,6 +429,12 @@ const Profile = () => {
     <View style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate("QiblahCompass")}
+            style={{ position: 'absolute', left: 25, top: 65 }}
+          >
+            <Icon name="compass" size={26} color="#FFF" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
 

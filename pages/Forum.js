@@ -12,6 +12,7 @@ import {
 } from "react-native"
 import { AppContext } from "../AppContext"
 import Icon from "react-native-vector-icons/Ionicons"
+import { useNavigation } from "@react-navigation/native"
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental(true)
@@ -22,6 +23,7 @@ const Forum = () => {
   const [expandedIndex, setExpandedIndex] = useState(null)
 
   const { selectedLanguage } = useContext(AppContext)
+  const navigation = useNavigation()
 
   const questionsEN = [
     { question: "Is it necessary to make up missed Salah?", answer: "Yes, it is obligatory to make up missed Fard prayers" },
@@ -102,6 +104,12 @@ const Forum = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate("QiblahCompass")}
+          style={{ position: 'absolute', left: 25, top: 65 }}
+        >
+          <Icon name="compass" size={26} color="#FFF" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>FAQ</Text>
       </View>
 

@@ -5,6 +5,7 @@ import auth from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore'
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Haptics from 'expo-haptics';
+import { useNavigation } from "@react-navigation/native"
 
 const QadhaFasts = () => {
   const [fastCount, setFastCount] = useState(0)
@@ -17,6 +18,7 @@ const QadhaFasts = () => {
 
   const userId = auth().currentUser?.uid
   const insets = useSafeAreaInsets()
+  const navigation = useNavigation()
 
   useEffect(() => {
     if (!userId) return
@@ -97,8 +99,17 @@ const QadhaFasts = () => {
         style={styles.container}
       >
         <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate("QiblahCompass")}
+            style={{ position: 'absolute', left: 25, top: 65 }}
+          >
+            <Icon name="compass" size={26} color="#FFF" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Qadha Fasts</Text>
-          <TouchableOpacity onPress={() => setShowHelp(true)} style={styles.helpIcon}>
+          <TouchableOpacity 
+            onPress={() => setShowHelp(true)}
+            style={{ position: 'absolute', right: 25, top: 65 }}
+          >
             <Icon name="help-circle" size={26} color="#FFF" />
           </TouchableOpacity>
         </View>
@@ -261,9 +272,17 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#5CB390" },
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 28, fontWeight: "600", color: "#FFFFFF" },
-  helpIcon: { position: 'absolute', right: 20, top: 65 },
+  header: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
   content: { flex: 1, backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, alignItems: 'center' },
   setupContainer: { width: '100%', paddingTop: 40, alignItems: 'center' },
   setupIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#F0F9F4', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
