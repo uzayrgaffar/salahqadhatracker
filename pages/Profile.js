@@ -285,10 +285,32 @@ const Profile = () => {
   const showConfirmation = () => {
     Alert.alert(
       "Confirmation",
-      `Are you sure you want to setup your account again?`,
+      `Are you sure you want to setup your account again? This will delete your daily salah and qadha history`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => navigation.navigate("SetDOB") }
+        {
+          text: "Confirm",
+          onPress: async () => {
+            const user = auth().currentUser;
+            if (user) {
+              try {
+                const dailyPrayersRef = firestore()
+                  .collection("users")
+                  .doc(user.uid)
+                  .collection("dailyPrayers");
+                const querySnapshot = await dailyPrayersRef.get();
+                const batch = firestore().batch();
+                querySnapshot.forEach((doc) => {
+                  batch.delete(doc.ref);
+                });
+                await batch.commit();
+              } catch (error) {
+                console.error("Failed to delete dailyPrayers:", error);
+              }
+            }
+            navigation.navigate("Setup");
+          },
+        },
       ]
     )
   }
