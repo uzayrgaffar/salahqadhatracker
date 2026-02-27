@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect, useCallback, useRef } from "react"
+import { useContext, useState, useEffect, useCallback } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Platform, Keyboard, Alert, Linking, TouchableWithoutFeedback } from "react-native"
 import { Calendar } from "react-native-calendars"
 import { AppContext } from "../AppContext"
@@ -13,7 +13,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import messaging from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DailyChart = () => {
   const { setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr, madhab, setMadhab } = useContext(AppContext)
@@ -34,7 +33,6 @@ const DailyChart = () => {
   const [isQadhaModalVisible, setIsQadhaModalVisible] = useState(false)
   const [prayerTimes, setPrayerTimes] = useState(null)
   const [isLoadingTimes, setIsLoadingTimes] = useState(false);
-  const locationRef = useRef(null);
   const [monthCache, setMonthCache] = useState({});
   const [showHelp, setShowHelp] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
@@ -385,16 +383,23 @@ const DailyChart = () => {
       if (!userId) return;
       
       try {
-        const hasSeen = await AsyncStorage.getItem('hasSeenNotificationPrompt');
-        if (hasSeen) return;
+        const userSnap = await firestore().collection("users").doc(userId).get();
+        if (userSnap.data()?.hasSeenNotificationPrompt) return;
 
-        const { status } = await Notifications.getPermissionsAsync();
-        const { status: locationStatus } = await Location.getForegroundPermissionsAsync();
 
-        if (status !== 'granted' || locationStatus !== 'granted') {
-          setShowNotificationPrompt(true);
-          await AsyncStorage.setItem('hasSeenNotificationPrompt', 'true');
+        if (userSnap.data()?.latitude && userSnap.data()?.longitude && userSnap.data()?.fcmToken && userSnap.data()?.countryCode && userSnap.data()?.method) {
+          await firestore().collection("users").doc(userId).set(
+            { hasSeenNotificationPrompt: true },
+            { merge: true }
+          );
+          return;
         }
+
+        setShowNotificationPrompt(true);
+        await firestore().collection("users").doc(userId).set(
+          { hasSeenNotificationPrompt: true },
+          { merge: true }
+        );
       } catch (error) {
         console.error("Error checking notification status:", error);
       }
@@ -647,7 +652,6 @@ const DailyChart = () => {
       const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
       if (newStatus === "granted") {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        locationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
         setLocationDenied(false);
         fetchPrayerTimes(selectedDate);
       }
@@ -693,8 +697,6 @@ const DailyChart = () => {
       const roundedLat = parseFloat(rawLat.toFixed(1));
       const roundedLng = parseFloat(rawLng.toFixed(1));
 
-      locationRef.current = { latitude: roundedLat, longitude: roundedLng };
-
       await firestore().collection("users").doc(userId).set({
         fcmToken: token,
         madhab: madhab,
@@ -714,7 +716,10 @@ const DailyChart = () => {
         [{ text: "Great!" }]
       );
 
-      await AsyncStorage.setItem('hasSeenNotificationPrompt', 'true');
+      await firestore().collection("users").doc(userId).set(
+        { hasSeenNotificationPrompt: true },
+        { merge: true }
+      );
 
       console.log("Notification profile fully set up for:", userId);
     } catch (error) {
