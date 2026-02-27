@@ -1,8 +1,9 @@
 import { useState, useContext } from "react"
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, LayoutAnimation } from "react-native"
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, LayoutAnimation, Platform } from "react-native"
 import { AppContext } from "../../AppContext"
 import Icon from "react-native-vector-icons/Ionicons"
 import { useRouter } from "expo-router"
+import { useBottomPadding } from "../hooks/useBottomPadding"
 
 const Forum = () => {
   const [searchQuery, setSearchQuery] = useState("")
@@ -10,6 +11,7 @@ const Forum = () => {
 
   const { selectedLanguage } = useContext(AppContext)
   const router = useRouter()
+  const bottomPadding = useBottomPadding(60, 20)
 
   const questionsEN = [
     { question: "Is it necessary to make up missed Salah?", answer: "Yes, it is obligatory to make up missed Fard prayers" },
@@ -99,7 +101,7 @@ const Forum = () => {
         <Text style={styles.headerTitle}>FAQ</Text>
       </View>
 
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingBottom: bottomPadding }]}>
         <View style={styles.searchContainer}>
           <Icon name="search-outline" size={20} color="#9CA3AF" style={styles.searchIcon} />
           <TextInput

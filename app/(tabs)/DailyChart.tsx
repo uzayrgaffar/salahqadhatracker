@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import messaging from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from "expo-router"
+import { useBottomPadding } from "../hooks/useBottomPadding"
 
 const DailyChart = () => {
   const { setFajr, setDhuhr, setAsr, setMaghrib, setIsha, setWitr, madhab, setMadhab } = useContext(AppContext)
@@ -21,6 +22,7 @@ const DailyChart = () => {
   const router = useRouter()
   const user = auth().currentUser
   const userId = user ? user.uid : null
+  const bottomPadding = useBottomPadding(90, 60)
 
   const today = moment().format("YYYY-MM-DD")
   const [selectedDate, setSelectedDate] = useState(today)
@@ -790,7 +792,7 @@ const DailyChart = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.card} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 60 }]}>
+      <ScrollView style={styles.card} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}>
         <TouchableOpacity style={styles.dateButton} onPress={() => setIsModalVisible(true)} activeOpacity={0.7}>
           <View style={styles.dateButtonContent}>
             <Icon name="calendar-outline" size={24} color="#5CB390" />

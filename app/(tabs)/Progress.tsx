@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react"
-import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity, Modal, TouchableWithoutFeedback } from "react-native"
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity, Modal, TouchableWithoutFeedback, Platform } from "react-native"
 import { LineChart } from "react-native-chart-kit"
 import moment from "moment"
 import auth from '@react-native-firebase/auth'
@@ -8,9 +8,12 @@ import { AppContext } from "../../AppContext"
 import Icon from "react-native-vector-icons/Ionicons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
+import { useBottomPadding } from "../hooks/useBottomPadding"
 
 const Progress = () => {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
+  const bottomPadding = useBottomPadding(80, 20)
 
   const [userData, setUserData] = useState<any>(null)
   const [dailyPrayerCounts, setDailyPrayerCounts] = useState<any>({})
@@ -19,7 +22,6 @@ const Progress = () => {
   const { madhab } = useContext(AppContext)
   const [selectedRange, setSelectedRange] = useState(14)
   const [showHelp, setShowHelp] = useState(false)
-  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     const userId = auth().currentUser?.uid;
@@ -199,7 +201,7 @@ const Progress = () => {
             <Icon name="help-circle" size={26} color="#FFF" />
           </TouchableOpacity>
         </View>
-        <ScrollView style={styles.content}>
+        <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: bottomPadding }}>
           <View style={styles.rangeSelector}>
             <TouchableOpacity
               style={[styles.rangeButton, selectedRange === 7 && styles.rangeButtonActive]}

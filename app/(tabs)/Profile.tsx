@@ -8,6 +8,7 @@ import Icon from "react-native-vector-icons/Ionicons"
 import * as Location from "expo-location"
 import * as Notifications from "expo-notifications"
 import { useRouter } from "expo-router"
+import { useBottomPadding } from "../hooks/useBottomPadding"
 
 const getMethodByCountry = (countryCode) => {
   switch (countryCode) {
@@ -59,6 +60,7 @@ const Profile = () => {
   const [method, setMethod] = useState(null);
   const [methodDropdownOpen, setMethodDropdownOpen] = useState(false);
   const [countryCode, setCountryCode] = useState(null);
+  const bottomPadding = useBottomPadding(90, 60)
 
   useEffect(() => {
     const unsubscribeAuth = auth().onAuthStateChanged((user) => {
@@ -459,7 +461,7 @@ const Profile = () => {
 
         <ScrollView
           style={styles.content}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.card}>
