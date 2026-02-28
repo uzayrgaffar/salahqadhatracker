@@ -20,6 +20,7 @@ const HANDLER_URL = `https://${LOCATION}-${PROJECT_ID}.cloudfunctions.net/sendPr
 
 // --- 1. DAILY QADHA INCREMENTER ---
 exports.incrementPrayerCounts = onSchedule({
+  schedule: "every 1 hours",
   timeoutSeconds: 540,
   memory: "512MiB",
 }, async (event) => {
