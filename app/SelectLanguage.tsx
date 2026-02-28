@@ -2,20 +2,63 @@ import { useState, useEffect, useRef } from 'react';
 import { Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
 const SelectLanguage = () => {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [verse, setVerse] = useState({ arabic: '', english: '', ref: '' });
-  
+  const [destination, setDestination] = useState(null);
+  const [held, setHeld] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const timerRef = useRef(null);
+  const heldRef = useRef(false);
 
   useEffect(() => {
     fetchVerse();
+    resolveDestination();
   }, []);
+
+  useEffect(() => {
+    if (!loading && destination) {
+      timerRef.current = setTimeout(() => {
+        if (!heldRef.current) {
+          router.replace(destination);
+        }
+      }, 5000);
+    }
+    return () => clearTimeout(timerRef.current);
+  }, [loading, destination]);
+
+  const resolveDestination = async () => {
+    const user = auth().currentUser;
+    try {
+      if (user) {
+        const userDocRef = firestore().collection("users").doc(user.uid);
+        const userDocSnapshot = await userDocRef.get();
+        if (userDocSnapshot.exists()) {
+          const userData = userDocSnapshot.data();
+          if (userData.setupComplete) {
+            setDestination("/DailyChart");
+          } else if (userData.madhab) {
+            await userDocRef.set({ setupComplete: true }, { merge: true });
+            setDestination("/DailyChart");
+          } else {
+            setDestination("/Setup");
+          }
+        } else {
+          setDestination("/Setup");
+        }
+      } else {
+        setDestination("/SignUp");
+      }
+    } catch (error) {
+      setDestination("/SignUp");
+    }
+  };
 
   const fetchVerse = async () => {
     try {
@@ -62,43 +105,42 @@ const SelectLanguage = () => {
     }
   };
 
-  const handlePressAnywhere = async () => {  
-    setLoading(true);
+  const handlePressIn = () => {
+    heldRef.current = true;
+    setHeld(true);
+    clearTimeout(timerRef.current);
+  };
 
-    const user = auth().currentUser;
-    try {
-      if (user) {
-        const userDocRef = firestore().collection("users").doc(user.uid);
-        const userDocSnapshot = await userDocRef.get();
-        if (userDocSnapshot.exists()) {
-          const userData = userDocSnapshot.data();
-
-          if (userData.setupComplete) {
-            router.replace('/DailyChart');
-          } else if (userData.madhab) {
-            await userDocRef.set({ setupComplete: true }, { merge: true });
-            router.replace('/DailyChart');
-          } else {
-            router.replace('/Setup');
-          }
-        } else {
-          router.replace('/Setup');
-        }
-      } else {
-        router.replace('/SignUp');
-      }
-    } catch (error) {
-      router.replace('/SignUp');
-    } finally {
-      setLoading(false);
+  const handlePressOut = () => {
+    heldRef.current = false;
+    setHeld(false);
+    if (destination) {
+      router.replace(destination);
     }
   };
 
+  useEffect(() => {
+    if (!loading && destination) {
+      setCountdown(5);
+      const countInterval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countInterval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(countInterval);
+    }
+  }, [loading, destination]);
+
   return (
-    <TouchableOpacity 
-      activeOpacity={1} 
-      style={styles.container} 
-      onPress={handlePressAnywhere}
+    <TouchableOpacity
+      activeOpacity={1}
+      style={styles.container}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
     >
       <Text style={styles.logoText}>iQadha</Text>
 
@@ -109,8 +151,10 @@ const SelectLanguage = () => {
           <Text style={styles.arabicText}>{verse.arabic}</Text>
           <Text style={styles.englishText}>"{verse.english}"</Text>
           <Text style={styles.reference}>— {verse.ref}</Text>
-          
-          <Text style={styles.tapText}>Tap anywhere to continue</Text>
+          <Text style={styles.tapText}>
+            {held ? "Release to continue" : `Continuing in ${countdown}...`}
+          </Text>
+          <Text style={styles.holdText}>Hold to stay on this screen</Text>
         </Animated.View>
       )}
     </TouchableOpacity>
@@ -163,10 +207,16 @@ const styles = StyleSheet.create({
     marginTop: 40,
     color: '#EEEEEE',
     fontSize: 12,
-    opacity: 0.6,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-  }
+  },
+  holdText: {
+    marginTop: 8,
+    color: '#EEEEEE',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
 });
 
 export default SelectLanguage;
