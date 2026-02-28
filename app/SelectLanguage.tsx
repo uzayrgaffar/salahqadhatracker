@@ -19,26 +19,41 @@ const SelectLanguage = () => {
 
   const fetchVerse = async () => {
     try {
-      const salahFastingVerses = ["2:43", "2:110", "2:183", "2:185", "4:103", "29:45"];
+      const verseDoc = await firestore().collection("appData").doc("dailyVerse").get();
+      const now = Date.now();
+
+      if (verseDoc.exists()) {
+        const data = verseDoc.data();
+        const age = now - data.fetchedAt;
+
+        if (age < 60 * 60 * 1000 && data.arabic) {
+          setVerse({ arabic: data.arabic, english: data.english, ref: data.ref });
+          Animated.timing(fadeAnim, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
+          return;
+        }
+      }
+
+      const versesDoc = await firestore().collection("appData").doc("verses").get();
+      const salahFastingVerses = versesDoc.exists() ? versesDoc.data().verses : ["2:43", "2:110", "2:183", "2:185", "4:103", "29:45"];
+
       const randomRef = salahFastingVerses[Math.floor(Math.random() * salahFastingVerses.length)];
-      
+
       const response = await fetch(
         `https://api.alquran.cloud/v1/ayah/${randomRef}/editions/quran-uthmani,en.sahih`
       );
       const json = await response.json();
-      
+
       if (json.status === "OK") {
-        setVerse({
+        const newVerse = {
           arabic: json.data[0].text,
           english: json.data[1].text,
-          ref: `${json.data[0].surah.englishName} ${json.data[0].numberInSurah}`
-        });
-        
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }).start();
+          ref: `${json.data[0].surah.englishName} ${json.data[0].numberInSurah}`,
+          fetchedAt: now,
+        };
+
+        await firestore().collection("appData").doc("dailyVerse").set(newVerse);
+        setVerse({ arabic: newVerse.arabic, english: newVerse.english, ref: newVerse.ref });
+        Animated.timing(fadeAnim, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
       }
     } catch (error) {
       console.error("Verse fetch error:", error);
@@ -55,7 +70,7 @@ const SelectLanguage = () => {
       if (user) {
         const userDocRef = firestore().collection("users").doc(user.uid);
         const userDocSnapshot = await userDocRef.get();
-        if (userDocSnapshot.exists) {
+        if (userDocSnapshot.exists()) {
           const userData = userDocSnapshot.data();
 
           if (userData.setupComplete) {
