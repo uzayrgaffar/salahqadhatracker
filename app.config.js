@@ -8,7 +8,7 @@ export default {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#5CB390"
     },
-    version: "1.1.3",
+    version: "1.1.4",
     userInterfaceStyle: "light",
     ios: {
       jsEngine: "hermes",
