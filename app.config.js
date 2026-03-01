@@ -37,7 +37,7 @@ export default {
     },
     splash: {
       image: "./assets/splash.png",
-      backgroundColor: "#5CB390",
+      backgroundColor: "#FFFFFF",
       resizeMode: "cover"
     },
     extra: {
@@ -47,6 +47,7 @@ export default {
     },
     plugins: [
       "expo-asset",
+      "expo-font",
       "expo-router",
       "@react-native-community/datetimepicker",
       [

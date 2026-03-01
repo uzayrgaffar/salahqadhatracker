@@ -800,6 +800,7 @@ const DailyChart = () => {
           <View style={styles.dateButtonContent}>
             <Icon name="calendar-outline" size={24} color="#5CB390" />
             <View style={styles.dateTextContainer}>
+              <Text style={styles.dateButtonLabel}>Selected Date</Text>
               <Text style={styles.dateButtonText}>{moment(selectedDate).format("D MMMM YYYY")}</Text>
               {hijriData && (
                 <Text style={styles.hijriDateText}>
@@ -1829,6 +1830,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
     fontWeight: '500',
+  },
+  dateButtonLabel: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    fontWeight: "500",
+    marginBottom: 1,
   },
 })
 
