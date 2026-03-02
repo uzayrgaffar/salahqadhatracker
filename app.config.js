@@ -8,13 +8,12 @@ export default {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#5CB390"
     },
-    version: "1.1.3",
+    version: "1.1.6",
     userInterfaceStyle: "light",
     ios: {
       jsEngine: "hermes",
       supportsTablet: true,
       bundleIdentifier: "com.uzayrgaffar.iqadha",
-      buildNumber: "1",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         UIBackgroundModes: ["remote-notification"],
@@ -28,7 +27,7 @@ export default {
     android: {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.iqadha",
-      versionCode: 9,
+      versionCode: 10,
       googleServicesFile: "./google-services.json",
       config: {
         keepConsistentProguardFile: true
@@ -37,7 +36,7 @@ export default {
     },
     splash: {
       image: "./assets/splash.png",
-      backgroundColor: "#5CB390",
+      backgroundColor: "#FFFFFF",
       resizeMode: "cover"
     },
     extra: {
