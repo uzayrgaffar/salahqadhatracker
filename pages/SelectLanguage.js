@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Dimensions, View } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
@@ -15,8 +15,7 @@ const SelectLanguage = () => {
   const [countdown, setCountdown] = useState(5);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const timerRef = useRef(null);
-  const heldRef = useRef(false);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     fetchVerse();
@@ -24,40 +23,45 @@ const SelectLanguage = () => {
   }, []);
 
   useEffect(() => {
-    if (!loading && destination) {
-      timerRef.current = setTimeout(() => {
-        if (!heldRef.current) {
-          navigation.replace(destination);
-        }
-      }, 5000);
+    if (!loading && destination && !held) {
+      intervalRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(intervalRef.current);
+            // TRIGGER NAVIGATION
+            navigation.replace(destination);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      clearInterval(intervalRef.current);
     }
-    return () => clearTimeout(timerRef.current);
-  }, [loading, destination]);
+
+    return () => clearInterval(intervalRef.current);
+  }, [loading, destination, held]);
 
   const resolveDestination = async () => {
-    const user = auth().currentUser;
     try {
+      const user = auth().currentUser;
       if (user) {
-        const userDocRef = firestore().collection("users").doc(user.uid);
-        const userDocSnapshot = await userDocRef.get();
+        const userDocSnapshot = await firestore().collection("users").doc(user.uid).get();
         if (userDocSnapshot.exists()) {
           const userData = userDocSnapshot.data();
-          if (userData.setupComplete) {
-            setDestination("/DailyChart");
-          } else if (userData.madhab) {
-            await userDocRef.set({ setupComplete: true }, { merge: true });
-            setDestination("/DailyChart");
+          if (userData.setupComplete || userData.madhab) {
+            setDestination("DailyChart");
           } else {
-            setDestination("/Setup");
+            setDestination("Setup");
           }
         } else {
-          setDestination("/Setup");
+          setDestination("Setup");
         }
       } else {
-        setDestination("/SignUp");
+        setDestination("SignUp");
       }
     } catch (error) {
-      setDestination("/SignUp");
+      setDestination("SignUp");
     }
   };
 
@@ -68,23 +72,19 @@ const SelectLanguage = () => {
 
       if (verseDoc.exists()) {
         const data = verseDoc.data();
-        const age = now - data.fetchedAt;
-
-        if (age < 60 * 60 * 1000 && data.arabic) {
+        if (now - data.fetchedAt < 3600000 && data.arabic) {
           setVerse({ arabic: data.arabic, english: data.english, ref: data.ref });
+          setLoading(false);
           Animated.timing(fadeAnim, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
           return;
         }
       }
 
       const versesDoc = await firestore().collection("appData").doc("verses").get();
-      const salahFastingVerses = versesDoc.exists() ? versesDoc.data().verses : ["2:43", "2:110", "2:183", "2:185", "4:103", "29:45"];
+      const pool = versesDoc.exists() ? versesDoc.data().verses : ["2:43", "2:110", "2:183", "2:185", "4:103", "29:45"];
+      const randomRef = pool[Math.floor(Math.random() * pool.length)];
 
-      const randomRef = salahFastingVerses[Math.floor(Math.random() * salahFastingVerses.length)];
-
-      const response = await fetch(
-        `https://api.alquran.cloud/v1/ayah/${randomRef}/editions/quran-uthmani,en.sahih`
-      );
+      const response = await fetch(`https://api.alquran.cloud/v1/ayah/${randomRef}/editions/quran-uthmani,en.sahih`);
       const json = await response.json();
 
       if (json.status === "OK") {
@@ -94,53 +94,27 @@ const SelectLanguage = () => {
           ref: `${json.data[0].surah.englishName} ${json.data[0].numberInSurah}`,
           fetchedAt: now,
         };
-
         await firestore().collection("appData").doc("dailyVerse").set(newVerse);
-        setVerse({ arabic: newVerse.arabic, english: newVerse.english, ref: newVerse.ref });
-        Animated.timing(fadeAnim, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
+        setVerse(newVerse);
       }
     } catch (error) {
       console.error("Verse fetch error:", error);
     } finally {
       setLoading(false);
+      Animated.timing(fadeAnim, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
     }
-  };
-
-  const handlePressIn = () => {
-    heldRef.current = true;
-    setHeld(true);
-    clearTimeout(timerRef.current);
   };
 
   const handlePressOut = () => {
-    heldRef.current = false;
     setHeld(false);
-    if (destination) {
-      navigation.replace(destination);
-    }
+    if (destination) navigation.replace(destination);
   };
-
-  useEffect(() => {
-    if (!loading && destination) {
-      setCountdown(5);
-      const countInterval = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countInterval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(countInterval);
-    }
-  }, [loading, destination]);
 
   return (
     <TouchableOpacity
       activeOpacity={1}
       style={styles.container}
-      onPressIn={handlePressIn}
+      onPressIn={() => setHeld(true)}
       onPressOut={handlePressOut}
     >
       <Text style={styles.logoText}>iQadha</Text>
