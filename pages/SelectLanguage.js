@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Dimensions, View } from 'react-native';
+import { Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
@@ -15,7 +15,6 @@ const SelectLanguage = () => {
   const [countdown, setCountdown] = useState(5);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const intervalRef = useRef(null);
 
   useEffect(() => {
     fetchVerse();
@@ -23,24 +22,18 @@ const SelectLanguage = () => {
   }, []);
 
   useEffect(() => {
-    if (!loading && destination && !held) {
-      intervalRef.current = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(intervalRef.current);
-            // TRIGGER NAVIGATION
-            navigation.replace(destination);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      clearInterval(intervalRef.current);
-    }
+    if (loading || !destination || held) return;
 
-    return () => clearInterval(intervalRef.current);
-  }, [loading, destination, held]);
+    const timer = setTimeout(() => {
+      if (countdown === 1) {
+        navigation.replace(destination);
+      } else {
+        setCountdown(countdown - 1);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [countdown, loading, destination, held]);
 
   const resolveDestination = async () => {
     try {
@@ -81,7 +74,10 @@ const SelectLanguage = () => {
       }
 
       const versesDoc = await firestore().collection("appData").doc("verses").get();
-      const pool = versesDoc.exists() ? versesDoc.data().verses : ["2:43", "2:110", "2:183", "2:185", "4:103", "29:45"];
+      const pool = versesDoc.exists()
+        ? versesDoc.data().verses
+        : ["2:43", "2:110", "2:183", "2:185", "4:103", "29:45"];
+
       const randomRef = pool[Math.floor(Math.random() * pool.length)];
 
       const response = await fetch(`https://api.alquran.cloud/v1/ayah/${randomRef}/editions/quran-uthmani,en.sahih`);
@@ -94,6 +90,7 @@ const SelectLanguage = () => {
           ref: `${json.data[0].surah.englishName} ${json.data[0].numberInSurah}`,
           fetchedAt: now,
         };
+
         await firestore().collection("appData").doc("dailyVerse").set(newVerse);
         setVerse(newVerse);
       }
@@ -105,17 +102,17 @@ const SelectLanguage = () => {
     }
   };
 
-  const handlePressOut = () => {
-    setHeld(false);
-    if (destination) navigation.replace(destination);
-  };
-
   return (
     <TouchableOpacity
       activeOpacity={1}
       style={styles.container}
       onPressIn={() => setHeld(true)}
-      onPressOut={handlePressOut}
+      onPressOut={() => {
+        setHeld(false);
+        if (!loading && destination) {
+          navigation.replace(destination);
+        }
+      }}
     >
       <Text style={styles.logoText}>iQadha</Text>
 
