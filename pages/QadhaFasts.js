@@ -254,6 +254,18 @@ const QadhaFasts = () => {
                         <Text style={styles.helpDescription}>Use the minus (-) button when you complete a fast to lower your debt.</Text>
                       </View>
                     </View>
+
+                    <View style={styles.helpItem}>
+                      <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
+                        <Icon name="compass" size={24} color="#C9A84C" />
+                      </View>
+                      <View style={styles.helpTextContainer}>
+                        <Text style={styles.helpLabel}>Qiblah Compass</Text>
+                        <Text style={styles.helpDescription}>
+                          In the top left of this screen, you can click on the compass icon to open the Qiblah Compass to accurately find the direction you should pray your Salah in. 
+                        </Text>
+                      </View>
+                    </View>
                   </ScrollView>
                   <TouchableOpacity style={styles.gotItButton} onPress={() => setShowHelp(false)}>
                     <Text style={styles.gotItButtonText}>Got it!</Text>

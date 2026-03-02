@@ -43,7 +43,7 @@ const SelectLanguage = () => {
         if (userDocSnapshot.exists()) {
           const userData = userDocSnapshot.data();
           if (userData.setupComplete || userData.madhab) {
-            setDestination("DailyChart");
+            setDestination("MainPages");
           } else {
             setDestination("Setup");
           }
