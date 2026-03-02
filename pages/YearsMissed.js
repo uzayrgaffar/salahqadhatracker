@@ -143,18 +143,19 @@ const YearsMissed = () => {
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowPicker(false)}
+              >
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
                 style={styles.modalConfirmButton}
                 onPress={() => setShowPicker(false)}
               >
                 <Text style={styles.modalConfirmButtonText}>Confirm</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setShowPicker(false)}
-              >
-                <Text style={styles.modalCloseButtonText}>Cancel</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>

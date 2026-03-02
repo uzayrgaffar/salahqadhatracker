@@ -1,22 +1,8 @@
 import { useState, useContext } from "react"
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from "react-native"
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, LayoutAnimation } from "react-native"
 import { AppContext } from "../AppContext"
 import Icon from "react-native-vector-icons/Ionicons"
 import { useNavigation } from "@react-navigation/native"
-
-if (Platform.OS === "android") {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
 
 const Forum = () => {
   const [searchQuery, setSearchQuery] = useState("")
@@ -29,7 +15,7 @@ const Forum = () => {
     { question: "Is it necessary to make up missed Salah?", answer: "Yes, it is obligatory to make up missed Fard prayers" },
     { question: "Can I perform Qadha Salah at any time throughout the day?", answer: "Yes, except for 5 minutes before sunrise, 10 minutes before dhuhr and 15 minutes before sunset" },
     { question: "Do I have to pray my Qadha Salah in order?", answer: "If you have only a few Qadha prayers, they should be made up in order. However, if there are many, then performing them regularly is sufficient without strict order." },
-    { question: "What intention (niyyah) should I make for Qadha Salah?", answer: "You should specify which Salah you are making up, e.g., 'I intend to perform Qadha of Fajr prayer'. If the exact date is unknown, then a general intention is sufficient." },
+    { question: "What intention (niyyah) should I make for Qadha Salah?", answer: "You should specify which Salah you are making up, e.g., 'I intend to perform Qadha of Fajr prayer'. If the exact date is unknown, then make intention of performing qadha of the last salah missed." },
     { question: "Can I pray Qadha Salah in congregation (Jama'ah)?", answer: "No, Qadha Salah should generally be performed individually. However, if a group agrees to perform Qadha together, it is permissible" },
     { question: "Can I pray Qadha Salah in place of Sunnah or Nafl prayers?", answer: "If you have a large backlog of missed Salah, it is recommended to prioritize Qadha over optional Sunnah/Nafl prayers (except emphasized Sunnah)" },
     { question: "Can I perform Qadha Salah for someone who has passed away?", answer: "No, Qadha Salah cannot be performed on behalf of a deceased person. Instead, you can give Sadaqah (charity) on their behalf." },
@@ -37,6 +23,11 @@ const Forum = () => {
     { question: "What if I converted to Islam—do I have to make up past missed prayers?", answer: "No, a convert does not need to make up missed Salah before embracing Islam. They start fresh upon conversion." },
     { question: "Does missing Salah intentionally make me a non-Muslim?", answer: "While neglecting Salah is a major sin, a person does not become a non-Muslim unless they completely reject the obligation of Salah. However, they must repent and start praying immediately." },
     { question: "What if I was unconscious or in a coma—do I need to make up missed prayers?", answer: "If unconscious for more than six Salah times, Qadha is not required. If it was less, then the missed Salah must be made up." },
+    { question: "Can I read the same shorts surahs over again while praying my qadha?", answer: "Yes, this is permissible for all qadha salah, except for witr (Only Hanafis need to make witr qadha). While praying witr qadha, you must read Al-Fatihah and another surah in all 3 rakats." },
+    { question: "Is there any way to shorten my qadha salah?", answer: "Yes, in the 3rd and 4th raka'at of Dhuhr, Asr, Maghrib and Isha, instead of praying as usual you may read any tasbih e.g. Subhanallah or Alhamdulillah or Allahu Akbar 3 times and then proceed into ruku. You may also end the salah by reading a shorter form of the durud sharif." },
+    { question: "What qadha do I make if I miss Jumu'ah?", answer: "You make qadha for 4 raka'at of Dhuhr." },
+    { question: "If I miss salah due to travelling, do I make up qasr (shortened) qadha or the full length of salah?", answer: "You make qadha as qasr (shortened)." },
+    { question: "What if I can't remember details of when I prayed and when I didn't accurately?", answer: "The calculation of qadha salah is an estimate and one should calculate on the basis that the heart is content, without going to either extreme." },
   ]
 
   const questionsAR = [

@@ -59,7 +59,6 @@ const DailyChart = () => {
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#5CB390',
-          sound: 'default',
         });
       }
     };
@@ -379,15 +378,21 @@ const DailyChart = () => {
   );
 
   useEffect(() => {
+    if (!madhabReady) return;
+    fetchPrayerTimes(selectedDate);
+  }, [selectedDate, madhab, madhabReady]);
+
+  useEffect(() => {
     const checkNotificationStatus = async () => {
       if (!userId) return;
       
       try {
         const userSnap = await firestore().collection("users").doc(userId).get();
-        if (userSnap.data()?.hasSeenNotificationPrompt) return;
+        const data = userSnap.data();
 
+        if (data?.hasSeenNotificationPrompt) return;
 
-        if (userSnap.data()?.latitude && userSnap.data()?.longitude && userSnap.data()?.fcmToken && userSnap.data()?.countryCode && userSnap.data()?.method) {
+        if (data?.latitude && data?.longitude && data?.fcmToken && data?.countryCode && data?.method) {
           await firestore().collection("users").doc(userId).set(
             { hasSeenNotificationPrompt: true },
             { merge: true }
@@ -396,10 +401,6 @@ const DailyChart = () => {
         }
 
         setShowNotificationPrompt(true);
-        await firestore().collection("users").doc(userId).set(
-          { hasSeenNotificationPrompt: true },
-          { merge: true }
-        );
       } catch (error) {
         console.error("Error checking notification status:", error);
       }
@@ -911,7 +912,7 @@ const DailyChart = () => {
         <TouchableWithoutFeedback onPress={() => setIsModalVisible(false)}>
           <View style={styles.modalContainer}>
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+              <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>Select Date</Text>
                   <TouchableOpacity onPress={() => setIsModalVisible(false)}>
@@ -1227,7 +1228,7 @@ const DailyChart = () => {
                     <View style={styles.helpTextContainer}>
                       <Text style={styles.helpLabel}>Calendar & History</Text>
                       <Text style={styles.helpDescription}>
-                        Tap the date to look back. Darker green dates mean more prayers were completed. You can log missed prayers for any past date!
+                        Tap the date to look back. Darker green dates mean more prayers were completed. You can log missed prayers for any past date.
                       </Text>
                     </View>
                   </View>
@@ -1240,6 +1241,18 @@ const DailyChart = () => {
                       <Text style={styles.helpLabel}>Praying Extra Qadha</Text>
                       <Text style={styles.helpDescription}>
                         If you pray any qadha prayers today, use the "Pray Qadha" button to log them.
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
+                      <Icon name="compass" size={24} color="#C9A84C" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Qiblah Compass</Text>
+                      <Text style={styles.helpDescription}>
+                        In the top left of this screen, you can click on the compass icon to open the Qiblah Compass to accurately find the direction you should pray your Salah in. 
                       </Text>
                     </View>
                   </View>
@@ -1342,7 +1355,13 @@ const DailyChart = () => {
 
             <TouchableOpacity 
               style={styles.skipButton} 
-              onPress={() => setShowNotificationPrompt(false)}
+              onPress={async () => {
+                setShowNotificationPrompt(false);
+                await firestore().collection("users").doc(userId).set(
+                  { hasSeenNotificationPrompt: true },
+                  { merge: true }
+                );
+              }}
               activeOpacity={0.7}
             >
               <Text style={styles.skipButtonText}>Maybe Later</Text>
@@ -1539,7 +1558,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    minHeight: 100,
   },
   modalHeader: {
     flexDirection: "row",

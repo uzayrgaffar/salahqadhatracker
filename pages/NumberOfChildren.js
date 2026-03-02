@@ -91,11 +91,12 @@ const NumberOfChildren = () => {
               onChangeText={(text) => setSelectedChildren(text.replace(/[^0-9]/g, ""))}
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalConfirmButton} onPress={handleConfirmSelection}>
-                <Text style={styles.modalConfirmButtonText}>Confirm</Text>
-              </TouchableOpacity>
               <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowChildrenPicker(false)}>
                 <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.modalConfirmButton} onPress={handleConfirmSelection}>
+                <Text style={styles.modalConfirmButtonText}>Confirm</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -114,15 +114,13 @@ const Progress = () => {
 
   if (loading) {
     return (
-      <View style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Progress</Text>
-          </View>
-          <View style={[styles.content, styles.centerContent]}>
-            <ActivityIndicator size="large" color="#5CB390" />
-            <Text style={styles.loadingText}>Loading data...</Text>
-          </View>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Progress</Text>
+        </View>
+        <View style={[styles.content, styles.centerContent]}>
+          <ActivityIndicator size="large" color="#5CB390" />
+          <Text style={styles.loadingText}>Loading data...</Text>
         </View>
       </View>
     )
@@ -130,15 +128,13 @@ const Progress = () => {
 
   if (error) {
     return (
-      <View style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Progress</Text>
-          </View>
-          <View style={[styles.content, styles.centerContent]}>
-            <Text style={styles.errorText}>Unable to load data</Text>
-            <Text style={styles.errorSubtext}>Please try again later</Text>
-          </View>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Progress</Text>
+        </View>
+        <View style={[styles.content, styles.centerContent]}>
+          <Text style={styles.errorText}>Unable to load data</Text>
+          <Text style={styles.errorSubtext}>Please try again later</Text>
         </View>
       </View>
     )
@@ -146,15 +142,13 @@ const Progress = () => {
 
   if (!userData) {
     return (
-      <View style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Progress</Text>
-          </View>
-          <View style={[styles.content, styles.centerContent]}>
-            <Text style={styles.errorText}>No user data found</Text>
-            <Text style={styles.errorSubtext}>Please complete your profile setup</Text>
-          </View>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Progress</Text>
+        </View>
+        <View style={[styles.content, styles.centerContent]}>
+          <Text style={styles.errorText}>No user data found</Text>
+          <Text style={styles.errorSubtext}>Please complete your profile setup</Text>
         </View>
       </View>
     )
@@ -428,6 +422,19 @@ const Progress = () => {
                       </Text>
                     </View>
                   </View>
+
+                  <View style={styles.helpItem}>
+                    <View style={[styles.helpIconCircle, { backgroundColor: '#EEF2FF' }]}>
+                      <Icon name="compass" size={24} color="#C9A84C" />
+                    </View>
+                    <View style={styles.helpTextContainer}>
+                      <Text style={styles.helpLabel}>Qiblah Compass</Text>
+                      <Text style={styles.helpDescription}>
+                        In the top left of this screen, you can click on the compass icon to open the Qiblah Compass to accurately find the direction you should pray your Salah in. 
+                      </Text>
+                    </View>
+                  </View>
+                
                 </ScrollView>
 
                 <TouchableOpacity 

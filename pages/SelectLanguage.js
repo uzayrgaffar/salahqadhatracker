@@ -10,35 +10,94 @@ const SelectLanguage = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [verse, setVerse] = useState({ arabic: '', english: '', ref: '' });
-  
+  const [destination, setDestination] = useState(null);
+  const [held, setHeld] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const timerRef = useRef(null);
+  const heldRef = useRef(false);
 
   useEffect(() => {
     fetchVerse();
+    resolveDestination();
   }, []);
+
+  useEffect(() => {
+    if (!loading && destination) {
+      timerRef.current = setTimeout(() => {
+        if (!heldRef.current) {
+          navigation.replace(destination);
+        }
+      }, 5000);
+    }
+    return () => clearTimeout(timerRef.current);
+  }, [loading, destination]);
+
+  const resolveDestination = async () => {
+    const user = auth().currentUser;
+    try {
+      if (user) {
+        const userDocRef = firestore().collection("users").doc(user.uid);
+        const userDocSnapshot = await userDocRef.get();
+        if (userDocSnapshot.exists()) {
+          const userData = userDocSnapshot.data();
+          if (userData.setupComplete) {
+            setDestination("/DailyChart");
+          } else if (userData.madhab) {
+            await userDocRef.set({ setupComplete: true }, { merge: true });
+            setDestination("/DailyChart");
+          } else {
+            setDestination("/Setup");
+          }
+        } else {
+          setDestination("/Setup");
+        }
+      } else {
+        setDestination("/SignUp");
+      }
+    } catch (error) {
+      setDestination("/SignUp");
+    }
+  };
 
   const fetchVerse = async () => {
     try {
-      const salahFastingVerses = ["2:43", "2:110", "2:183", "2:185", "4:103", "29:45"];
+      const verseDoc = await firestore().collection("appData").doc("dailyVerse").get();
+      const now = Date.now();
+
+      if (verseDoc.exists()) {
+        const data = verseDoc.data();
+        const age = now - data.fetchedAt;
+
+        if (age < 60 * 60 * 1000 && data.arabic) {
+          setVerse({ arabic: data.arabic, english: data.english, ref: data.ref });
+          Animated.timing(fadeAnim, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
+          return;
+        }
+      }
+
+      const versesDoc = await firestore().collection("appData").doc("verses").get();
+      const salahFastingVerses = versesDoc.exists() ? versesDoc.data().verses : ["2:43", "2:110", "2:183", "2:185", "4:103", "29:45"];
+
       const randomRef = salahFastingVerses[Math.floor(Math.random() * salahFastingVerses.length)];
-      
+
       const response = await fetch(
         `https://api.alquran.cloud/v1/ayah/${randomRef}/editions/quran-uthmani,en.sahih`
       );
       const json = await response.json();
-      
+
       if (json.status === "OK") {
-        setVerse({
+        const newVerse = {
           arabic: json.data[0].text,
           english: json.data[1].text,
-          ref: `${json.data[0].surah.englishName} ${json.data[0].numberInSurah}`
-        });
-        
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }).start();
+          ref: `${json.data[0].surah.englishName} ${json.data[0].numberInSurah}`,
+          fetchedAt: now,
+        };
+
+        await firestore().collection("appData").doc("dailyVerse").set(newVerse);
+        setVerse({ arabic: newVerse.arabic, english: newVerse.english, ref: newVerse.ref });
+        Animated.timing(fadeAnim, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
       }
     } catch (error) {
       console.error("Verse fetch error:", error);
@@ -47,43 +106,42 @@ const SelectLanguage = () => {
     }
   };
 
-  const handlePressAnywhere = async () => {  
-    setLoading(true);
+  const handlePressIn = () => {
+    heldRef.current = true;
+    setHeld(true);
+    clearTimeout(timerRef.current);
+  };
 
-    const user = auth().currentUser;
-    try {
-      if (user) {
-        const userDocRef = firestore().collection("users").doc(user.uid);
-        const userDocSnapshot = await userDocRef.get();
-        if (userDocSnapshot.exists) {
-          const userData = userDocSnapshot.data();
-
-          if (userData.setupComplete) {
-            navigation.replace("MainPages");
-          } else if (userData.madhab) {
-            await userDocRef.set({ setupComplete: true }, { merge: true });
-            navigation.replace("MainPages");
-          } else {
-            navigation.replace("Setup");
-          }
-        } else {
-          navigation.replace("Setup");
-        }
-      } else {
-        navigation.replace("SignUp");
-      }
-    } catch (error) {
-      navigation.replace("SignUp");
-    } finally {
-      setLoading(false);
+  const handlePressOut = () => {
+    heldRef.current = false;
+    setHeld(false);
+    if (destination) {
+      navigation.replace(destination);
     }
   };
 
+  useEffect(() => {
+    if (!loading && destination) {
+      setCountdown(5);
+      const countInterval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countInterval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(countInterval);
+    }
+  }, [loading, destination]);
+
   return (
-    <TouchableOpacity 
-      activeOpacity={1} 
-      style={styles.container} 
-      onPress={handlePressAnywhere}
+    <TouchableOpacity
+      activeOpacity={1}
+      style={styles.container}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
     >
       <Text style={styles.logoText}>iQadha</Text>
 
@@ -94,8 +152,10 @@ const SelectLanguage = () => {
           <Text style={styles.arabicText}>{verse.arabic}</Text>
           <Text style={styles.englishText}>"{verse.english}"</Text>
           <Text style={styles.reference}>— {verse.ref}</Text>
-          
-          <Text style={styles.tapText}>Tap anywhere to continue</Text>
+          <Text style={styles.tapText}>
+            {held ? "Release to continue" : `Continuing in ${countdown}...`}
+          </Text>
+          <Text style={styles.holdText}>Hold to stay on this screen</Text>
         </Animated.View>
       )}
     </TouchableOpacity>
@@ -148,10 +208,16 @@ const styles = StyleSheet.create({
     marginTop: 40,
     color: '#EEEEEE',
     fontSize: 12,
-    opacity: 0.6,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-  }
+  },
+  holdText: {
+    marginTop: 8,
+    color: '#EEEEEE',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
 });
 
 export default SelectLanguage;

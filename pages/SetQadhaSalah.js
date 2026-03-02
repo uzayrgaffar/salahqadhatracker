@@ -107,17 +107,18 @@ export const SetQadhaSalah = () => {
     let witr = selectedSalah.Witr ? 0 : adjustedDays
 
     if (selectedSalah.Jummah && !selectedSalah.Dhuhr) {
-      dhuhr = adjustedDays - 52 * yearsMissed
+      const jummahWeeks = selectedSalah.OnlyRamadan ? 48 : 52
+      dhuhr -= jummahWeeks * yearsMissed
     }
 
     if (selectedSalah.OnlyRamadan) {
-      const ramadanDays = adjustedDays - yearsMissed * 30
-      fajr = selectedSalah.Fajr ? 0 : ramadanDays
-      dhuhr = selectedSalah.Dhuhr ? 0 : ramadanDays
-      asr = selectedSalah.Asr ? 0 : ramadanDays
-      maghrib = selectedSalah.Maghrib ? 0 : ramadanDays
-      isha = selectedSalah.Isha ? 0 : ramadanDays
-      witr = selectedSalah.Witr ? 0 : ramadanDays
+      const ramadanReduction = 30 * yearsMissed
+      if (!selectedSalah.Fajr) fajr = Math.max(0, fajr - ramadanReduction)
+      if (!selectedSalah.Dhuhr) dhuhr = Math.max(0, dhuhr - ramadanReduction)
+      if (!selectedSalah.Asr) asr = Math.max(0, asr - ramadanReduction)
+      if (!selectedSalah.Maghrib) maghrib = Math.max(0, maghrib - ramadanReduction)
+      if (!selectedSalah.Isha) isha = Math.max(0, isha - ramadanReduction)
+      if (!selectedSalah.Witr) witr = Math.max(0, witr - ramadanReduction)
     }
 
     fajr = Math.max(0, fajr)
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
   bottomContainer: {
     backgroundColor: "#5CB390",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 20,
   },
   confirmButton: {
     backgroundColor: "#2F7F6F",
