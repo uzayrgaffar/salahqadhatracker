@@ -52,7 +52,7 @@ exports.incrementPrayerCounts = onSchedule({
           .doc(yesterday)
           .get();
 
-      const prayersLogged = yesterdayDoc.exists() ? (yesterdayDoc.data().prayers || {}) : {};
+      const prayersLogged = yesterdayDoc.exists ? (yesterdayDoc.data().prayers || {}) : {};
 
       const allPrayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
       if (userData.madhab === "Hanafi") allPrayers.push("witr");
