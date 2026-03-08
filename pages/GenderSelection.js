@@ -31,18 +31,16 @@ const GenderSelection = () => {
           const userDoc = await userDocRef.get();
   
           if (userDoc.exists) {
-            // Update existing user document with gender
             await userDocRef.update({
               gender: selectedGender,
             });
           } else {
-            // Create a new document if it doesn't exist
             await userDocRef.set(
               {
                 gender: selectedGender,
                 createdAt: firestore.Timestamp.now(),
               },
-              { merge: true } // Ensures other data is not erased
+              { merge: true }
             );            
           }
   

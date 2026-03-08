@@ -88,13 +88,11 @@ const Login = () => {
     const trimmedEmail = email.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // If valid email already in the field, send directly without showing modal
     if (trimmedEmail && emailRegex.test(trimmedEmail)) {
       sendResetEmail(trimmedEmail);
       return;
     }
 
-    // Pre-fill modal with whatever they've typed so far
     setResetEmail(trimmedEmail);
     setIsForgotModalVisible(true);
   };
@@ -355,8 +353,6 @@ const styles = StyleSheet.create({
     color: "#5CB390",
     fontSize: 15,
   },
-
-  // Modal — matches Profile page exactly
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

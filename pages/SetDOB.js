@@ -19,17 +19,14 @@ const SetDOB = () => {
   const insets = useSafeAreaInsets();
 
   const today = new Date()
-  // Minimum age of 9 years old to use the app
   const minimumDOB = new Date(today.getFullYear() - 9, today.getMonth(), today.getDate())
 
-  // --- Helper Calculations ---
   const userAgeToday = selectedDOB 
     ? today.getFullYear() - selectedDOB.getFullYear() - (today < new Date(today.getFullYear(), selectedDOB.getMonth(), selectedDOB.getDate()) ? 1 : 0) 
     : 0;
 
   const maxSelectableAge = Math.min(16, userAgeToday);
   
-  // Show Islamic Default only if they are at least 15 lunar years (approx 14y 8m)
   const showIslamicOption = userAgeToday >= 15 || (userAgeToday === 14 && today.getMonth() >= (selectedDOB?.getMonth() + 8) % 12);
 
   const selectDOB = (event, selectedDate) => {

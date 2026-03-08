@@ -9,13 +9,11 @@ const {CloudTasksClient} = require("@google-cloud/tasks");
 
 admin.initializeApp();
 
-// ─── CONFIG ────────────────────────────────────────────────────────────────────
 const PROJECT_ID = "iqadha-11db4";
 const LOCATION = "us-central1";
 const QUEUE = "prayer-notifications";
 const SERVICE_ACCOUNT = "firebase-adminsdk-fbsvc@iqadha-11db4.iam.gserviceaccount.com";
 const HANDLER_URL = `https://${LOCATION}-${PROJECT_ID}.cloudfunctions.net/sendPrayerNotification`;
-// ───────────────────────────────────────────────────────────────────────────────
 
 
 // --- 1. DAILY QADHA INCREMENTER ---
@@ -159,8 +157,6 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 
 // --- 3. SCHEDULE DAILY PRAYER TASKS ---
-// Runs every hour. Checks all users and schedules any remaining future prayers for their current day.
-// Uses deterministic task names to prevent duplicate scheduling.
 exports.scheduleDailyPrayerTasks = onSchedule(
     {
       schedule: "0 * * * *",
@@ -184,7 +180,6 @@ exports.scheduleDailyPrayerTasks = onSchedule(
       const processUser = async (doc) => {
         const user = doc.data();
 
-        // 1. Basic Validation
         if (!user.latitude || !user.longitude || !user.fcmToken) return;
 
         const timezone = user.timezone || "UTC";
@@ -194,14 +189,10 @@ exports.scheduleDailyPrayerTasks = onSchedule(
         const month = userNow.month() + 1;
         const year = userNow.year();
 
-        // 2. Formatting for Calendar Lookup
         const roundedLat = user.latitude.toFixed(1);
         const roundedLng = user.longitude.toFixed(1);
         const madhab = user.madhab === "Hanafi" ? 1 : 0;
 
-        // 3. Method Logic:
-        // We prioritize a stored 'method'. If it doesn't exist, we find it via countryCode.
-        // If countryCode doesn't exist, we use whichCountry to guess it.
         let method = user.method;
 
         if (!method) {
@@ -209,7 +200,6 @@ exports.scheduleDailyPrayerTasks = onSchedule(
           method = 3;
         }
 
-        // 4. Fetch/Cache Calendar
         let monthData;
         try {
           monthData = await getMonthCalendar(db, roundedLat, roundedLng, month, year, madhab, method);
@@ -218,8 +208,6 @@ exports.scheduleDailyPrayerTasks = onSchedule(
           return;
         }
 
-        // 5. Schedule Prayers
-        // monthData is 0-indexed, so we use day - 1
         const dayTimings = monthData[day - 1].timings;
         if (!dayTimings) {
           console.error(`No timings found for day ${day} for user ${doc.id}`);
@@ -229,17 +217,15 @@ exports.scheduleDailyPrayerTasks = onSchedule(
         const prayers = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
         for (const prayer of prayers) {
-          const cleanTime = dayTimings[prayer].split(" ")[0]; // Remove extra text like "(BST)"
+          const cleanTime = dayTimings[prayer].split(" ")[0];
           const prayerMoment = moment.tz(
               `${userNow.format("YYYY-MM-DD")} ${cleanTime}`,
               "YYYY-MM-DD HH:mm",
               timezone,
           );
 
-          // Only schedule if the prayer time is in the future (plus 1 min grace)
           if (prayerMoment.isBefore(userNow.clone().add(1, "minutes"))) continue;
 
-          // 6. Create Task with Deterministic ID to prevent duplicates
           const taskId = `${doc.id}-${userNow.format("YYYYMMDD")}-${prayer}`;
           const taskName = client.taskPath(PROJECT_ID, LOCATION, QUEUE, taskId);
 
@@ -271,7 +257,6 @@ exports.scheduleDailyPrayerTasks = onSchedule(
           try {
             await client.createTask({parent, task});
           } catch (err) {
-            // Error code 6 is "ALREADY_EXISTS" - we expect this on subsequent hourly runs.
             if (err.code !== 6) {
               console.error(`Failed to create task for ${doc.id} ${prayer}:`, err.message);
             }
@@ -290,7 +275,6 @@ exports.scheduleDailyPrayerTasks = onSchedule(
 
 
 // --- 4. PRAYER NOTIFICATION HANDLER ---
-// Called by Cloud Tasks at the exact prayer time for each user.
 exports.sendPrayerNotification = onRequest(
     {
       timeoutSeconds: 30,
