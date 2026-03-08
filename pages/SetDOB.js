@@ -17,6 +17,7 @@ const SetDOB = () => {
   const [selectedAge, setSelectedAge] = useState(null)
   const [tempAge, setTempAge] = useState("")
   const insets = useSafeAreaInsets();
+  const earliestDOB = new Date(1900, 0, 1);
 
   const today = new Date()
   const minimumDOB = new Date(today.getFullYear() - 9, today.getMonth(), today.getDate())
@@ -130,7 +131,6 @@ const SetDOB = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* 1. iOS Spinner Logic */}
         {showDOBPicker && Platform.OS === 'ios' && (
           <Modal transparent animationType="slide">
             <View style={styles.modalContainer}>
@@ -153,19 +153,18 @@ const SetDOB = () => {
           </Modal>
         )}
 
-        {/* 2. Android Spinner Logic (No Modal wrapper needed) */}
         {showDOBPicker && Platform.OS === 'android' && (
           <DateTimePicker
             value={selectedDOB || minimumDOB}
             mode="date"
             display="spinner"
             onChange={selectDOB}
+            minimumDate={earliestDOB}
             maximumDate={minimumDOB}
           />
         )}
       </View>
 
-      {/* Age of Puberty Card */}
       {selectedDOB && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Age of Puberty</Text>

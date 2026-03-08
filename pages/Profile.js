@@ -474,7 +474,6 @@ const Profile = () => {
             <Text style={styles.emailText}>{email || "Anonymous Account"}</Text>
           </View>
 
-          {/* Permissions Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Permissions</Text>
             <Text style={styles.sectionDescription}>Manage location and notification access</Text>
@@ -502,7 +501,6 @@ const Profile = () => {
             </View>
           </View>
 
-          {/* Madhab Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Madh'hab Selection</Text>
             <Text style={styles.sectionDescription}>Choose your school of thought</Text>
@@ -526,7 +524,6 @@ const Profile = () => {
             </View>
           </View>
 
-          {/* Calculation Method Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Salah Time Method</Text>
             

@@ -180,7 +180,6 @@ const QadhaFasts = () => {
         </View>
       </KeyboardAvoidingView>
 
-      {/* --- ADJUST MODAL --- */}
       <Modal visible={showAdjustModal} transparent={true} animationType="slide">
         <KeyboardAvoidingView 
           behavior={Platform.OS === "ios" ? "padding" : "height"} 
@@ -219,7 +218,6 @@ const QadhaFasts = () => {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* --- HELP MODAL --- */}
       <Modal visible={showHelp} transparent={true} animationType="fade">
         <TouchableWithoutFeedback onPress={() => setShowHelp(false)}>
             <View style={styles.modalContainer}>

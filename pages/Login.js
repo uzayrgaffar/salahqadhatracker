@@ -212,7 +212,6 @@ const Login = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Forgot Password Modal — matches Profile page modal style exactly */}
       <Modal visible={isForgotModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
