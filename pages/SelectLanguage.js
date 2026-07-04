@@ -22,18 +22,20 @@ const SelectLanguage = () => {
   }, []);
 
   useEffect(() => {
-    if (loading || !destination || held) return;
+    if (held || countdown === 0) return;
 
     const timer = setTimeout(() => {
-      if (countdown === 1) {
-        navigation.replace(destination);
-      } else {
-        setCountdown(countdown - 1);
-      }
+      setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [countdown, loading, destination, held]);
+  }, [countdown, held]);
+
+  useEffect(() => {
+    if (countdown === 0 && destination) {
+      navigation.replace(destination);
+    }
+  }, [countdown, destination, navigation]);
 
   const resolveDestination = async () => {
     try {
