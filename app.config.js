@@ -22,8 +22,6 @@ export default {
     },
     android: {
       jsEngine: "hermes",
-      package: "com.uzayrgaffar.iqadha",
-      versionCode: 11,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#5CB390"
