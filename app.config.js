@@ -3,11 +3,7 @@ export default {
   expo: {
     name: "iQadha",
     slug: "QadhaApp",
-    icon: "./assets/icon.png",
-    adaptiveIcon: {
-      foregroundImage: "./assets/adaptive-icon.png",
-      backgroundColor: "#5CB390"
-    },
+    icon: "./assets/icon.png",    
     version: "1.1.7",
     userInterfaceStyle: "light",
     ios: {
@@ -28,6 +24,10 @@ export default {
       jsEngine: "hermes",
       package: "com.uzayrgaffar.iqadha",
       versionCode: 11,
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#5CB390"
+      },
       googleServicesFile: "./google-services.json",
       config: {
         keepConsistentProguardFile: true
@@ -52,8 +52,8 @@ export default {
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
-          "color": "#5CB390"
+          icon: "./assets/notification-icon.png",
+          color: "#5CB390"
         }
       ],
       "@react-native-firebase/app",
@@ -61,20 +61,22 @@ export default {
       [
         "expo-build-properties",
         {
-          "ios": {
-            "useFrameworks": "static",
-            "buildReactNativeFromSource": true 
+          ios: {
+            useFrameworks: "static",
+            buildReactNativeFromSource: true
           },
-          "android": {
-            "enableMinifyInReleaseBuilds": false,
-            "shrinkResources": false
+
+          android: {
+            enableMinifyInReleaseBuilds: false,
+            shrinkResources: false
           }
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow location access to calculate prayer times and Qiblah direction."
+          locationWhenInUsePermission:
+            "Allow location access to calculate prayer times and Qiblah direction."
         }
       ]
     ],
