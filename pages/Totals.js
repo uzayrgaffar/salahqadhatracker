@@ -20,6 +20,25 @@ const Totals = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const insets = useSafeAreaInsets();
+  const qadhaPrayers = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", ...(madhab === "Hanafi" ? ["Witr"] : [])];
+
+  const getQadhaDocRef = useCallback(() => {
+    const user = auth().currentUser;
+    if (!user) {
+      return null;
+    }
+
+    return firestore().collection("users").doc(user.uid).collection("totalQadha").doc("qadhaSummary");
+  }, []);
+
+  const persistQadhaCount = useCallback(async (salah, value) => {
+    const qadhaDocRef = getQadhaDocRef();
+    if (!qadhaDocRef) {
+      return;
+    }
+
+    await qadhaDocRef.set({ [salah.toLowerCase()]: value }, { merge: true });
+  }, [getQadhaDocRef]);
 
   const fetchQadhaCounts = useCallback(async () => {
     try {
@@ -57,17 +76,9 @@ const Totals = () => {
 
   const adjustQadha = async (salah, amount) => {
     try {
-      const current = qadhaCounts[salah] ?? 0;
-      const newValue = Math.max(0, current + amount);
+      const newValue = Math.max(0, (qadhaCounts[salah] ?? 0) + amount);
 
       setQadhaCounts((prev) => ({ ...prev, [salah]: newValue }));
-
-      const user = auth().currentUser;
-      if (user) {
-        const userId = user.uid;
-        const qadhaDocRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
-        await qadhaDocRef.set({ [salah.toLowerCase()]: newValue }, { merge: true });
-      }
     } catch (error) {
       console.error("Error updating Qadha count:", error);
       Alert.alert("Error", "Failed to update Qadha count. Please try again.");
@@ -80,13 +91,6 @@ const Totals = () => {
     const safeValue = Math.max(0, numValue);
 
     setQadhaCounts((prev) => ({ ...prev, [salah]: safeValue }));
-
-    const user = auth().currentUser;
-    if (user) {
-      const userId = user.uid;
-      const qadhaDocRef = firestore().collection("users").doc(userId).collection("totalQadha").doc("qadhaSummary");
-      await qadhaDocRef.set({ [salah.toLowerCase()]: safeValue }, { merge: true });
-    }
   };
 
   const getPrayerIcon = (prayer) => {
@@ -103,10 +107,30 @@ const Totals = () => {
 
   const totalRemaining = Object.values(qadhaCounts).reduce((sum, v) => sum + (v ?? 0), 0);
 
-  const confirmSelection = () => {
-    Keyboard.dismiss();
-    navigation.replace("MainPages");
-  };
+  const saveAllQadhaCounts = useCallback(async () => {
+    const qadhaDocRef = getQadhaDocRef();
+    if (!qadhaDocRef) {
+      return;
+    }
+
+    const payload = qadhaPrayers.reduce((accumulator, salah) => {
+      accumulator[salah.toLowerCase()] = qadhaCounts[salah] ?? 0;
+      return accumulator;
+    }, {});
+
+    await qadhaDocRef.set(payload, { merge: true });
+  }, [getQadhaDocRef, qadhaCounts, qadhaPrayers]);
+
+  const confirmSelection = useCallback(async () => {
+    try {
+      Keyboard.dismiss();
+      await saveAllQadhaCounts();
+      navigation.replace("MainPages");
+    } catch (error) {
+      console.error("Error saving Qadha counts:", error);
+      Alert.alert("Error", "Failed to save Qadha counts. Please try again.");
+    }
+  }, [navigation, saveAllQadhaCounts]);
 
   if (isLoading) {
     return (
@@ -138,8 +162,10 @@ const Totals = () => {
         </View>
 
         <View style={styles.qadhaCountersContainer}>
-          {Object.entries(qadhaCounts).map(([salah, count]) =>
-            count !== null ? (
+          {qadhaPrayers.map((salah) => {
+            const count = qadhaCounts[salah];
+
+            return count !== null ? (
               <View key={salah} style={styles.qadhaCounterWrapper}>
                 <View style={styles.qadhaLabelContainer}>
                   <View style={styles.qadhaIconContainer}>
@@ -173,8 +199,8 @@ const Totals = () => {
                   </TouchableOpacity>
                 </View>
               </View>
-            ) : null
-          )}
+            ) : null;
+          })}
         </View>
       </ScrollView>
 
