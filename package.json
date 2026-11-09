@@ -37,6 +37,7 @@
     "lucide-react-native": "^0.561.0",
     "moment": "^2.30.1",
     "moment-timezone": "^0.6.0",
+    "praytimes": "^0.0.5",
     "react": "19.2.3",
     "react-native": "0.86.2",
     "react-native-calendars": "^1.1305.0",

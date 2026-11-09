@@ -55,6 +55,7 @@ const Profile = () => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [automaticQadhaEnabled, setAutomaticQadhaEnabled] = useState(true);
   const [checkingPermissions, setCheckingPermissions] = useState(true);
   const [method, setMethod] = useState(null);
   const [methodDropdownOpen, setMethodDropdownOpen] = useState(false);
@@ -73,6 +74,7 @@ const Profile = () => {
             setMadhab(data.madhab || "")
             setMethod(data.method || null)
             setCountryCode(data.countryCode || null)
+            setAutomaticQadhaEnabled(data.automaticQadhaEnabled !== false)
           }
         })
       } else {
@@ -282,6 +284,19 @@ const Profile = () => {
     }
   }
 
+  const handleAutomaticQadhaToggle = async () => {
+    if (!userDocRef) return
+
+    const newValue = !automaticQadhaEnabled
+    try {
+      await userDocRef.update({ automaticQadhaEnabled: newValue })
+      setAutomaticQadhaEnabled(newValue)
+    } catch (error) {
+      console.error("Failed to update automatic qadha setting:", error)
+      Alert.alert("Error", "Failed to update automatic qadha setting")
+    }
+  }
+
   const showConfirmation = () => {
     Alert.alert(
       "Confirmation",
@@ -475,8 +490,8 @@ const Profile = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Permissions</Text>
-            <Text style={styles.sectionDescription}>Manage location and notification access</Text>
+            <Text style={styles.sectionTitle}>Settings</Text>
+            <Text style={styles.sectionDescription}>Manage account settings and permissions</Text>
 
             <View style={styles.permissionsCard}>
               <PermissionRow
@@ -497,6 +512,17 @@ const Profile = () => {
                 enabled={notificationsEnabled}
                 onToggle={handleNotificationToggle}
                 disabled={checkingPermissions || !locationEnabled}
+              />
+
+              <View style={styles.permissionDivider} />
+
+              <PermissionRow
+                icon="repeat-outline"
+                label="Dynamic Qadha Count"
+                description="Checks if you have missed any prayers at the end of each day and adds to your Qadha count automatically (Auto-Enabled)"
+                enabled={automaticQadhaEnabled}
+                onToggle={handleAutomaticQadhaToggle}
+                disabled={!userDocRef}
               />
             </View>
           </View>

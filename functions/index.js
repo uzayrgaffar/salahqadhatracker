@@ -31,6 +31,9 @@ exports.incrementPrayerCounts = onSchedule({
     try {
       const userData = userDoc.data();
       const userId = userDoc.id;
+
+      if (userData.automaticQadhaEnabled === false) continue;
+
       const timezone = userData.timezone || "UTC";
 
       const nowInUserTz = moment().tz(timezone);
